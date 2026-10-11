@@ -13,17 +13,17 @@
   "use strict";
 
   const HAN_CHARACTER = /\p{Script=Han}/u;
-  const CLAUSE_END_CHARACTER = /[，,、。.！？!?；;：:\n…（）()《》〈〉]/u;
-  const TRAILING_CLOSER = /[”’」』）》】〉〕〗〙〛"'）)\]]/u;
   const NUMERIC_EXPRESSION = /\p{Number}+(?:[.,]\p{Number}+)?(?:\s+\p{Number}+[\/／]\p{Number}+|[\/／]\p{Number}+)?/gu;
   const MIN_SPLIT_VISUAL_LENGTH = 13;
   const MIN_SPLIT_CONFIDENCE = 0.45;
   const MAX_MODEL_WINDOW_TOKENS = 256;
   const MODEL_INFO = modelBackend?.getModelInfo?.();
-  const USES_CONTEXT = MODEL_INFO?.inputRepresentation === "unicode-context-v1";
+  if (MODEL_INFO?.inputRepresentation !== "unicode-context-v1") {
+    throw new Error("Super Reader chunker requires a unicode-context-v1 model backend");
+  }
   // Each kernel-3, dilation-1 convolution adds one token of context per side.
   const MODEL_CONTEXT_RADIUS = MODEL_INFO?.convolutionLayers ?? 0;
-  // Match training/text-policy.json and text_policy.{py,mjs}. Classify ORIGINAL
+  // Match the text policy in the private training repository. Classify ORIGINAL
   // glyphs before NFKC: ASCII/compatibility punctuation is retained context.
   const CONTEXT_PROXY = /[，。！？；…]/u;
   const LINE_BOUNDARY = /[\n\r\v\f\u001c-\u001e\u0085\u2028\u2029]/u;
@@ -93,22 +93,8 @@
       0,
     );
     const numericExpressionLength = Array.from(text.matchAll(NUMERIC_EXPRESSION)).length;
-    const latinWords = USES_CONTEXT ? Array.from(text.matchAll(/[A-Za-zＡ-Ｚａ-ｚ]+/gu)).length : 0;
+    const latinWords = Array.from(text.matchAll(/[A-Za-zＡ-Ｚａ-ｚ]+/gu)).length;
     return hanLength + numericExpressionLength + latinWords;
-  }
-
-  function tokenizeHanCharacters(text) {
-    const tokens = [];
-    let index = 0;
-
-    for (const character of text) {
-      if (HAN_CHARACTER.test(character)) {
-        tokens.push({ segment: character, index });
-      }
-      index += character.length;
-    }
-
-    return tokens;
   }
 
   function createSegmenter(locale) {
@@ -124,8 +110,7 @@
     const characters = Array.from(text);
     const clauses = [];
     let buffer = "";
-    let isInsideStraightDoubleQuote = false;
-    const boundaryOffsets = USES_CONTEXT ? contextBoundaryOffsets(text) : new Set();
+    const boundaryOffsets = contextBoundaryOffsets(text);
     let sourceOffset = 0;
     const sourceOffsets = characters.map((character) => {
       const start = sourceOffset;
@@ -134,9 +119,7 @@
     });
     // The original enumeration comma is an extra reading boundary, not a
     // training proxy: it stays in the preceding fragment's model tokens.
-    const isEnd = (index) => USES_CONTEXT
-      ? boundaryOffsets.has(sourceOffsets[index]) || characters[index] === "、"
-      : CLAUSE_END_CHARACTER.test(characters[index]);
+    const isEnd = (index) => boundaryOffsets.has(sourceOffsets[index]) || characters[index] === "、";
 
     const flush = () => {
       if (!buffer) return;
@@ -147,24 +130,11 @@
     for (let index = 0; index < characters.length; index += 1) {
       const character = characters[index];
       buffer += character;
-      if (character === '"') {
-        isInsideStraightDoubleQuote = !isInsideStraightDoubleQuote;
-      }
-
       if (!isEnd(index)) continue;
 
-      while (index + 1 < characters.length) {
-        const nextCharacter = characters[index + 1];
-        const isTrailingPunctuation = isEnd(index + 1);
-        const isTrailingCloser = !USES_CONTEXT &&
-          TRAILING_CLOSER.test(nextCharacter) &&
-          (nextCharacter !== '"' || isInsideStraightDoubleQuote);
-
-        if (!isTrailingPunctuation && !isTrailingCloser) break;
-
+      while (index + 1 < characters.length && isEnd(index + 1)) {
         index += 1;
-        buffer += nextCharacter;
-        if (nextCharacter === '"') isInsideStraightDoubleQuote = false;
+        buffer += characters[index];
       }
 
       flush();
@@ -194,35 +164,24 @@
 
   // Cumulative visual lengths at token boundaries, including numeric expressions.
   function visualOffsetsForTokens(text, tokens) {
-    if (USES_CONTEXT) {
-      const ends = [];
-      let index = 0;
-      for (const c of text) {
-        if (HAN_CHARACTER.test(c)) ends.push(index + c.length);
-        index += c.length;
-      }
-      for (const pattern of [NUMERIC_EXPRESSION, /[A-Za-zＡ-Ｚａ-ｚ]+/gu]) {
-        for (const match of text.matchAll(pattern)) ends.push(match.index + match[0].length);
-      }
-      ends.sort((a, b) => a - b);
-      let units = 0;
-      const result = tokens.map((token) => {
-        while (units < ends.length && ends[units] <= token.index) units += 1;
-        return units;
-      });
-      result[0] = 0;
-      result.push(ends.length);
-      return result;
+    const ends = [];
+    let index = 0;
+    for (const c of text) {
+      if (HAN_CHARACTER.test(c)) ends.push(index + c.length);
+      index += c.length;
     }
-    const numbers = Array.from(text.matchAll(NUMERIC_EXPRESSION), (match) => match.index);
-    let numberCount = 0;
-    const offsets = tokens.map((token, index) => {
-      while (numberCount < numbers.length && numbers[numberCount] < token.index) numberCount += 1;
-      return index + numberCount;
+    for (const pattern of [NUMERIC_EXPRESSION, /[A-Za-zＡ-Ｚａ-ｚ]+/gu]) {
+      for (const match of text.matchAll(pattern)) ends.push(match.index + match[0].length);
+    }
+    ends.sort((a, b) => a - b);
+    let units = 0;
+    const result = tokens.map((token) => {
+      while (units < ends.length && ends[units] <= token.index) units += 1;
+      return units;
     });
-    offsets[0] = 0; // The first fragment also includes any leading numbers.
-    offsets.push(tokens.length + numbers.length);
-    return offsets;
+    result[0] = 0;
+    result.push(ends.length);
+    return result;
   }
 
   function selectBestBoundary(scores, isAllowed = () => true, start = 0, end) {
@@ -276,8 +235,8 @@
     return scores;
   }
 
-  function chunkByModel(text, segmenter, minConfidence, scoringStrategy) {
-    const tokens = USES_CONTEXT ? tokenizeContext(text) : tokenizeHanCharacters(text);
+  function chunkByModel(text, segmenter, minConfidence) {
+    const tokens = tokenizeContext(text);
     if (tokens.length < 2 || visualLength(text) < MIN_SPLIT_VISUAL_LENGTH) return [text];
     if (!modelBackend || typeof modelBackend.scoreTokens !== "function") {
       throw new Error("Super Reader model backend must load before the chunker");
@@ -312,8 +271,6 @@
       // Combine windows before normalization, including any short final window.
       return { scores, confidence: gapProbabilities(scores) };
     }
-    const initial = scoreRange(0, tokens.length);
-
     // Use a stack so repeated choices near one end cannot overflow the call stack.
     const pendingRanges = [{ start: 0, end: tokens.length }];
     while (pendingRanges.length > 0) {
@@ -327,32 +284,21 @@
         continue;
       }
 
-      // Default: run the CNN again on each over-threshold child, so scores
+      // Run the CNN again on each over-threshold child, so scores
       // reflect its new context and edges. Token offsets and protection ranges
-      // stay fixed; cached-score strategies are only for offline comparisons.
-      const scoped = scoringStrategy !== "fixed" && (start !== 0 || end !== tokens.length);
-      const fresh = scoped && scoringStrategy === "recursive-model";
-      const indexOffset = scoped ? start : 0;
-      let { scores, confidence } = initial;
-      if (fresh) {
-        ({ scores, confidence } = scoreRange(start, end));
-      } else if (scoped) {
-        scores = initial.scores.slice(start, end - 1);
-        confidence = gapProbabilities(scores);
-      }
+      // stay fixed in the original clause.
+      const { scores, confidence } = scoreRange(start, end);
       // Use the same confidence gate for every eligible fragment.
       // An explicit threshold supports offline comparisons, including zero abstention.
       const requiredConfidence = minConfidence ?? MIN_SPLIT_CONFIDENCE;
       const selected = selectBestBoundary(
         scores,
         (index) => (requiredConfidence === 0 || confidence[index] > requiredConfidence) &&
-          tokens[indexOffset + index + 1].index > tokens[indexOffset + index].index &&
-          hanBoundaryOffsets.has(tokens[indexOffset + index + 1].index) &&
-          !protectedBoundaryOffsets.has(tokens[indexOffset + index + 1].index),
-        start - indexOffset,
-        end - 1 - indexOffset,
+          tokens[start + index + 1].index > tokens[start + index].index &&
+          hanBoundaryOffsets.has(tokens[start + index + 1].index) &&
+          !protectedBoundaryOffsets.has(tokens[start + index + 1].index),
       );
-      const boundaryAfter = selected === null ? null : selected + indexOffset;
+      const boundaryAfter = selected === null ? null : selected + start;
       if (boundaryAfter === null) {
         ranges.push({ start, end });
         continue;
@@ -377,14 +323,14 @@
     if (minConfidence != null && (!Number.isFinite(minConfidence) || minConfidence < 0 || minConfidence > 1)) {
       throw new RangeError("Super Reader minConfidence must be between 0 and 1");
     }
-    if (!["recursive-softmax", "fixed", "recursive-model"].includes(scoringStrategy)) {
-      throw new TypeError("Super Reader scoringStrategy must be recursive-softmax, fixed or recursive-model");
+    if (scoringStrategy !== "recursive-model") {
+      throw new TypeError("Super Reader scoringStrategy must be recursive-model");
     }
     if (!text) return [];
     const segmenter = options.segmenter === undefined
       ? createSegmenter(options.locale)
       : options.segmenter;
-    return splitClauses(text).map((clause) => chunkByModel(clause, segmenter, minConfidence, scoringStrategy));
+    return splitClauses(text).map((clause) => chunkByModel(clause, segmenter, minConfidence));
   }
 
   function chunkText(text, options = {}) {
@@ -408,11 +354,10 @@
    * Process all texts from one viewport in order. Offsets are ascending UTF-16
    * positions inside each corresponding input; no DOM or task scheduling here.
    * @param {string[]} texts
-   * @param {{minConfidence?: number, scoringStrategy?: "recursive-softmax" | "fixed" | "recursive-model"}} options
+   * @param {{minConfidence?: number, scoringStrategy?: "recursive-model"}} options
    * Defaults to >45% at 13 or more visual units; shorter
    * fragments skip inference. Each eligible child receives fresh inference.
    * An explicit minConfidence overrides the default; 0 disables abstention.
-   * Cached-score strategies are offline comparison options.
    * @returns {number[][]}
    */
   function process(texts, options = {}) {
@@ -440,7 +385,6 @@
     selectBestBoundary,
     scoreTokenWindows,
     splitClauses,
-    tokenizeHanCharacters,
     tokenizeContext,
     visualLength,
   });

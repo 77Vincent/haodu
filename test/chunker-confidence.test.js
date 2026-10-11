@@ -136,19 +136,16 @@ test("threshold is strict and configurable and does not use a per-gap sigmoid", 
   }
 });
 
-test("explicit cached-score comparison renormalizes without running the model again", () => {
+test("retired cached-score strategies fail explicitly without running inference", () => {
   let calls = 0;
   const chunker = withScores((tokens) => {
     calls++;
-    assert.equal(tokens.join(""), text);
-    return tokens.slice(1).map((_, i) => i === 15 ? 10 : i === 7 ? 5 : -1000);
+    return tokens.slice(1).map(() => 0);
   });
-  const chunks = Array.from(chunker.chunkText(text, { segmenter: null, scoringStrategy: "recursive-softmax" }));
-  assert.deepEqual(chunks, [text.slice(0, 8), text.slice(8, 16), text.slice(16)]);
-  assert.equal(calls, 1);
-  assert.deepEqual(Array.from(chunker.chunkText(text, { segmenter: null, scoringStrategy: "fixed" })),
-    [text.slice(0, 16), text.slice(16)]);
-  assert.equal(calls, 2, "fixed-probability comparison also scores the original clause once");
+  for (const scoringStrategy of ["recursive-softmax", "fixed"]) {
+    assert.throws(() => chunker.chunkText(text, { scoringStrategy }), /scoringStrategy must be recursive-model/u);
+  }
+  assert.equal(calls, 0);
 });
 
 test("protected high-confidence gaps do not promote an uncertain alternative", () => {
@@ -169,7 +166,7 @@ test("the 45% default accepts an unprotected runner-up only at its original conf
   assert.deepEqual(Array.from(chunker.chunkText(text, { segmenter, minConfidence: .45 })), [text.slice(0, 16), text.slice(16)]);
 });
 
-test("explicit cached-score comparison keeps the original word protection inside a child", () => {
+test("fresh child inference keeps the original clause's word protection", () => {
   let calls = 0, segmentations = 0;
   const chunker = withScores((tokens) => {
     calls++;
@@ -179,8 +176,8 @@ test("explicit cached-score comparison keeps the original word protection inside
     segmentations++;
     return [{ segment: text.slice(10, 14), index: 10, isWordLike: true }];
   } };
-  assert.deepEqual(Array.from(chunker.chunkText(text, { segmenter, scoringStrategy: "recursive-softmax" })), [text.slice(0, 6), text.slice(6)]);
-  assert.equal(calls, 1);
+  assert.deepEqual(Array.from(chunker.chunkText(text, { segmenter })), [text.slice(0, 6), text.slice(6)]);
+  assert.equal(calls, 2);
   assert.equal(segmentations, 1);
 });
 
@@ -197,7 +194,7 @@ test("confidence cannot create a fragment with no visual content", () => {
     const chunker = withScores((tokens) => tokens.slice(1).map((_, i) => (
       i === (leading ? 0 : tokens.length - 2) ? 100 : 0
     )));
-    for (const scoringStrategy of ["recursive-softmax", "fixed", "recursive-model"]) {
+    for (const scoringStrategy of [undefined, "recursive-model"]) {
       assert.deepEqual(Array.from(chunker.chunkText(input, { segmenter: null, scoringStrategy })), [input]);
     }
   }

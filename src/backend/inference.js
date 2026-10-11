@@ -12,15 +12,11 @@
 })(globalThis, function createModelBackend(modelData) {
   "use strict";
 
-  const tensorDescriptors = modelData && modelData.tensors ? modelData.tensors : {};
-  const CHANNELS = modelData && modelData.architecture
-    ? modelData.architecture.channels
-    : tensorDescriptors["embedding.weight"].shape[1];
-  const RESIDUAL_BLOCKS = modelData && modelData.architecture
-    ? modelData.architecture.residualBlocks
-    : Object.keys(tensorDescriptors)
-      .filter((name) => /^blocks\.\d+\.normalization\.weight$/u.test(name))
-      .length;
+  if (!modelData?.architecture || modelData.inputRepresentation !== "unicode-context-v1") {
+    throw new Error("Super Reader inference requires a unicode-context-v1 model with architecture metadata");
+  }
+  const CHANNELS = modelData.architecture.channels;
+  const RESIDUAL_BLOCKS = modelData.architecture.residualBlocks;
   const FEATURE_CHANNELS = CHANNELS * 4;
   const LAYER_NORM_EPSILON = 1e-5;
   const GELU_FACTOR = Math.sqrt(2 / Math.PI);
@@ -236,7 +232,7 @@
         checkpointSha256: modelData.checkpointSha256,
         testAccuracy: modelData.testAccuracy,
         tokenization: modelData.tokenization,
-        inputRepresentation: modelData.inputRepresentation || "han-only-v1",
+        inputRepresentation: modelData.inputRepresentation,
         candidatePositions: modelData.candidatePositions,
         vocabularySize: Object.keys(modelData.vocabulary).length,
         channels: CHANNELS,

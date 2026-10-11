@@ -56,7 +56,7 @@ Chrome 中文阅读辅助扩展。只有一个全局工具栏开关，保存在�
 
 片段不足 13 个视觉单位，或重新推理后没有通过门槛与保护规则的切点，就停止处理该片段。当前模型按每条样本一个目标断点训练，softmax 是相对概率；重新推理也不使门槛成为实际正确率保证。`src/backend/chunker.js` 中的 `MIN_SPLIT_CONFIDENCE` 是运行默认值；`chunkText`、`chunkTextByClause`、`buildVisualChunks` 和 `process` 无需传参即可使用 `recursive-model`。显式传入 `minConfidence` 会覆盖默认置信度，供离线比较；`0` 关闭置信度门槛，但仍保留长度门槛。原文坐标及词内保护沿用原始子句，子片段重新推理会增加模型调用；这些计算不拆分视口请求，也不影响 toggle 的锁。
 
-当前算法见 [后端预处理](src/backend/chunker.js)；历史实验与模型评估记录在私有训练仓库维护。
+当前算法见 [后端预处理](src/backend/chunker.js)。公开扩展仅支持 `unicode-context-v1` 模型输入和递归重新推理；旧的仅汉字输入、固定评分和对子片段重新归一化旧评分的实验实现与记录保留在私有训练仓库。
 
 ## 模块如何连接
 

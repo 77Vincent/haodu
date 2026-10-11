@@ -10,11 +10,10 @@ const {
   chunkTextByClause,
   selectBestBoundary,
   splitClauses,
-  tokenizeHanCharacters,
   visualLength,
 } = require("../src/backend/chunker.js");
 
-function withModel(scoreTokens, inputRepresentation) {
+function withModel(scoreTokens, inputRepresentation = "unicode-context-v1") {
   const context = vm.createContext({ SuperReaderModelBackend: {
     scoreTokens, getModelInfo: () => ({ inputRepresentation }),
   }, Intl });
@@ -600,11 +599,13 @@ test("vertical separators appear only at model boundaries inside one clause", ()
   ]);
 });
 
-test("character tokenization keeps original UTF-16 source offsets", () => {
-  assert.deepEqual(tokenizeHanCharacters("A中😀文"), [
-    { segment: "中", index: 1 },
-    { segment: "文", index: 4 },
-  ]);
+test("chunker rejects incompatible or missing model input metadata", () => {
+  for (const inputRepresentation of ["han-only-v1", "unknown", null]) {
+    assert.throws(() => withModel(() => [], inputRepresentation), /requires a unicode-context-v1 model backend/u);
+  }
+  const context = vm.createContext({ SuperReaderModelBackend: { scoreTokens: () => [] }, Intl });
+  assert.throws(() => vm.runInContext(readFileSync(join(__dirname, "../src/backend/chunker.js"), "utf8"), context),
+    /requires a unicode-context-v1 model backend/u);
 });
 
 test("never loses whitespace or mixed-language content", () => {
