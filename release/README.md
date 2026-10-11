@@ -2,7 +2,7 @@
 
 网站与插件独立发布。网站只上传静态页面；插件只上传运行文件。不要把仓库根目录或整个 `dist/` 上传到任意一方。
 
-当前方向：Chrome Web Store 首发；`haodu.site` 的域名注册与站点托管统一使用阿里云。静态文件已通过 API 部署到上海 OSS Bucket `haodu-site` 并逐个校验。Bucket 当前为私有，备案审核、域名绑定、DNS 与 HTTPS 尚待完成，正式域名尚未上线。具体配置与进度见 [阿里云 OSS 部署说明](aliyun-oss.md)。
+发布目标为 Chrome Web Store；`haodu.site` 的域名注册与站点托管使用阿里云。网站部署配置和带日期的操作记录见 [阿里云 OSS 部署说明](aliyun-oss.md)。云端访问状态以实际访问与控制台为准，旧部署记录不代表当前线上状态。
 
 ## 1. 构建插件
 
@@ -27,7 +27,7 @@ npm run release:extension
 
 已验证工具：Hugo Extended 0.164.0、Node.js 25.9.0；主题依赖由 `site/package-lock.json` 锁定。Node.js 24.13+ 也在项目声明的支持范围内。
 
-域名尚未确定时，先构建可本地预览的完整静态文件：
+只检查本地构建产物时：
 
 ```sh
 npm --prefix site ci
@@ -35,11 +35,11 @@ npm run release:site:preview
 python3 -m http.server 8088 --bind 127.0.0.1 --directory dist/site-preview
 ```
 
-访问 `http://127.0.0.1:8088/`。`dist/site-preview/` 使用站点根路径、noindex 和禁止抓取的 robots，只用于检查产物，不能作为最终 SEO 发布包。正式域名确定后重新运行以下命令：
+访问 `http://127.0.0.1:8088/`。`dist/site-preview/` 使用站点根路径、noindex 和禁止抓取的 robots，只用于检查产物，不能作为最终 SEO 发布包。正式构建使用：
 
 ```sh
 npm --prefix site ci
-npm run release:site -- --base-url https://正式域名/
+npm run release:site -- --base-url https://haodu.site/
 ```
 
 CI 也可以通过 `SITE_BASE_URL` 传入地址。正式地址必须包含 HTTPS；若有子路径，包含子路径。发布入口会拒绝缺失地址及常见占位域名。`site/config/_default/hugo.toml` 的本地默认占位地址不用于正式发布。
@@ -70,17 +70,18 @@ npm run deploy:site -- --profile haodu-site
 
 1. 确认公开隐私政策与支持链接可访问。官网备案期间，可使用公开仓库的 [隐私政策](https://github.com/77Vincent/haodu/blob/main/site/content/privacy.md) 和项目首页提交商店，无需等待正式域名上线。官网上线后，再验证首页、`/privacy/`、404、CSS/JS、明暗切换与演示按钮。
 2. 用 `dist/extension/` 做最终安装验证，避免与旧的开发版同时启用。检查开关、页面刷新、滚动、跨标签页和本地推理；官网应保持静态演示。
-3. 在 Chrome Web Store 开发者后台创建项目，上传 ZIP，参考 [商店材料](chrome-web-store.md) 填写文案、权限、隐私页和支持链接，并补齐真实截图与宣传图。
+3. 在 Chrome Web Store 开发者后台使用已有的“好读”项目上传 ZIP；后续版本继续使用同一项目。参考 [商店材料](chrome-web-store.md) 核对文案、权限、隐私页、支持链接、真实截图与宣传图。
 4. 获得商店项目 ID 后，保留它作为后续升级的同一项目；不要把本地开发扩展的 ID 当成商店 ID。
-5. 商店详情页可公开访问后，填写 `site/config/_default/params.toml` 的 `chromeWebStoreURL` 并重新部署站点。`edgeAddonsURL` 暂留空，现有逻辑让桌面 Edge 使用同一个 Chrome 商店链接。
+5. 商店详情页可公开访问后，替换 `site/config/_default/params.toml` 中 `chromeWebStoreURL` 的占位链接并重新部署站点。安装按钮统一显示“现在安装”，所有浏览器直接使用该链接。
 
-首次提交需要开发者账号及后台要求的账号验证。网站备案与商店审核可分别推进；商店详情页公开后再更新安装按钮，中间阶段按钮继续链接到项目安装说明，不填写虚构的商店地址。
+网站备案与商店审核可分别推进。目前安装按钮按产品约定直接链接到含 `REPLACE_WITH_EXTENSION_ID` 的商店占位地址，不检测浏览器或回退到 GitHub；正式上线前需填入实际商店详情页地址。
 
-## 尚需提供或完成
+## 每次发布前核对
 
-- 完成首次 ICP 备案、OSS 域名绑定、DNS、HTTPS 与公共读配置，并验证正式域名公开访问。OSS 文件已上传，证书已签发但尚未部署，网站尚未公开上线。
-- Chrome Web Store 开发者账号和上架材料最终确认。
-- 实际扩展截图与最终安装验证；小宣传图 `release/assets/store-promo-440x280.jpg` 和官网静态预览图 `release/assets/store-preview-1280x800.jpg` 已准备（见商店材料）。
-- 上线后的域名访问、HTTPS 与商店安装验证。
+- 正式域名、HTTPS、隐私政策和商店详情页可访问，安装链接已替换。
+- 使用本次 `dist/extension/` 完成安装验证，核对模型、分隔效果、开关及动态网页行为。
+- 商店文案与图片对应待提交版本；旧截图不能直接当作新模型的运行结果。
+- ZIP、SHA-256 与 `dist/extension-release.json` 来自同一次构建。
+- 在开发者后台确认本次版本的审核、发布状态，再验证商店安装。
 
 本地构建、ZIP 校验和单元测试不等于商店审核通过。

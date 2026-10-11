@@ -2,7 +2,9 @@
 
 本站统一使用阿里云：域名为 `haodu.site`，网站由上海 OSS 静态托管。默认发布入口为 `npm run deploy:site`。
 
-目标域名为 `https://haodu.site/`。2026-09-29 已将生产构建的 21 个静态文件（共 286,494 字节）通过官方 ossutil 2.4.0 上传至 OSS Bucket `haodu-site`，并逐个通过 ETag 校验。Bucket 位于华东 2（上海，`cn-shanghai`），使用标准存储、本地冗余 LRS，静态托管配置已保存。文件部署已完成；Bucket 当前仍为私有，域名尚未公开上线。中国内地 Bucket 需要域名完成 ICP 备案后才能绑定上线。
+以下云端状态记录于 **2026-09-29**，本地仓库检查不会刷新这些状态；发布前请在控制台和实际访问中核对。
+
+目标域名为 `https://haodu.site/`。2026-09-29 已将生产构建的 21 个静态文件（共 286,494 字节）通过官方 ossutil 2.4.0 上传至 OSS Bucket `haodu-site`，并逐个通过 ETag 校验。Bucket 位于华东 2（上海，`cn-shanghai`），使用标准存储、本地冗余 LRS，静态托管配置已保存。当时文件部署已完成，Bucket 仍为私有，域名尚未公开上线。中国内地 Bucket 需要域名完成 ICP 备案后才能绑定上线。
 
 已领取并成功签发 1 张零元 DigiCert 个人测试证书（基础版、RSA 2048），覆盖 `haodu.site` 和 `www.haodu.site`，有效期为 2026-09-29 至 2026-12-28。联系人由用户填写，`_dnsauth.haodu.site` 的 TXT 验证记录已添加并通过验证。证书尚未部署到 OSS，签发完成不代表站点已支持 HTTPS。免费证书没有自动续期，需要在到期前重新申请并部署。
 
@@ -57,7 +59,7 @@ CI 可通过密钥存储注入 `OSS_ACCESS_KEY_ID`、`OSS_ACCESS_KEY_SECRET`；�
 | 用途 | 仅存放本站公开静态文件的独立 Bucket |
 | 存储类型 | 标准存储 |
 | 冗余类型 | 本地冗余 LRS |
-| 当前访问权限 | 私有，阻止公共访问已开启；备案通过并准备上线时再启用公共读 |
+| 记录时的访问权限 | 私有，阻止公共访问已开启；备案通过并准备上线时再启用公共读 |
 | 默认首页 | `index.html` |
 | 子目录首页 | 开通，使 `/privacy/` 返回 `privacy/index.html` |
 | 文件 404 规则 | Redirect，使 `/privacy` 跳转到 `/privacy/` |

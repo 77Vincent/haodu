@@ -1,23 +1,19 @@
-# Chrome Web Store 首发材料
+# Chrome Web Store 发布材料
 
-基于当前 `manifest.json` 的 0.1.0 版；首发 Chrome Web Store，Edge 商店地址暂留空。发布材料与实际提交进度分别记录，不能把本地构建成功当成商店发布成功。
+当前包版本以 `manifest.json` 为准。以下材料对应本仓库的离线推理、全局开关与网站权限实现；提交前需核对实际上传的 ZIP。
 
-## 当前进度（2026-10-03）
+## 包与审核状态
 
-- `npm test`：254 项通过，无失败或跳过。
-- `npm run release:extension`：生成 `dist/haodu-0.1.0.zip`，27 个运行文件，约 14 MB；`unzip -t` 校验通过。
-- ZIP SHA-256：`f57ff0f8747a726a61ae7d724fe2985387b5142dc5787d878241787c586f97b4`。
-- 已核对源代码：模型与运行脚本均随包提供，开关写入 `chrome.storage.local`，没有向外部服务发送正文的代码。
-- 公开隐私政策与支持链接已具备，440 × 280 小宣传图已准备。
-- 用户截图已确认：项目“好读”已创建并上传包，当前状态为 Draft；正在填写 Privacy，尚未提交审核。Chrome 曾拒绝浏览器工具读取或截图，返回 `The extensions gallery cannot be scripted.`，因此下列内容供用户在后台手动填写，不能把材料准备完成当成后台已保存或已提交。
-- 已于 2026-10-03 核对本地 `dist/haodu-0.1.0.zip`：全部文件与当前源码一致，SHA-256 与上述记录一致。以下隐私字段基于该版本的实际行为。
-- 已于 2026-10-01 截取带有插件实际分隔线的阅读示例页，保存为 `release/assets/store-screenshot-1280x800.jpg`；已验证为 1280 × 800、RGB JPEG，无透明通道。最终安装验证仍待完成。
+- `npm run release:extension` 生成 `dist/haodu-<version>.zip`、对应 `.sha256` 和 `dist/extension-release.json`，文件清单和校验值以本次构建产物为准。
+- 模型与运行脚本均随包提供，开关写入 `chrome.storage.local`，网页正文不上传。
+- 最近一次用户提供的后台截图为 **Ready to publish**，表示当时提交的版本已通过审核。之后本地模型或代码的变化不属于该已审核包；当前发布状态须以开发者后台为准。
+- 本地测试、构建与素材准备不代表上传、审核或发布已经完成。
 
 ## 名称与摘要
 
 名称：好读
 
-摘要（来自 manifest，只说明用途和阅读收益）：中文阅读辅助，按人类习惯，将长句切成短句，让阅读更轻松。
+摘要（来自 manifest，只说明用途和阅读收益）：中文阅读辅助，按人类习惯，将长句划分为短句，让阅读更轻松。
 
 语言：简体中文。选择与阅读辅助最接近的商店分类。
 
@@ -54,7 +50,7 @@
 
 填写完成后点击 **Save draft**。保存草稿不等于提交审核。
 
-网站地址：<https://github.com/77Vincent/haodu>。正式官网 `https://haodu.site/` 尚未公开上线，暂不填写不可访问的网址。
+网站地址：<https://github.com/77Vincent/haodu>。确认正式官网 `https://haodu.site/` 公开可访问后，可改用官网地址。
 
 隐私政策地址：<https://github.com/77Vincent/haodu/blob/main/site/content/privacy.md>。该文件已在公开仓库中可访问，与站点使用同一份政策；官网上线后可改为 `https://haodu.site/privacy/`。
 
@@ -67,18 +63,13 @@
 - 128 × 128 图标：`icons/on-128.png`，已包含在 ZIP。
 - 440 × 280 小宣传图：[store-promo-440x280.jpg](assets/store-promo-440x280.jpg)，对应可编辑源文件 [store-promo-440x280.svg](assets/store-promo-440x280.svg)。
 - 1400 × 560 横幅宣传图（Marquee）：[store-marquee-1400x560.jpg](assets/store-marquee-1400x560.jpg)，RGB JPEG，无透明通道；对应可编辑源文件 [store-marquee-1400x560.svg](assets/store-marquee-1400x560.svg)。
-- 商店截图：[store-screenshot-1280x800.jpg](assets/store-screenshot-1280x800.jpg)，1280 × 800、RGB JPEG，无透明通道。截自阅读示例页，正文中的分隔线来自实际运行的插件，可上传至 Screenshots。
-- 官网预览图：[store-preview-1280x800.jpg](assets/store-preview-1280x800.jpg)，1280 × 800。按照 2026-09-29 用户选定的截图内容，保留标题、本地神经网络简介、两个按钮及第一张纸张示例卡片。
-  - 图片说明：官网阅读辅助预览。该图展示官网的静态演示，不声称是此时运行扩展模型得到的结果。
-  - 用户原附件为 1706 × 894 的内存截图，没有磁盘原文件。当前版本取自本地页面的同一组内容，按商店尺寸重新排版并截图，不是原附件的逐像素副本。
+- 旧版实际扩展截图：[store-screenshot-1280x800.jpg](assets/store-screenshot-1280x800.jpg)，摄于 2026-10-01，1280 × 800、RGB JPEG，无透明通道。用于参考截图构图；模型和后端已有更新，提交新版本前应重新截取实际效果。
 - 真实扩展截图用例：[store-reading-preview.html](assets/store-reading-preview.html)。该页没有阅读脚本，也没有人工插入的正文分隔线。通过本地 HTTP 服务打开后，开启待发布扩展，确认分隔线实际出现，再按 1280 × 800 截图。不能将未处理页面或人工标记页面描述为扩展运行结果。
 
 ```sh
 python3 -m http.server 8096 --bind 127.0.0.1 --directory release/assets
 # 打开 http://127.0.0.1:8096/store-reading-preview.html
 ```
-
-![好读官网阅读辅助预览](assets/store-preview-1280x800.jpg)
 
 ## 官方要求
 

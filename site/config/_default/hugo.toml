@@ -1,4 +1,4 @@
-# 发布前替换为正式地址；子路径也要包含在内，并保留末尾斜杠。
+# 默认占位；production 配置和正式发布命令提供实际 HTTPS 地址。
 baseURL = 'https://example.org/'
 title = '好读'
 locale = 'zh-CN'

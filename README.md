@@ -1,6 +1,6 @@
 # 好读
 
-Chrome 中文阅读辅助扩展。只有一个全局工具栏开关，保存在本地，刷新页面或重启浏览器后仍保留。页面在获得焦点时应用开关，后台标签页不会因开关变化而收到消息或开始处理。运行代码无需编译；发布时通过白名单复制和打包，避免把本地训练数据带入插件。
+Chrome 中文阅读辅助扩展。只有一个全局工具栏开关，保存在本地，刷新页面或重启浏览器后仍保留。页面在获得焦点时应用开关，后台标签页不会因开关变化而收到消息或开始处理。运行代码无需编译；发布时通过白名单复制和打包，只包含扩展运行所需文件。
 
 在 Chrome 中按 **Shift + Option + R**（macOS；其他平台为 **Shift + Alt + R**）可切换开关。快捷键通过 manifest 的 `_execute_action` 触发同一个工具栏点击处理函数，处理中同样不响应，无需额外事件监听。重新加载扩展后生效；可在 `chrome://extensions/shortcuts` 查看或修改绑定。声明方式见 [Chrome 快捷键文档](https://developer.chrome.com/docs/extensions/reference/api/commands#action-commands)。
 
@@ -166,7 +166,7 @@ writer 使用现有 `markedSources` 集合保存每个原始文本节点的切�
 
 ## 安装和验证
 
-1. 在仓库根目录运行 `npm run release:extension`（需要 Node.js 和 `zip`，macOS 自带 `zip`）。在 `chrome://extensions/` 开启开发者模式，选择“加载已解压的扩展程序”，加载 `dist/extension/`。不要选仓库根目录，否则 Chrome 会把本地语料等文件也计入扩展体积。
+1. 在仓库根目录运行 `npm run release:extension`（需要 Node.js 和 `zip`，macOS 自带 `zip`）。在 `chrome://extensions/` 开启开发者模式，选择“加载已解压的扩展程序”，加载 `dist/extension/`。不要选仓库根目录，否则 Chrome 会把网站、测试和开发文件也计入扩展体积。
 2. 打开普通网页，点击好读工具栏按钮或按 Shift + Option + R（macOS）。开启时显示红色粗竖线图标，关闭时显示灰色版本，不显示 `ON` 标签。处理中保持相同外观和标题，点击不响应、不排队；`ERR` 表示失败，悬停可看错误。图标通过 [Chrome action API](https://developer.chrome.com/docs/extensions/reference/api/action#icon) 切换。
 3. 切到其他普通网页会沿用全局开关；切回已处理页面不会重复处理。刷新当前页面也会沿用开关。
 4. 处理完成后再次点击全局关闭。后台标签页不会收到通知，下次聚焦时才清理。使用本地文件时，需要开启扩展的“允许访问文件网址”。
@@ -186,7 +186,9 @@ python3 -m http.server 8765 --bind 127.0.0.1
 
 离线数据准备、训练、评估、导出及实验资料维护在私有仓库 [77Vincent/haodu-training](https://github.com/77Vincent/haodu-training)，访问需要仓库权限。本仓库保留浏览器推理代码和导出的 `src/boundary-model-data.js`，可独立测试和打包。
 
-本地已有的 `training/` 目录被 Git 忽略，可继续承载运行中的任务和数据。新模型在私有仓库训练、验证后，导出到本仓库，再执行测试、同步网站示例并打包扩展。
+训练代码、数据、检查点及运行任务均已迁入私有仓库，本仓库不再保留本地 `training/` 目录；忽略规则用于防止误拷回并提交。日常开发、测试、网站构建和扩展打包不依赖私有仓库。
+
+需要更新模型时，在私有仓库训练、验证并导出，再将导出文件写入或复制到本仓库的 `src/boundary-model-data.js`，执行模型对齐验证、测试、网站示例同步和扩展打包。两仓库没有 submodule、符号链接或固定相对路径依赖。
 
 ## 发布
 

@@ -10,15 +10,17 @@
 
 网站 favicon 与插件图标统一为透明底的红色粗竖线，颜色为 `#ff1744`；在仓库根目录运行 `npm run icons:generate` 可同时重新生成 SVG、插件各尺寸 PNG 和 `static/favicon.png`。
 
-首页的切分示例是静态演示，不加载模型或运行推理。在 `content/_index.md` 的 `reader-demo` shortcode 内用 `｜` 指定示意断点；构建时生成分隔线。安装入口位于顶部中央，使用 `btn-primary`；阅读辅助开关固定在视口底部中央，使用带实色底和阴影的 `btn-outline-primary`，适配手机底部安全区域；悬浮按钮脱离文档流，不额外增加页面底部或页脚高度。开关统一控制简介及所有演示段落中的分隔线，主标题和品牌分隔线始终显示。卡片保留自定义的 [CSS Scan #32](https://getcssscan.com/css-box-shadow-examples) 纸张阴影，间距使用 Bootstrap 的 `p-3 p-md-4`。没有 JavaScript 时仍显示静态示例，开关隐藏。
+首页的切分示例是静态演示，浏览器不加载模型。`content/_index.md` 的 `lead` 和 `reader-demo` 正文中的 `｜` 由 `scripts/sync-site-reading.mjs` 调用当前扩展后端生成，包含相同的长度门槛、置信度、词内保护和递归切分。开发服务启动及构建前自动同步；开发服务运行中修改文案后，在仓库根目录执行 `npm run site:sync-reading`，用 `npm run site:check-reading` 检查一致性。不要手工选择这些切点。
 
-演示引用可用 `{{< reader-demo source="罗素《幸福之路》" >}}` 指定来源，模板自动添加 `-- ` 前缀。来源在卡片内渲染为正文之后的独立段落，使用 Bootstrap 的 `text-end mb-0` 靠右对齐；不指定 `source` 时不生成来源段落。
+安装入口位于顶部中央，使用 `btn-primary`；阅读辅助开关固定在视口底部中央，使用带实色底和阴影的 `btn-outline-primary`，通过 `ResizeObserver` 与安装按钮保持同样尺寸，图标开启为红色、关闭为灰色。悬浮按钮脱离文档流，不额外增加页面底部或页脚高度。开关控制简介及所有演示段落中的分隔线，主标题和品牌分隔线始终显示。卡片使用自定义边框和阴影，间距使用 Bootstrap 的 `p-3 p-md-4`。没有 JavaScript 时仍显示静态示例，开关隐藏。
 
-首页主标题 `headline` 和副标题 `lead` 也用 `｜` 指定固定断点，构建时由 `layouts/_partials/reader-copy.html` 转为与演示相同的红色分隔线，不显示字面量竖线，也不运行模型。每个语意块优先保持完整，分隔线随前一块一起换行，避免单独落在行首。`title` 和 `seo.title` 保留不带分隔标记的纯文本，供页面元信息使用。
+演示引用可用 `{{< reader-demo source="罗素《幸福之路》" >}}` 指定来源，模板直接显示该文字。来源在卡片内渲染为正文之后的独立段落，使用 Bootstrap 的 `text-end mb-0` 靠右对齐；不指定 `source` 时不生成来源段落。
+
+首页主标题 `headline` 的“让中文｜更好读”使用固定分隔线，不参与模型切分。主标题和 `lead` 均由 `layouts/_partials/reader-copy.html` 渲染，不显示字面量竖线。每个语意块优先保持完整，分隔线随前一块一起换行，避免单独落在行首；两条 `lead` 之间使用 `<br>`。`title` 和 `seo.title` 保留不带分隔标记的纯文本，供页面元信息使用。
 
 官网与扩展的分隔线均以桌面正文的 18px 字号、3px 线宽为基准：高度 `1em`、宽度 `calc(1em / 6)`，间距和垂直偏移也使用 `em`。标题和小字按同一比例缩放；使用实色伪元素绘制，避免边框宽度取整改变细线比例。
 
-站点布局和样式优先使用 Bootstrap 预定义类，包括栅格、间距、排版、背景和按钮；标题语意块使用 `d-inline-block mw-100`，正文使用 `lh-lg text-break`。自定义 CSS 的例外是阅读分隔线绘制规则、演示卡片的纸张纹理与阴影，以及悬浮开关的底色、层级和安全间距，均保留在 `assets/scss/common/_custom.scss`。纹理用内嵌 SVG 生成单色颗粒，以 200px 方块平铺；SVG 中的 `opacity='0.05'` 控制颗粒强度，不影响文字透明度。浅色模式使用暖白纸面和 multiply 纹理，深色模式跟随 Bootstrap 的 `--bs-tertiary-bg`，用 screen 混合淡色颗粒及更适合深色背景的阴影；文字继承主题配色。后续样式调整也优先组合现有类，避免在这些例外之外新增项目 CSS 或内联样式。
+站点布局和样式优先使用 Bootstrap 预定义类，包括栅格、间距、排版、背景和按钮；标题语意块使用 `d-inline-block mw-100`，正文使用 `lh-lg text-break`。自定义 CSS 保留阅读分隔线、卡片边框与阴影，以及悬浮开关的底色、图标、层级和安全间距，位于 `assets/scss/common/_custom.scss`。卡片跟随页面配色，深色模式调整边框颜色。`bootstrapJavascript = false` 关闭完整 Bootstrap 脚本，`assets/js/custom.js` 单独导入移动端菜单所需的 Offcanvas 组件。
 
 全站通过 `layouts/_partials/head/custom-head.html` 在 HTML 的 `<head>` 中输出 `<meta name="super-reader" content="off">`。即使扩展全局开启，也会跳过这些页面，不运行切分推理，避免影响静态演示开关；其他网站仍按全局设置处理。此标记不依赖域名或页面 JavaScript，部署后同样生效。已安装旧版开发扩展时，重新加载扩展及页面后该规则生效。
 
@@ -53,16 +55,16 @@ npm --prefix site run build
 正式发布推荐从仓库根目录运行：
 
 ```sh
-npm run release:site -- --base-url https://正式域名/
+npm run release:site -- --base-url https://haodu.site/
 ```
 
-该入口必须指定真实 HTTPS 地址，输出到独立的 `dist/site/`，并检查隐私页、扩展跳过标记、sitemap 和 robots 地址。它不会修改开发配置。域名确定后再生成最终产物；部署只上传 `dist/site/` 的内容。详细步骤见 [`../release/README.md`](../release/README.md)。
+该入口必须指定真实 HTTPS 地址，输出到独立的 `dist/site/`，并检查隐私页、扩展跳过标记、sitemap 和 robots 地址。它不会修改开发配置；部署只上传 `dist/site/` 的内容。详细步骤见 [`../release/README.md`](../release/README.md)。
 
-尚未确定域名时运行 `npm run release:site:preview`，生成 `dist/site-preview/`，用本地静态服务器预览即可。预览产物禁用抓取并标记 noindex；正式产物在指定真实域名后重新生成。
+只需检查本地构建产物时，运行 `npm run release:site:preview`，生成 `dist/site-preview/`，用本地静态服务器预览即可。预览产物禁用抓取并标记 noindex，不能当作正式发布包。
 
 ## 发布前配置
 
-- `config/_default/hugo.toml` 的 `baseURL`：把 `https://example.org/` 替换为正式地址，包含协议、部署子路径（如有）和末尾斜杠。
+- `config/production/hugo.toml` 的 `baseURL` 为 `https://haodu.site/`；正式发布命令仍显式传入地址。`config/_default/hugo.toml` 的 `https://example.org/` 仅作默认占位，不用于部署。
 - `config/_default/params.toml` 的 `chromeWebStoreURL`：首页安装按钮的固定地址。目前使用含 `REPLACE_WITH_EXTENSION_ID` 的 Chrome 商店占位链接；发布后替换为好读的完整商店详情页链接，再重新构建、部署网站。
 - `content/_index.md`：维护首页标题、SEO 标题、描述和正文。
 
@@ -86,11 +88,11 @@ npm --prefix site run build -- --baseURL https://example.org/haodu/
 | `content/privacy.md`、`layouts/legal.html` | 隐私政策和简单的正文布局 |
 | `layouts/home.html` | 使用 Doks 基础模板和 Bootstrap 栅格的产品首页 |
 | `layouts/_partials/` | 项目扩展入口、站点图标、404 的 noindex |
-| `assets/scss/common/` | 保留阅读分隔线和卡片纸张阴影，其余使用 Bootstrap 预定义类 |
+| `assets/scss/common/` | 阅读分隔线、卡片边框与阴影、悬浮开关，其余使用 Bootstrap 预定义类 |
 | `package.json`、`package-lock.json` | 固定版本的主题依赖和构建命令 |
 
 没有复制官方示例的 docs、blog 等页面。隐私政策按本项目实际的数据流编写。文档搜索、侧栏、版本切换等功能在 `params.toml` 中关闭；页脚包含隐私政策入口。
 
-升级主题时更新依赖与锁文件并重新构建，检查首页、404、明暗切换和移动端菜单即可。不修改 `node_modules` 中的主题源码。
+升级主题时更新依赖与锁文件并重新构建，检查首页、404、明暗切换和移动端菜单。不修改 `node_modules` 中的主题源码。Doks 1.9.3 的主题切换事件绑定在按钮内的 SVG 上；`assets/js/custom.js` 将按钮空白处及键盘触发转交给对应 SVG，复用主题的保存与切换逻辑。升级主题后需确认是否仍需要此适配。
 
 当前 Doks 1.9.3 及其上游依赖在 Hugo 0.164.0 下仍会输出 `LanguageCode` 和 LibSass 的弃用提示，正常构建成功。将来升级 Hugo 时需同时检查主题的兼容性。

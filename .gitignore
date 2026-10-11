@@ -1,6 +1,8 @@
-# Training code lives in the private haodu-training repository. Keep the local
-# directory available for running jobs and data without publishing it again.
+# Training code, jobs and data live in the separate private haodu-training repo.
+# Prevent accidentally copying them back into the public repository.
 /training/
 __pycache__/
 *.pyc
 /dist/
+.DS_Store
+/.claude/worktrees/

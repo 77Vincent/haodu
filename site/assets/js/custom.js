@@ -1,3 +1,18 @@
+// The header's mobile menu needs Offcanvas even when the full Bootstrap bundle is disabled.
+import 'bootstrap/js/dist/offcanvas.js';
+
+// Doks binds theme selection to the SVGs. Forward button/keyboard activation
+// to the appropriate SVG so the entire button uses Doks' existing theme logic.
+const themeButton = document.querySelector('#buttonColorMode');
+if (themeButton) {
+  themeButton.addEventListener('click', (event) => {
+    if (event.target.closest('[data-bs-theme-value]')) return;
+    const nextTheme = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+    themeButton.querySelector(`[data-bs-theme-value="${nextTheme}"]`)
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+}
+
 // Toggle model-generated markers in the lead and demos; brand dividers stay visible.
 const readerToggle = document.querySelector('[data-reader-toggle]');
 if (readerToggle) {
