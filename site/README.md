@@ -12,7 +12,17 @@
 
 首页的切分示例是静态演示，浏览器不加载模型。切点直接写在 `content/_index.md` 的 `lead` 和 `reader-demo` 正文中，以 `｜` 标记，由人工维护并定期审查。模板将这些标记渲染为分隔线；开发服务启动、热刷新和构建均使用文案中保存的切点，不改写源文件。
 
-产品宣传语和介绍以 `content/_index.md` 的 `title`、`lead` 为准；[项目 README](../README.md) 复用相同文案，仅省略阅读分隔标记。修改这些文案时手动一并更新两处。
+产品文案以本站为准，按用途复用：
+
+| 内容 | 文案来源 | 同步位置 |
+| --- | --- | --- |
+| 中文名称、标语与介绍 | `config/_default/hugo.toml`、`content/_index.md` 的 `title`、`lead` | [项目 README](../README.md)、商店材料、截图用例；复用正文时仅省略 `｜` 标记 |
+| 中文摘要 | `content/_index.md` 的 `description` | `params.toml`、根 `manifest.json`、两份 `package.json`、商店摘要 |
+| 英文名称与介绍 | `config/_default/languages.toml`、`content/_index.en.md` | 名称统一为小写 `haodu`，英文摘要同时用于语言配置 |
+| 按钮 | `i18n/zh-cn.toml`、`i18n/en.toml` | 安装入口统一为“现在安装” / “Install now”；文档中的按钮引用沿用这些名称 |
+| 宣传图短语 | 从中文 `lead` 概括为“保留原文 · 长句切分 · 离线运行 · 安全高效” | `release/assets/` 中的两份 SVG、对应 JPEG 和截图用例页脚 |
+
+修改时手动同步对应位置，宣传图更新 SVG 后需重新导出 JPEG。商店详细介绍复用第二条 `lead` 并补充显示方式和操作，避免重复摘要的用途介绍。历史截图与测试输入是记录和用例，不作为当前宣传文案；历史截图不得直接用于新版本发布。demo 切点仍由人工维护，不自动同步。
 
 中文首页位于 `/`，英文首页位于 `/en/`，通过页头的 Doks 语言下拉菜单切换语言，按钮使用 `中` / `En` 简写，菜单保留完整语言名称。`content/_index.en.md` 仅维护英文标题、介绍和元信息，按钮等界面文案放在 `i18n/`。两种首页都通过 `hugo.Sites.Default.Home.Content` 渲染 `content/_index.md` 中的同一份中文 demo，包括引用来源和手写切点，不复制或翻译示例。隐私政策暂保留中文，英文页脚会标明其语言。
 

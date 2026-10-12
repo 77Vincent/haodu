@@ -12,7 +12,7 @@ globalThis.SuperReader.createReaderAdapter = function createChromeReaderAdapter(
       });
       if (response?.error) throw new Error(response.error);
       if (!Array.isArray(response?.offsetsByText) || response.offsetsByText.length !== texts.length) {
-        throw new Error("Super Reader received an incomplete viewport result");
+        throw new Error("haodu received an incomplete viewport result");
       }
       return response.offsetsByText;
     },

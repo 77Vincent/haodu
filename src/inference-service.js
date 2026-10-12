@@ -37,7 +37,7 @@ globalThis.SuperReader.createInferenceService = function createInferenceService(
       else request.resolve(event.data.offsetsByText);
     };
     inferenceWorker.onerror = (event) => {
-      const error = new Error(event.message || "Super Reader inference worker failed");
+      const error = new Error(event.message || "haodu inference worker failed");
       rejectPendingRequests(error);
     };
     return inferenceWorker;
@@ -46,14 +46,14 @@ globalThis.SuperReader.createInferenceService = function createInferenceService(
   function runInference(texts) {
     return new Promise((resolve, reject) => {
       if (!Array.isArray(texts) || texts.some((text) => typeof text !== "string")) {
-        throw new TypeError("Super Reader received invalid inference input");
+        throw new TypeError("haodu received invalid inference input");
       }
       if (texts.length === 0) { resolve([]); return; }
       const worker = ensureInferenceWorker();
       const id = nextRequestId;
       nextRequestId += 1;
       const timer = setTimeout(() => {
-        rejectPendingRequests(new Error("Super Reader inference timed out"));
+        rejectPendingRequests(new Error("haodu inference timed out"));
       }, REQUEST_TIMEOUT_MS);
       pendingRequests.set(id, { reject, resolve, timer });
       try {

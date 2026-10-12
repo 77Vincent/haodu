@@ -12,7 +12,7 @@ math = false
   colorModeToggler = true
   navbarSticky = true
   containerBreakpoint = 'lg'
-  # The landing page loads only Bootstrap's mobile menu component in custom.js.
+  # custom.js loads only Bootstrap's Offcanvas and Dropdown components.
   bootstrapJavascript = false
   navBarButton = false
   flexSearch = false

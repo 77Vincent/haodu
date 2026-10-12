@@ -19,7 +19,7 @@
   const MAX_MODEL_WINDOW_TOKENS = 256;
   const MODEL_INFO = modelBackend?.getModelInfo?.();
   if (MODEL_INFO?.inputRepresentation !== "unicode-context-v1") {
-    throw new Error("Super Reader chunker requires a unicode-context-v1 model backend");
+    throw new Error("haodu chunker requires a unicode-context-v1 model backend");
   }
   // Each kernel-3, dilation-1 convolution adds one token of context per side.
   const MODEL_CONTEXT_RADIUS = MODEL_INFO?.convolutionLayers ?? 0;
@@ -239,7 +239,7 @@
     const tokens = tokenizeContext(text);
     if (tokens.length < 2 || visualLength(text) < MIN_SPLIT_VISUAL_LENGTH) return [text];
     if (!modelBackend || typeof modelBackend.scoreTokens !== "function") {
-      throw new Error("Super Reader model backend must load before the chunker");
+      throw new Error("haodu model backend must load before the chunker");
     }
     const visualOffsets = visualOffsetsForTokens(text, tokens);
     const ranges = [];
@@ -321,10 +321,10 @@
     const minConfidence = options.minConfidence;
     const scoringStrategy = options.scoringStrategy ?? "recursive-model";
     if (minConfidence != null && (!Number.isFinite(minConfidence) || minConfidence < 0 || minConfidence > 1)) {
-      throw new RangeError("Super Reader minConfidence must be between 0 and 1");
+      throw new RangeError("haodu minConfidence must be between 0 and 1");
     }
     if (scoringStrategy !== "recursive-model") {
-      throw new TypeError("Super Reader scoringStrategy must be recursive-model");
+      throw new TypeError("haodu scoringStrategy must be recursive-model");
     }
     if (!text) return [];
     const segmenter = options.segmenter === undefined

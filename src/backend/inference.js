@@ -13,7 +13,7 @@
   "use strict";
 
   if (!modelData?.architecture || modelData.inputRepresentation !== "unicode-context-v1") {
-    throw new Error("Super Reader inference requires a unicode-context-v1 model with architecture metadata");
+    throw new Error("haodu inference requires a unicode-context-v1 model with architecture metadata");
   }
   const CHANNELS = modelData.architecture.channels;
   const RESIDUAL_BLOCKS = modelData.architecture.residualBlocks;
@@ -39,12 +39,12 @@
   function getWeights() {
     if (decodedWeights) return decodedWeights;
     if (!modelData || modelData.format !== "super-reader-f32-v1") {
-      throw new Error("Super Reader boundary model data is unavailable or incompatible");
+      throw new Error("haodu boundary model data is unavailable or incompatible");
     }
 
     const bytes = decodeBase64(modelData.weightsBase64);
     if (bytes.byteLength % Float32Array.BYTES_PER_ELEMENT !== 0) {
-      throw new Error("Super Reader boundary model has an invalid byte length");
+      throw new Error("haodu boundary model has an invalid byte length");
     }
     decodedWeights = new Float32Array(
       bytes.buffer,
