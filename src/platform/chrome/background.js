@@ -2,19 +2,48 @@
 
 // Chrome entry point: toolbar, script loading, routing, and offscreen host.
 const INFERENCE_PAGE = "src/inference.html";
+const TOGGLE_MENU_ID = "haodu-toggle";
 let creatingInferencePage = null;
 let enabled = false;
 let toggling = false;
 let checkingActiveTab = false;
 let checkPending = false;
-const settingsReady = chrome.storage.local.get({ enabled: false }).then((saved) => {
+let actionShortcut = "";
+const settingsReady = Promise.all([
+  chrome.storage.local.get({ enabled: false }),
+  refreshShortcut(),
+]).then(([saved]) => {
   enabled = saved.enabled;
   return updateAction();
 });
 
+async function refreshShortcut() {
+  // Use the active binding, not the suggestion: users can change or clear it.
+  const commands = await chrome.commands.getAll().catch(() => []);
+  actionShortcut = commands.find((command) => command.name === "_execute_action")?.shortcut || "";
+}
+
+function updateToggleMenu() {
+  const title = `${enabled ? "关闭" : "开启"}好读${actionShortcut ? `（${actionShortcut}）` : ""}`;
+  // Menus outlive the worker. Update the existing item, creating it only if
+  // absent. Callbacks also work on Chrome versions before Promise support.
+  return new Promise((resolve) => {
+    const properties = { title, contexts: ["action"] };
+    chrome.contextMenus.update(TOGGLE_MENU_ID, properties, () => {
+      if (!chrome.runtime.lastError) return resolve();
+      chrome.contextMenus.create({ id: TOGGLE_MENU_ID, ...properties }, () => {
+        const error = chrome.runtime.lastError;
+        if (error) console.warn("[haodu] Could not create toolbar menu:", error.message);
+        resolve(); // A menu failure must not prevent the reader from running.
+      });
+    });
+  });
+}
+
 function updateAction(tabId, error) {
   // Busy is a click lock, not a visual state.
-  const title = error || (enabled ? "好读（点击关闭）" : "好读（点击开启）");
+  const shortcutHint = actionShortcut ? `${actionShortcut} / ` : "";
+  const title = error || `好读（${shortcutHint}点击${enabled ? "关闭" : "开启"}）`;
   const icon = enabled ? "on" : "off";
   return Promise.all([
     chrome.action.setIcon({ tabId, path: {
@@ -24,6 +53,7 @@ function updateAction(tabId, error) {
     } }),
     chrome.action.setBadgeText({ tabId, text: error ? "ERR" : "" }),
     chrome.action.setTitle({ tabId, title }),
+    updateToggleMenu(),
   ]);
 }
 
@@ -141,6 +171,7 @@ async function applyToActiveTab() {
       // latest document in the focused tab. Intermediate tabs aren't queued.
       const tab = await activeTab();
       if (!tab) continue;
+      await refreshShortcut();
       await updateAction(tab.id);
       await applyToTab(tab);
     }
@@ -154,6 +185,7 @@ async function toggleGlobal(tab) {
   toggling = true;
   try {
     await settingsReady;
+    tab ??= await activeTab();
     // Only the clicked page's task locks this click. Other tabs apply the new
     // setting when visited, without interrupting their current operation.
     if (await supportsReader(tab) && (await readerStatus(tab.id))?.busy) return;
@@ -170,6 +202,9 @@ async function toggleGlobal(tab) {
 }
 
 chrome.action.onClicked.addListener((tab) => { void toggleGlobal(tab); });
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === TOGGLE_MENU_ID) void toggleGlobal(tab);
+});
 chrome.tabs.onActivated.addListener(() => { void applyToActiveTab().catch(() => {}); });
 chrome.windows.onFocusChanged.addListener((windowId) => {
   if (windowId !== chrome.windows.WINDOW_ID_NONE) void applyToActiveTab().catch(() => {});

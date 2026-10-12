@@ -10,7 +10,10 @@ const runScript = (path, context) => vm.runInContext(
 const drain = () => new Promise((resolve) => setImmediate(resolve));
 
 function createBackground(saved = {}) {
-  let click, message, navigate, activate, focusWindow, startup, install;
+  let click, menuClick, message, navigate, activate, focusWindow, startup, install;
+  let shortcut = "Alt+Shift+R";
+  let menuCreations = 0;
+  const menus = new Map();
   let activeId = null;
   let offscreen = false;
   let fileAccess = false;
@@ -74,6 +77,27 @@ function createBackground(saved = {}) {
   }
 
   const chrome = {
+    commands: { async getAll() {
+      return [{ name: "_execute_action", shortcut }];
+    } },
+    contextMenus: {
+      onClicked: { addListener: (callback) => { menuClick = callback; } },
+      create(properties, callback) {
+        assert.ok(manifest.permissions.includes("contextMenus"));
+        assert.equal(menus.has(properties.id), false, "worker restarts must not duplicate menus");
+        menus.set(properties.id, { ...properties });
+        menuCreations += 1;
+        queueMicrotask(callback);
+        return properties.id;
+      },
+      update(id, properties, callback) {
+        queueMicrotask(() => {
+          if (menus.has(id)) Object.assign(menus.get(id), properties);
+          else chrome.runtime.lastError = { message: "Cannot find menu item" };
+          try { callback(); } finally { delete chrome.runtime.lastError; }
+        });
+      },
+    },
     action: {
       onClicked: { addListener: (callback) => { click = callback; } },
       async setBadgeText({ tabId, text }) { badges.set(tabId, text); },
@@ -177,7 +201,9 @@ function createBackground(saved = {}) {
 
   return {
     pages, badges, icons, titles, disabled, commands, queries, writes, saved, tabs, injected, injectedFiles, requests,
-    addTab, optedOutTabs, cssInjections, injectionErrors,
+    addTab, optedOutTabs, cssInjections, injectionErrors, menus,
+    setShortcut(value) { shortcut = value; },
+    menuCreations: () => menuCreations,
     setFileAccess(allowed) { fileAccess = allowed; },
     pauseInjection(id) {
       let resume;
@@ -196,6 +222,11 @@ function createBackground(saved = {}) {
     },
     creations: () => creations,
     async click(id) { select(id); click(tabs.get(id)); await drain(); },
+    async menuClick(id, withoutTab = false) {
+      select(id);
+      menuClick({ menuItemId: "haodu-toggle" }, withoutTab ? undefined : tabs.get(id));
+      await drain();
+    },
     async focus(id) { select(id); activate({ tabId: id }); await drain(); },
     async windowFocus(id) { select(id); focusWindow(2); await drain(); },
     async navigate(id) {
@@ -214,6 +245,43 @@ function createBackground(saved = {}) {
     message: publish,
   };
 }
+
+test("the toolbar menu and icon share the global switch and retain one menu across worker restarts", async () => {
+  const background = createBackground();
+  background.addTab(2);
+  await drain();
+  const menu = () => background.menus.get("haodu-toggle");
+  assert.equal(menu().title, "开启好读（Alt+Shift+R）");
+  assert.deepEqual(Array.from(menu().contexts), ["action"]);
+  await background.menuClick(1);
+  assert.equal(background.saved.enabled, true);
+  assert.equal(background.pages.get(1).reader.status().enabled, true);
+  assert.equal(background.pages.has(2), false);
+  assert.equal(menu().title, "关闭好读（Alt+Shift+R）");
+  await background.restartWorker();
+  assert.equal(menu().title, "关闭好读（Alt+Shift+R）");
+  assert.equal(background.menuCreations(), 1);
+  await background.click(1);
+  assert.equal(menu().title, "开启好读（Alt+Shift+R）");
+  assert.equal(background.pages.get(1).reader.status().enabled, false);
+  await background.menuClick(1, true);
+  assert.equal(background.saved.enabled, true);
+  assert.equal(background.pages.get(1).reader.status().enabled, true);
+  assert.equal(background.menus.size, 1);
+});
+
+test("the toolbar menu follows changed and cleared shortcuts without showing the suggested binding", async () => {
+  const background = createBackground();
+  await background.focus(1);
+  background.setShortcut("⌃⇧H");
+  await background.focus(1);
+  assert.equal(background.menus.get("haodu-toggle").title, "开启好读（⌃⇧H）");
+  assert.equal(background.titles.get(1), "好读（⌃⇧H / 点击开启）");
+  background.setShortcut("");
+  await background.focus(1);
+  assert.equal(background.menus.get("haodu-toggle").title, "开启好读");
+  assert.equal(background.titles.get(1), "好读（点击开启）");
+});
 
 test("the saved switch is global but toggles and focus leave every inactive tab untouched", async () => {
   const background = createBackground();
@@ -376,7 +444,7 @@ test("busy clicks are ignored without flicker, and inactive pages are neither qu
   await drain();
   const writes = background.writes.length;
   await background.click(1);
-  await background.click(1);
+  await background.menuClick(1);
   assert.equal(background.writes.length, writes, "busy clicks are discarded");
   assert.equal(background.badges.get(1), "");
   assert.deepEqual(background.icons.get(1), icon);
@@ -497,7 +565,7 @@ test("protected pages are skipped before contacting or injecting into the page",
     background.badges.set(1, "ERR");
     await background.focus(1);
     assert.equal(background.badges.get(1), "", url);
-    assert.equal(background.titles.get(1), "好读（点击关闭）", url);
+    assert.equal(background.titles.get(1), "好读（Alt+Shift+R / 点击关闭）", url);
   }
   assert.equal(background.commands.length, 0);
   assert.equal(background.cssInjections.length, 0);
