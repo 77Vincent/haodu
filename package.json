@@ -9,8 +9,6 @@
     "release:extension": "node scripts/build-extension.mjs",
     "release:site": "node scripts/build-site.mjs",
     "release:site:preview": "node scripts/build-site.mjs --preview",
-    "site:sync-reading": "node scripts/sync-site-reading.mjs",
-    "site:check-reading": "node scripts/sync-site-reading.mjs --check",
     "deploy:site": "node scripts/deploy-site.mjs"
   }
 }

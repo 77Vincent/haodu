@@ -10,7 +10,7 @@
 
 网站 favicon 与插件图标统一为透明底的红色粗竖线，颜色为 `#ff1744`；在仓库根目录运行 `npm run icons:generate` 可同时重新生成 SVG、插件各尺寸 PNG 和 `static/favicon.png`。
 
-首页的切分示例是静态演示，浏览器不加载模型。`content/_index.md` 的 `lead` 和 `reader-demo` 正文中的 `｜` 由 `scripts/sync-site-reading.mjs` 调用当前扩展后端生成，包含相同的长度门槛、置信度、词内保护和递归切分。开发服务启动及构建前自动同步；开发服务运行中修改文案后，在仓库根目录执行 `npm run site:sync-reading`，用 `npm run site:check-reading` 检查一致性。不要手工选择这些切点。
+首页的切分示例是静态演示，浏览器不加载模型。切点直接写在 `content/_index.md` 的 `lead` 和 `reader-demo` 正文中，以 `｜` 标记，由人工维护并定期审查。模板将这些标记渲染为分隔线；开发服务启动、热刷新和构建均使用文案中保存的切点，不改写源文件。
 
 安装入口位于顶部中央，使用 `btn-primary`；阅读辅助开关固定在视口底部中央，使用带实色底和阴影的 `btn-outline-primary`，通过 `ResizeObserver` 与安装按钮保持同样尺寸，图标开启为红色、关闭为灰色。悬浮按钮脱离文档流，不额外增加页面底部或页脚高度。开关控制简介及所有演示段落中的分隔线，主标题和品牌分隔线始终显示。卡片使用自定义边框和阴影，间距使用 Bootstrap 的 `p-3 p-md-4`。没有 JavaScript 时仍显示静态示例，开关隐藏。
 
