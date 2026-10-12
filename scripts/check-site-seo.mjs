@@ -18,6 +18,7 @@ export async function checkSiteSeo(destination, releaseURL) {
     'zh-cn': new URL('', base).href,
     en: new URL('en/', base).href,
   };
+  const languageTargets = new Map(Object.entries(homeAlternates));
   function artifactPath(href) {
     const url = new URL(href, base);
     assert.equal(url.origin, base.origin, `Unexpected external SEO asset: ${href}`);
@@ -29,7 +30,6 @@ export async function checkSiteSeo(destination, releaseURL) {
       [lang, new URL(href, base).href]));
   }
   const indexable = new Map();
-  let website;
   for (const page of ['index.html', 'en/index.html', 'privacy/index.html', '404.html', 'en/404.html']) {
     const html = await readFile(join(destination, page), 'utf8');
     const head = html.split('</head>')[0];
@@ -41,7 +41,8 @@ export async function checkSiteSeo(destination, releaseURL) {
       return values[0].content;
     };
     const errorPage = page.endsWith('404.html');
-    assert.equal(tags(html, 'html')[0]?.lang, page.startsWith('en/') ? 'en-US' : 'zh-CN');
+    const locale = tags(html, 'html')[0]?.lang;
+    assert.equal(locale, page.startsWith('en/') ? 'en-US' : 'zh-CN');
     assert.equal([...head.matchAll(/<title>[^<]+<\/title>/g)].length, 1, `${page}: missing/duplicate title`);
     assert.equal(tags(html, 'h1').length, 1, `${page}: expected one H1`);
     meta('description');
@@ -70,8 +71,8 @@ export async function checkSiteSeo(destination, releaseURL) {
       const schema = schemas.find(item => item['@type'] === 'WebSite');
       assert(schema, `${page}: missing WebSite schema`);
       assert.equal(new URL(schema.url, base).href, base.href);
-      if (website) assert.deepEqual(schema, website, 'Both languages must describe the same website');
-      website = schema;
+      assert.equal(schema.name, meta('og:site_name'), `${page}: incorrect localized website name`);
+      languageTargets.set(locale.toLowerCase(), expected);
     }
     if (!errorPage) indexable.set(expected, absoluteAlternates(head));
   }
@@ -88,7 +89,14 @@ export async function checkSiteSeo(destination, releaseURL) {
     for (const [, entry] of xml.matchAll(/<url>([\s\S]*?)<\/url>/g)) {
       const loc = entry.match(/<loc>([^<]+)<\/loc>/)?.[1];
       assert(indexable.has(loc), `Sitemap contains a non-indexable or unexpected URL: ${loc}`);
-      assert.deepEqual(absoluteAlternates(entry), indexable.get(loc), `Sitemap language links differ: ${loc}`);
+      // The theme uses locales in XML and language codes in HTML. XML may omit
+      // x-default; require correct destinations and complete reciprocal links.
+      const links = absoluteAlternates(entry);
+      for (const [language, target] of Object.entries(links)) {
+        assert.equal(target, languageTargets.get(language.toLowerCase()), `Incorrect sitemap language target: ${loc}`);
+      }
+      assert.deepEqual(new Set(Object.values(links)), new Set(Object.values(indexable.get(loc))),
+        `Sitemap omits a language alternative: ${loc}`);
       listed.add(loc);
     }
   }

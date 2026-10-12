@@ -94,12 +94,12 @@ npm --prefix site run build -- --baseURL https://example.org/haodu/
 
 ## SEO
 
-- 标题与描述来自各页面 front matter；中英文首页分别使用自己的 canonical。HTML 与 sitemap 中的语言互链统一为 `zh-cn` / `en`，包含页面自身及指向中文首页的 `x-default`。
+- 标题与描述来自各页面 front matter；中英文首页分别使用自己的 canonical。语言互链与 sitemap 直接使用主题默认模板：HTML 使用 `zh-cn` / `en` 并提供 `x-default`，sitemap 使用 `zh-CN` / `en-US`。两者都链接到中英文首页并包含自身，无需为统一写法覆盖模板。
 - 分享卡片复用 [`haodu-cover-1280x640.jpg`](../release/assets/haodu-cover-1280x640.jpg)。`module.toml` 将这一个文件挂载为站点资源，Thulite 输出 Open Graph / Twitter 大图，项目补充实际尺寸和中英文替代文字。换封面后重新构建即可，不需维护第二份图片。
-- 两个首页的 `WebSite` 结构化数据描述同一个网站，主名称为「好读」，别名为 `haodu`。
+- `WebSite` 结构化数据使用主题默认模板，名称按语言配置输出「好读」或 `haodu`，URL 均指向站点根地址。无需维护本地覆盖模板来额外添加别名。
 - 页面正文在静态 HTML 中可读取，不依赖 JavaScript。英文 H1 的分隔线处保留文本空格，避免文本提取后变成 `Chineseeasier`，不增加视觉间距。中文演示区保留在中英文首页，使用 `data-nosnippet` 避免书籍例文被 Google 抽作产品搜索摘要；不影响演示显示及正文收录。搜索摘要仍由搜索引擎决定。
 - 正式站允许抓取；开发和预览页、所有 404 页面使用 `noindex`。sitemap 索引包含两种语言的子 sitemap，仅列出两个首页及隐私政策，不包含 404 或语言重定向页。
-- [`check-site-seo.mjs`](../scripts/check-site-seo.mjs) 随发布和预览构建执行，检查标题、描述、H1、canonical、语言互链、收录设置、分享图片文件、JSON-LD 和 sitemap 覆盖；不通过就终止构建。
+- [`check-site-seo.mjs`](../scripts/check-site-seo.mjs) 随发布和预览构建执行，检查标题、描述、H1、canonical、语言互链、收录设置、分享图片文件、JSON-LD 和 sitemap 覆盖；不通过就终止构建。检查允许主题默认的语言代码与 locale 差异，不要求两种语言的结构化数据全文相同，也不要求 sitemap 重复 HTML 中的 `x-default`。
 
 主题的描述长度提醒使用统一的 110–160 长度区间，不能当作中英文 SEO 的硬性标准。保持当前准确简洁的描述，不为消除提醒填充文字；Google 会根据设备宽度截断摘要，见[官方说明](https://developers.google.com/search/docs/appearance/snippet)。
 
