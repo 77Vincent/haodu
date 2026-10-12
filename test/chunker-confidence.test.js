@@ -288,16 +288,16 @@ test("punctuation separates independent confidence distributions and preserves U
 });
 
 test("bundled model uses the 45% default and honors a stricter explicit threshold", () => {
-  const marginal = "我一直在思考明天早上的早餐吃什么";
-  const moderate = "在没有人被人特别留意的情况下";
-  assert.deepEqual(realChunker.process([marginal, moderate]), [[6], [4]]);
-  assert.deepEqual(realChunker.process([marginal, moderate], { minConfidence: .75 }), [[], [4]]);
-  assert.deepEqual(realChunker.process([moderate], { minConfidence: .9 }), [[]]);
-  assert.deepEqual(realChunker.process([marginal, moderate], { minConfidence: 0 }), [[6], [4]]);
-  const tokens = realChunker.tokenizeContext(marginal);
+  const moderate = "我一直在思考明天早上的早餐吃什么";
+  const confident = "在没有人被人特别留意的情况下";
+  assert.deepEqual(realChunker.process([moderate, confident]), [[6], [4]]);
+  assert.deepEqual(realChunker.process([moderate, confident], { minConfidence: .9 }), [[], [4]]);
+  assert.deepEqual(realChunker.process([confident], { minConfidence: .99 }), [[]]);
+  assert.deepEqual(realChunker.process([moderate, confident], { minConfidence: 0 }), [[6], [4]]);
+  const tokens = realChunker.tokenizeContext(moderate);
   const probabilities = realChunker.gapProbabilities(backend.scoreTokens(tokens.map((t) => t.segment)));
   assert.equal(probabilities.indexOf(Math.max(...probabilities)), 5);
-  assert.ok(probabilities[5] > .5 && probabilities[5] < .75);
+  assert.ok(probabilities[5] > .75 && probabilities[5] < .9);
 });
 
 test("default recursion runs fresh inference and can accept a different second boundary", () => {

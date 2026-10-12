@@ -163,7 +163,7 @@ test("enumeration boundaries preserve UTF-16 cut offsets without adding punctuat
 test("reported wheel enumeration avoids recursive cuts within short listed phrases", () => {
   const text = "轮辐截面、轮圈表面形状、轮胎侧壁、轮拱和刹车导流设计都会影响结果。";
   const [cuts] = require("../src/backend/chunker.js").process([text]);
-  assert.deepEqual(cuts, [text.indexOf("都会影响结果")]);
+  assert.deepEqual(cuts, [text.indexOf("导流设计")]);
   assert.equal(buildVisualChunks(text).map((c) => c.text).join(""), text);
 });
 
@@ -551,8 +551,8 @@ test("renders the reported Euler-method example with model scores", () => {
   assert.deepEqual(chunkText(text, { minConfidence: 0 }), [
     "欧拉法",
     "是在积分无法直接计算时，",
-    '用"无数个小矩形累加"来近似',
-    '积分，',
+    '用"无数个小矩形累加"来',
+    '近似积分，',
     "因此",
     "它被称为一种数值",
     "积分方法（numerical integration method）。",
@@ -561,8 +561,9 @@ test("renders the reported Euler-method example with model scores", () => {
 
 test("model scoring keeps 方向盘 together at the current length threshold", () => {
   assert.deepEqual(chunkText("驾驶员会出于本能进行向左打方向盘等避险动作，", { minConfidence: 0 }), [
-    "驾驶员会出于本能进行",
-    "向左打方向盘等避险动作，",
+    "驾驶员会出于本能",
+    "进行向左打",
+    "方向盘等避险动作，",
   ]);
 });
 

@@ -10,8 +10,10 @@ const projectRoot = join(__dirname, "..");
 test("browser backend loads the exported best checkpoint", () => {
   const info = backend.getModelInfo();
 
-  assert.equal(info.bestEpoch, 1);
-  assert.equal(info.testAccuracy, 0.9068468088924256);
+  assert.equal(info.bestEpoch, 3);
+  assert.equal(info.bestEpoch, reference.bestEpoch);
+  // This validation-selected checkpoint has no full test-set evaluation.
+  assert.equal(info.testAccuracy, null);
   assert.equal(info.tokenization, "character");
   assert.equal(info.inputRepresentation, "unicode-context-v1");
   assert.equal(info.candidatePositions, "between every adjacent Unicode code point");
