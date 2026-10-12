@@ -157,7 +157,7 @@
 
         <!-- Doks language dropdown, with a compact current-language label. -->
         {{ if and site.Params.doks.multilingualMode .IsTranslated -}}
-        <div class="dropdown d-lg-flex mt-3 mt-lg-0 mx-lg-2 order-lg-2">
+        <div class="dropdown d-lg-flex mt-3 mt-lg-0 mx-lg-2">
           <button type="button" class="btn btn-dropdown dropdown-toggle m-0" id="doks-languages" data-bs-toggle="dropdown" aria-expanded="false" data-bs-display="static" aria-label="{{ i18n "selectLanguage" }}">
             <span class="d-inline-flex align-items-center gap-1">
               <span id="doks-language-current">{{ site.Params.languageShort }}</span>

@@ -1,9 +1,4 @@
 [[footer]]
-  name = 'GitHub'
-  url = 'https://github.com/77Vincent/haodu'
-  weight = 10
-
-[[footer]]
   name = 'Privacy policy (中文)'
   url = '/privacy/'
   weight = 20
