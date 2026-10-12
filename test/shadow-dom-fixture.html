@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8">
-<meta name="super-reader" content="off">
+<meta name="haodu" content="off">
 <title>Shadow DOM regression tests</title>
 <link rel="stylesheet" href="../src/content.css">
 <style>
@@ -25,7 +25,7 @@
   let inputs = [];
   let states = [];
   let processInput = async (texts) => texts.map(() => [2]);
-  SuperReader.createReaderAdapter = () => ({
+  Haodu.createReaderAdapter = () => ({
     markerStyleUrl: new URL("../src/content.css", location.href).href,
     async process(texts) { inputs.push([...texts]); return processInput(texts); },
     publishState(state) { states.push(state); },
@@ -47,7 +47,7 @@
       await delay(20);
     }
   }
-  const markers = (root) => root.querySelectorAll(".super-reader-divider");
+  const markers = (root) => root.querySelectorAll(".haodu-divider");
   const resize = () => window.dispatchEvent(new Event("resize"));
   function shadow(parent = fixture) {
     const host = document.createElement("div");
@@ -159,8 +159,8 @@
       await delay(30);
       assert(errors.length === 0, errors.join("; "));
       await until(() => markers(next).length === 1, "replacement link text was not processed");
-      assert(SuperReader.parentElementAcrossRoots(link) === null, "detached anchor acquired a false parent");
-      assert(SuperReader.parentElementAcrossRoots(area) === null, "detached area acquired a false parent");
+      assert(Haodu.parentElementAcrossRoots(link) === null, "detached anchor acquired a false parent");
+      assert(Haodu.parentElementAcrossRoots(area) === null, "detached area acquired a false parent");
     } finally { window.removeEventListener("error", onError); }
   });
 

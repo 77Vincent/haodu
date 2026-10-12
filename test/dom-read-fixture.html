@@ -35,7 +35,7 @@
       const observer = new MutationObserver(() => {});
       observer.observe(fixture, { subtree: true, childList: true, characterData: true, attributes: true });
       const start = performance.now();
-      const snapshot = SuperReader.read();
+      const snapshot = Haodu.read();
       const elapsed = performance.now() - start;
       const mutations = observer.takeRecords();
       observer.disconnect();
@@ -179,7 +179,7 @@
       assert(snapshot.sources.length === 1, "expected one complete source node");
       const offsets = snapshot.texts.map((text) => text.length > 2 ? [1, 2] : []);
       const expected = snapshot.sources.flatMap((source, i) => offsets[i].map((offset) => source.start + offset));
-      SuperReader.write(snapshot, offsets);
+      Haodu.write(snapshot, offsets);
       let offset = 0;
       const actual = [];
       fixture.childNodes.forEach((node) => {
@@ -188,7 +188,7 @@
       });
       assert(JSON.stringify(actual) === JSON.stringify(expected), "markers shifted from original offsets");
       assert(fixture.textContent === original, "write changed text");
-      SuperReader.clearMarkers();
+      Haodu.clearMarkers();
       assert(fixture.childNodes.length === 1 && fixture.textContent === original, "clear did not restore text");
     });
 
@@ -196,14 +196,14 @@
       fixture.innerHTML = `<div style="height:60px;overflow:auto"><p>首屏中文文字</p><div style="height:300px"></div><p>滚动后新增中文</p></div>`;
       const scroller = fixture.firstChild;
       const inputs = [];
-      const reader = SuperReader.createReader({
-        read: SuperReader.read,
+      const reader = Haodu.createReader({
+        read: Haodu.read,
         async process(texts) { inputs.push([...texts]); return texts.map(() => [2]); },
-        write: SuperReader.write,
-        clear: SuperReader.clearMarkers,
-        remember: SuperReader.rememberProcessedText,
-        reset: SuperReader.clearProcessedText,
-        watch: (onChange) => SuperReader.watchViewport(document, onChange),
+        write: Haodu.write,
+        clear: Haodu.clearMarkers,
+        remember: Haodu.rememberProcessedText,
+        reset: Haodu.clearProcessedText,
+        watch: (onChange) => Haodu.watchViewport(document, onChange),
         publishState() {},
       });
       try {
@@ -216,7 +216,7 @@
         scroller.scrollTop = 0;
         await settle();
         assert(inputs.length === 2, "processed an overlapping node twice");
-        assert(fixture.querySelectorAll(".super-reader-divider").length === 2, "duplicated or lost markers");
+        assert(fixture.querySelectorAll(".haodu-divider").length === 2, "duplicated or lost markers");
       } finally {
         if (reader.status().enabled) reader.toggle(false);
       }
@@ -228,8 +228,8 @@
       const inputs = [];
       let finishFirst;
       let active = 0;
-      const reader = SuperReader.createReader({
-        read: SuperReader.read,
+      const reader = Haodu.createReader({
+        read: Haodu.read,
         async process(texts) {
           inputs.push([...texts]);
           active += 1;
@@ -238,11 +238,11 @@
           active -= 1;
           return texts.map(() => [2]);
         },
-        write: SuperReader.write,
-        clear: SuperReader.clearMarkers,
-        remember: SuperReader.rememberProcessedText,
-        reset: SuperReader.clearProcessedText,
-        watch: (onChange) => SuperReader.watchViewport(document, onChange),
+        write: Haodu.write,
+        clear: Haodu.clearMarkers,
+        remember: Haodu.rememberProcessedText,
+        reset: Haodu.clearProcessedText,
+        watch: (onChange) => Haodu.watchViewport(document, onChange),
         publishState() {},
       });
       try {
@@ -265,14 +265,14 @@
     addTest("article arriving after page load is processed without scroll or window resize", async () => {
       fixture.style.position = "relative";
       const inputs = [];
-      const reader = SuperReader.createReader({
-        read: SuperReader.read,
+      const reader = Haodu.createReader({
+        read: Haodu.read,
         async process(texts) { inputs.push([...texts]); return texts.map(() => [2]); },
-        write: SuperReader.write,
-        clear: SuperReader.clearMarkers,
-        remember: SuperReader.rememberProcessedText,
-        reset: SuperReader.clearProcessedText,
-        watch: (onChange) => SuperReader.watchViewport(document, onChange),
+        write: Haodu.write,
+        clear: Haodu.clearMarkers,
+        remember: Haodu.rememberProcessedText,
+        reset: Haodu.clearProcessedText,
+        watch: (onChange) => Haodu.watchViewport(document, onChange),
         publishState() {},
       });
       try {
@@ -283,7 +283,7 @@
         fixture.textContent = "页面加载完成以后正文才显示出来";
         await settle();
         assert(inputs.length === 1, "late article was not processed");
-        assert(fixture.querySelectorAll(".super-reader-divider").length === 1, "late article has no marker");
+        assert(fixture.querySelectorAll(".haodu-divider").length === 1, "late article has no marker");
         await settle();
         assert(inputs.length === 1, "layout changes repeated model work");
       } finally {
@@ -307,8 +307,8 @@
         } catch (error) {
           results.push(`FAIL ${name}: ${error.message}`);
         }
-        SuperReader.clearMarkers();
-        SuperReader.clearProcessedText();
+        Haodu.clearMarkers();
+        Haodu.clearProcessedText();
       }
       fixture.replaceChildren();
       output.textContent = `${passed}/${tests.length} passed\n${results.join("\n")}`;

@@ -1,7 +1,7 @@
 (function defineDOMRead() {
   "use strict";
 
-  globalThis.SuperReader ??= {};
+  globalThis.Haodu ??= {};
 
   /**
    * @typedef {Object} TextSource
@@ -20,8 +20,8 @@
    * @param {(root: ShadowRoot) => void} [onRoot] Register roots for content observation.
    * @returns {ViewportSnapshot & {sources: TextSource[], viewport: Object}}
    */
-  globalThis.SuperReader.read = function read(onRoot = () => {}) {
-    const { readViewport, createVisibilityFilter, isProcessedText, walkDOM, parentElementAcrossRoots } = globalThis.SuperReader;
+  globalThis.Haodu.read = function read(onRoot = () => {}) {
+    const { readViewport, createVisibilityFilter, isProcessedText, walkDOM, parentElementAcrossRoots } = globalThis.Haodu;
     const viewport = readViewport(document);
     const snapshot = { texts: [], sources: [], viewport };
     if (!document.body || viewport.right <= viewport.left || viewport.bottom <= viewport.top) return snapshot;

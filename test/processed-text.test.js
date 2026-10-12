@@ -9,7 +9,7 @@ const source = readFileSync(join(__dirname, "../src/frontend/processed-text.js")
 test("processed text is identified by node identity, current value, and parent", () => {
   const context = vm.createContext({});
   vm.runInContext(source, context);
-  const { isProcessedText, rememberProcessedText } = context.SuperReader;
+  const { isProcessedText, rememberProcessedText } = context.Haodu;
   const parent = {};
   const node = { nodeValue: "相同文字", parentNode: parent };
   assert.equal(isProcessedText(node), false);
@@ -27,9 +27,9 @@ test("script reinjection preserves processed text, and clearing resets it", () =
   const context = vm.createContext({});
   vm.runInContext(source, context);
   const node = { nodeValue: "已处理", parentNode: {} };
-  context.SuperReader.rememberProcessedText([node]);
+  context.Haodu.rememberProcessedText([node]);
   vm.runInContext(source, context);
-  assert.equal(context.SuperReader.isProcessedText(node), true);
-  context.SuperReader.clearProcessedText();
-  assert.equal(context.SuperReader.isProcessedText(node), false);
+  assert.equal(context.Haodu.isProcessedText(node), true);
+  context.Haodu.clearProcessedText();
+  assert.equal(context.Haodu.isProcessedText(node), false);
 });

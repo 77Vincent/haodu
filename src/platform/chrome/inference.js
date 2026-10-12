@@ -1,14 +1,14 @@
 "use strict";
 
-globalThis.SuperReader ??= {};
+globalThis.Haodu ??= {};
 
 /** @returns {InferenceAdapter} */
-globalThis.SuperReader.createInferenceAdapter = function createChromeInferenceAdapter() {
+globalThis.Haodu.createInferenceAdapter = function createChromeInferenceAdapter() {
   return {
     workerUrl: chrome.runtime.getURL("src/inference-worker.js"),
     connect(service) {
       chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        if (message?.target !== "offscreen" || message?.type !== "SUPER_READER_RUN_INFERENCE") {
+        if (message?.target !== "offscreen" || message?.type !== "HAODU_RUN_INFERENCE") {
           return undefined;
         }
         if (sender.id !== chrome.runtime.id) return false;

@@ -1,4 +1,4 @@
-.super-reader-divider::before {
+.haodu-divider::before {
   display: inline-block !important;
   /* Match the site's 18px paragraph / 3px divider baseline. */
   width: calc(1em / 6) !important;

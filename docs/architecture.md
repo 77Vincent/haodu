@@ -66,7 +66,9 @@ Chrome 中文阅读辅助扩展。只有一个全局工具栏开关，保存在�
 
 ## 模块如何连接
 
-核心只使用标准 DOM、Worker 和 JavaScript，不调用扩展 API。Chrome 调用集中在 `src/platform/chrome/`。普通脚本通过 `globalThis.SuperReader` 暴露接口，后台按以下顺序加载页面代码：
+英文品牌统一为 `haodu`；代码命名空间使用 `Haodu`，扩展消息使用 `HAODU_` 前缀，DOM 标识使用 `haodu-` 前缀。网站跳过标记为 `<meta name="haodu" content="off">`，与扩展读取规则同时维护。
+
+核心只使用标准 DOM、Worker 和 JavaScript，不调用扩展 API。Chrome 调用集中在 `src/platform/chrome/`。普通脚本通过 `globalThis.Haodu` 暴露接口，后台按以下顺序加载页面代码：
 
 ```text
 frontend/dom-tree.js → frontend/viewport.js → frontend/visibility.js → frontend/processed-text.js
@@ -77,26 +79,26 @@ frontend/dom-tree.js → frontend/viewport.js → frontend/visibility.js → fro
 `start-reader.js` 注入依赖：
 
 ```js
-const adapter = SuperReader.createReaderAdapter();
-const changes = SuperReader.createContentChanges(document, SuperReader.markDirtySources);
-const reader = SuperReader.createReader({
+const adapter = Haodu.createReaderAdapter();
+const changes = Haodu.createContentChanges(document, Haodu.markDirtySources);
+const reader = Haodu.createReader({
   read: () => {
     changes.withoutObservation(() => {
-      const { forgotten, preserved } = SuperReader.removeStaleMarkers();
-      SuperReader.forgetProcessedText(forgotten);
-      SuperReader.rememberProcessedText(preserved);
+      const { forgotten, preserved } = Haodu.removeStaleMarkers();
+      Haodu.forgetProcessedText(forgotten);
+      Haodu.rememberProcessedText(preserved);
     });
-    return SuperReader.read(changes.observeRoot);
+    return Haodu.read(changes.observeRoot);
   },
   process: adapter.process,
   write: (snapshot, results) => changes.withoutObservation(() =>
-    SuperReader.write(snapshot, results, adapter.markerStyleUrl)),
-  clear: SuperReader.clearMarkers,
-  remember: SuperReader.rememberProcessedText,
-  reset: SuperReader.clearProcessedText,
+    Haodu.write(snapshot, results, adapter.markerStyleUrl)),
+  clear: Haodu.clearMarkers,
+  remember: Haodu.rememberProcessedText,
+  reset: Haodu.clearProcessedText,
   watch(onChange) {
     const stopContent = changes.watch(onChange);
-    const stopViewport = SuperReader.watchViewport(document, onChange);
+    const stopViewport = Haodu.watchViewport(document, onChange);
     return () => { stopContent(); stopViewport(); };
   },
   publishState: adapter.publishState,
@@ -117,7 +119,7 @@ adapter.connect(reader);
 网页可在初始 HTML 的 `<head>` 中加入以下标记，禁止扩展处理该页：
 
 ```html
-<meta name="super-reader" content="off">
+<meta name="haodu" content="off">
 ```
 
 即使全局开关开启，页面也不会启动文本处理或请求模型推理；刷新、切换标签页及再次开启扩展均遵守此标记。它不改变全局设置，其他网页仍正常处理。官网全站默认添加该标记，静态演示由网页自己的按钮控制。

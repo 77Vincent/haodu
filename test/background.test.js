@@ -46,7 +46,7 @@ function createBackground(saved = {}) {
     const page = { reads: 0, clears: 0, marker: null, process: async () => [[]] };
     const context = vm.createContext({ setTimeout, clearTimeout,
       document: { querySelector: (selector) => {
-        assert.equal(selector, 'meta[name="super-reader"][content="off"]');
+        assert.equal(selector, 'meta[name="haodu"][content="off"]');
         return optedOutTabs.has(id) ? {} : null;
       } }, chrome: { runtime: {
       getURL: (path) => path,
@@ -55,8 +55,8 @@ function createBackground(saved = {}) {
     } } });
     runScript("src/app/reader.js", context);
     runScript("src/platform/chrome/content.js", context);
-    const adapter = context.SuperReader.createReaderAdapter();
-    page.reader = context.SuperReader.createReader({
+    const adapter = context.Haodu.createReaderAdapter();
+    page.reader = context.Haodu.createReader({
       read() { page.reads += 1; return { texts: ["需要处理的中文"] }; },
       process: (texts) => page.process(texts),
       write() { page.marker = {}; },
@@ -110,12 +110,12 @@ function createBackground(saved = {}) {
         commands.push({ id, ...request });
         if (!pages.has(id)) throw new Error("No receiver");
         const response = pages.get(id).message(request);
-        if (request.type === "SUPER_READER_PING" && statusDelays.has(id)) {
+        if (request.type === "HAODU_PING" && statusDelays.has(id)) {
           const delay = statusDelays.get(id);
           statusDelays.delete(id);
           await delay;
         }
-        if (request.type === "SUPER_READER_APPLY_SETTING" && settingDelays.has(id)) {
+        if (request.type === "HAODU_APPLY_SETTING" && settingDelays.has(id)) {
           const delay = settingDelays.get(id);
           settingDelays.delete(id);
           await delay;
@@ -557,7 +557,7 @@ test("Chrome access denials are quiet for both CSS and script injection and do n
       assert.equal(background.pages.has(1), false);
       assert.equal(background.creations(), 0);
       assert.equal(background.writes.length, 0);
-      assert.ok(!background.commands.some(({ type }) => type === "SUPER_READER_APPLY_SETTING"));
+      assert.ok(!background.commands.some(({ type }) => type === "HAODU_APPLY_SETTING"));
       if (method === "insertCSS") assert.equal(background.injected.length, 0);
 
       await background.focus(2);
@@ -604,7 +604,7 @@ test("switching away during script loading leaves that tab inert until it is foc
   await drain();
   assert.equal(background.pages.get(1).reads, 0);
   assert.equal(background.pages.get(2).reads, 1);
-  assert.ok(!background.commands.some(({ id, type }) => id === 1 && type === "SUPER_READER_APPLY_SETTING"));
+  assert.ok(!background.commands.some(({ id, type }) => id === 1 && type === "HAODU_APPLY_SETTING"));
   await background.focus(1);
   assert.equal(background.pages.get(1).reads, 1);
   assert.equal(background.injected.filter((id) => id === 1).length, 1);
@@ -642,7 +642,7 @@ test("overlapping focus events recheck only the latest active tab", async () => 
 test("whole viewports are forwarded intact and concurrent pages share one lazy offscreen context", async () => {
   const background = createBackground();
   assert.equal(background.creations(), 0);
-  const request = { type: "SUPER_READER_PROCESS", texts: ["这里是一段需要切分的中文文本", "甲".repeat(500)] };
+  const request = { type: "HAODU_PROCESS", texts: ["这里是一段需要切分的中文文本", "甲".repeat(500)] };
   const results = await Promise.all([background.message(request, 1), background.message(request, 2)]);
   assert.equal(background.creations(), 1);
   results.forEach((result) => assert.deepEqual(result.offsetsByText, [[4], [4]]));
@@ -673,7 +673,7 @@ test("offscreen requests match their results; timeouts terminate the worker and 
   runScript("src/platform/chrome/inference.js", context);
   runScript("src/start-inference.js", context);
   const request = () => new Promise((resolve) => listener({
-    target: "offscreen", type: "SUPER_READER_RUN_INFERENCE", texts: [sampleText()],
+    target: "offscreen", type: "HAODU_RUN_INFERENCE", texts: [sampleText()],
   }, { id: "test-extension" }, resolve));
   const first = request();
   const second = request();
@@ -710,7 +710,7 @@ test("the inference service sends a whole viewport once and validates the data i
   const context = vm.createContext({ Worker: FakeWorker, setTimeout, clearTimeout });
   runScript("src/inference-service.js", context);
   let service;
-  context.SuperReader.createInferenceAdapter = () => ({
+  context.Haodu.createInferenceAdapter = () => ({
     workerUrl: "./inference-worker.js",
     connect: (instance) => { service = instance; },
   });
@@ -733,8 +733,8 @@ test("the actual worker uses fresh recursive inference with the 13-unit and 45% 
   const context = vm.createContext({ atob, btoa, console, Intl });
   context.importScripts = (...paths) => paths.forEach((path) => {
     if (path === "backend/chunker.js") {
-      const model = context.SuperReaderModelBackend;
-      context.SuperReaderModelBackend = { ...model, scoreTokens(tokens) {
+      const model = context.HaoduModelBackend;
+      context.HaoduModelBackend = { ...model, scoreTokens(tokens) {
         inputs.push(Array.from(tokens));
         return model.scoreTokens(tokens);
       } };

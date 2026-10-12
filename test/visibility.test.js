@@ -7,7 +7,7 @@ const vm = require("node:vm");
 const context = vm.createContext({});
 vm.runInContext(readFileSync(join(__dirname, "../src/frontend/dom-tree.js"), "utf8"), context);
 vm.runInContext(readFileSync(join(__dirname, "../src/frontend/visibility.js"), "utf8"), context);
-const { createVisibilityFilter } = context.SuperReader;
+const { createVisibilityFilter } = context.Haodu;
 const viewport = Object.freeze({ left: 0, top: 0, right: 100, bottom: 100 });
 const box = (left, top, width, height) => ({
   left, top, width, height, right: left + width, bottom: top + height,

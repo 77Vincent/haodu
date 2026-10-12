@@ -1,10 +1,10 @@
 (function defineDOMWrite() {
   "use strict";
 
-  globalThis.SuperReader ??= {};
-  if (globalThis.SuperReader.write) return;
+  globalThis.Haodu ??= {};
+  if (globalThis.Haodu.write) return;
 
-  const SUPER_READER_SELECTOR = "super-reader-divider";
+  const HAODU_SELECTOR = "haodu-divider";
   const markers = new Set();
   const markedSources = new Set();
   const shadowStyles = new Map();
@@ -25,7 +25,7 @@
   }
 
   // Adds markers to the document at the specified offsets within a text node.
-  globalThis.SuperReader.addMarkers = function addMarkers(source, offsets, styleUrl) {
+  globalThis.Haodu.addMarkers = function addMarkers(source, offsets, styleUrl) {
     // Offsets follow the processing contract; only the live DOM can become stale.
     if (!sourceIsCurrent(source)) return [];
     const nextSibling = source.node.nextSibling;
@@ -37,7 +37,7 @@
     for (const offset of [...offsets].reverse()) {
       const right = source.node.splitText(source.start + offset);
       const marker = document.createElement("span");
-      marker.className = SUPER_READER_SELECTOR;
+      marker.className = HAODU_SELECTOR;
       marker.setAttribute("aria-hidden", "true");
       right.before(marker);
       markers.add(marker);
@@ -62,7 +62,7 @@
   }
 
   /** Page writes count even when they assign the same fragment value. */
-  globalThis.SuperReader.markDirtySources = function markDirtySources(records) {
+  globalThis.Haodu.markDirtySources = function markDirtySources(records) {
     if (!records.length) return false;
     const edited = new Set(records.filter((record) => record.type === "characterData").map((record) => record.target));
     const removed = new Set(records.flatMap((record) => Array.from(record.removedNodes || [])));
@@ -166,7 +166,7 @@
   }
 
   /** Reconcile obsolete groups before reading, without normalizing page parents. */
-  globalThis.SuperReader.removeStaleMarkers = function removeStaleMarkers() {
+  globalThis.Haodu.removeStaleMarkers = function removeStaleMarkers() {
     const result = { forgotten: [], preserved: [] };
     for (const source of markedSources) {
       if (sourceIsIntact(source)) continue;
@@ -178,16 +178,16 @@
   };
 
   /** Apply a complete result synchronously to the unchanged source nodes. */
-  globalThis.SuperReader.write = function write(snapshot, results, styleUrl) {
+  globalThis.Haodu.write = function write(snapshot, results, styleUrl) {
     const written = [];
     for (let index = snapshot.sources.length - 1; index >= 0; index -= 1) {
-      written.push(...globalThis.SuperReader.addMarkers(snapshot.sources[index], results[index], styleUrl));
+      written.push(...globalThis.Haodu.addMarkers(snapshot.sources[index], results[index], styleUrl));
     }
     return written;
   };
 
   // Use the same group rules on shutdown, including roots detached by the page.
-  globalThis.SuperReader.clearMarkers = function clearMarkers() {
+  globalThis.Haodu.clearMarkers = function clearMarkers() {
     for (const source of markedSources) releaseSource(source);
     markers.forEach((marker) => marker.remove());
     markers.clear();

@@ -1,13 +1,13 @@
 (function startReader() {
   "use strict";
-  if (globalThis.__superReaderContentLoaded) return;
+  if (globalThis.__haoduContentLoaded) return;
 
   // Shared per-page startup; the loaded adapter supplies the implementation.
   const {
     read, write, clearMarkers, rememberProcessedText, clearProcessedText,
     removeStaleMarkers, forgetProcessedText, markDirtySources,
     watchViewport, createContentChanges, createReader, createReaderAdapter,
-  } = globalThis.SuperReader;
+  } = globalThis.Haodu;
   const adapter = createReaderAdapter();
   const changes = createContentChanges(document, markDirtySources);
   const reader = createReader({
@@ -32,5 +32,5 @@
     publishState: adapter.publishState,
   });
   adapter.connect(reader);
-  globalThis.__superReaderContentLoaded = true;
+  globalThis.__haoduContentLoaded = true;
 })();

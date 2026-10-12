@@ -1,7 +1,7 @@
 {{ if or (eq .Kind "404") (ne hugo.Environment "production") }}
   <meta name="robots" content="noindex">
 {{ end }}
-<meta name="super-reader" content="off">
+<meta name="haodu" content="off">
 {{- /* Thulite emits the image URLs; add dimensions and localized alternatives. */}}
 {{- with resources.Get (index site.Params.images 0) }}
   <meta property="og:image:type" content="{{ .MediaType.Type }}">

@@ -84,7 +84,7 @@ function createPage() {
   for (const { filename, source } of scripts) vm.runInContext(source, context, { filename });
   return {
     document, view, body, root, measurements, visited,
-    read: context.SuperReader.read,
+    read: context.Haodu.read,
     element: (tag, options = {}) => element(tag, { parent: body, ...options }),
     text(value, geometry = () => box(0, 0, 40, 20), parent = body) {
       const node = { nodeType: 3, nodeValue: value, parentElement: parent.nodeType === 1 ? parent : null, parentNode: parent, geometry };
@@ -153,7 +153,7 @@ test("read excludes code, controls, editable and hidden subtrees, and existing m
   for (const options of [
     { attributes: { hidden: "" } }, { attributes: { "aria-hidden": "true" } },
     { attributes: { contenteditable: "" } }, { attributes: { contenteditable: "plaintext-only" } },
-    { className: "super-reader-divider" },
+    { className: "haodu-divider" },
     { style: { display: "none" } }, { style: { visibility: "hidden" } },
     { style: { visibility: "collapse" } }, { style: { opacity: "0" } },
     { style: { contentVisibility: "hidden" } },

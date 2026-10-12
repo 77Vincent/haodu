@@ -1,14 +1,14 @@
 (function exposeModelBackend(root, factory) {
   const modelData = typeof module === "object" && module.exports
     ? require("../boundary-model-data.js")
-    : root.SuperReaderBoundaryModelData;
+    : root.HaoduBoundaryModelData;
   const api = factory(modelData);
 
   if (typeof module === "object" && module.exports) {
     module.exports = api;
   }
 
-  root.SuperReaderModelBackend = api;
+  root.HaoduModelBackend = api;
 })(globalThis, function createModelBackend(modelData) {
   "use strict";
 
@@ -38,7 +38,7 @@
 
   function getWeights() {
     if (decodedWeights) return decodedWeights;
-    if (!modelData || modelData.format !== "super-reader-f32-v1") {
+    if (!modelData || modelData.format !== "haodu-f32-v1") {
       throw new Error("haodu boundary model data is unavailable or incompatible");
     }
 

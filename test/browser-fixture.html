@@ -46,7 +46,7 @@
           started = performance.now();
         }
         wasEnabled = state.enabled;
-        states.push({ ...state, markers: document.querySelectorAll(".super-reader-divider").length });
+        states.push({ ...state, markers: document.querySelectorAll(".haodu-divider").length });
         fixtureToggle.disabled = state.busy;
         fixtureToggle.textContent = state.error ? "出错，点击重试" : state.busy ? "处理中" : state.enabled ? "关闭" : "开启";
         document.body.dataset.enabled = String(state.enabled);
@@ -57,11 +57,11 @@
         }, null, 2);
       }
       let fixtureService;
-      SuperReader.createInferenceAdapter = () => ({
+      Haodu.createInferenceAdapter = () => ({
         workerUrl: new URL("../src/inference-worker.js", location.href).href,
         connect(service) { fixtureService = service; },
       });
-      SuperReader.createReaderAdapter = () => ({
+      Haodu.createReaderAdapter = () => ({
         markerStyleUrl: new URL("../src/content.css", location.href).href,
         async process(texts) {
           requests += 1;

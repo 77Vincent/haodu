@@ -28,7 +28,7 @@ execFileSync('npm', ['run', 'build', '--', '--baseURL', url?.href || '/',
 });
 for (const page of ['index.html', 'en/index.html', 'privacy/index.html', '404.html', 'en/404.html']) {
   const html = await readFile(join(destination, page), 'utf8');
-  if (!/<meta\b[^>]*\bname=["']?super-reader["']?\s+content=["']?off["']?[\s/>]/.test(html)) {
+  if (!/<meta\b[^>]*\bname=["']?haodu["']?\s+content=["']?off["']?[\s/>]/.test(html)) {
     throw new Error(`${page} is missing the extension opt-out flag.`);
   }
   if (/https?:\/\/(?:localhost|example\.org)(?:[:/"\s<])/.test(html)) {

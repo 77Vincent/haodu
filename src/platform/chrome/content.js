@@ -1,14 +1,14 @@
 "use strict";
 
-globalThis.SuperReader ??= {};
+globalThis.Haodu ??= {};
 
 /** @returns {ReaderAdapter} */
-globalThis.SuperReader.createReaderAdapter = function createChromeReaderAdapter() {
+globalThis.Haodu.createReaderAdapter = function createChromeReaderAdapter() {
   return {
     markerStyleUrl: chrome.runtime.getURL("src/content.css"),
     async process(texts) {
       const response = await chrome.runtime.sendMessage({
-        type: "SUPER_READER_PROCESS", texts,
+        type: "HAODU_PROCESS", texts,
       });
       if (response?.error) throw new Error(response.error);
       if (!Array.isArray(response?.offsetsByText) || response.offsetsByText.length !== texts.length) {
@@ -18,15 +18,15 @@ globalThis.SuperReader.createReaderAdapter = function createChromeReaderAdapter(
     },
     publishState(state) {
       try {
-        void chrome.runtime.sendMessage({ type: "SUPER_READER_STATE", ...state }).catch(() => {});
+        void chrome.runtime.sendMessage({ type: "HAODU_STATE", ...state }).catch(() => {});
       } catch (_) { /* An extension reload can invalidate this page's context. */ }
     },
     connect(reader) {
       chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-        if (message?.type === "SUPER_READER_PING") sendResponse(reader.status());
-        if (message?.type !== "SUPER_READER_APPLY_SETTING" || typeof message.enabled !== "boolean") return;
+        if (message?.type === "HAODU_PING") sendResponse(reader.status());
+        if (message?.type !== "HAODU_APPLY_SETTING" || typeof message.enabled !== "boolean") return;
         // A demonstration page can opt out so its own marker toggle stays independent.
-        const optedOut = document.querySelector('meta[name="super-reader"][content="off"]');
+        const optedOut = document.querySelector('meta[name="haodu"][content="off"]');
         sendResponse(reader.toggle(message.enabled && !optedOut));
       });
     },

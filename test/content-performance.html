@@ -106,11 +106,11 @@ if (!new URL(location.href).searchParams.has("frame")) {
     }
     const counter = document.createTextNode("00:00");
     inner.append(counter);
-    const changes = SuperReader.createContentChanges(document);
-    const reader = SuperReader.createReader({
+    const changes = Haodu.createContentChanges(document);
+    const reader = Haodu.createReader({
       read() {
         const start = performance.now();
-        const snapshot = SuperReader.read(enabled ? changes.observeRoot : undefined);
+        const snapshot = Haodu.read(enabled ? changes.observeRoot : undefined);
         if (metrics) metrics.scans.push(performance.now() - start);
         return snapshot;
       },
@@ -122,19 +122,19 @@ if (!new URL(location.href).searchParams.has("frame")) {
       write(snapshot, results) {
         const start = performance.now();
         const written = changes.withoutObservation(() =>
-          SuperReader.write(snapshot, results, new URL("../src/content.css", location.href).href));
+          Haodu.write(snapshot, results, new URL("../src/content.css", location.href).href));
         if (metrics) metrics.writeMs += performance.now() - start;
         return written;
       },
-      remember: SuperReader.rememberProcessedText,
-      reset: SuperReader.clearProcessedText,
-      clear: SuperReader.clearMarkers,
+      remember: Haodu.rememberProcessedText,
+      reset: Haodu.clearProcessedText,
+      clear: Haodu.clearMarkers,
       watch(onChange) {
         const stopContent = enabled ? changes.watch(() => {
           if (metrics) metrics.refreshRequests += 1;
           onChange();
         }) : () => {};
-        const stopViewport = SuperReader.watchViewport(document, () => {
+        const stopViewport = Haodu.watchViewport(document, () => {
           if (metrics) metrics.viewportRequests += 1;
           onChange();
         });
@@ -146,13 +146,13 @@ if (!new URL(location.href).searchParams.has("frame")) {
       reader.toggle(true);
       await delay(400);
       assert(!reader.status().busy && reader.status().enabled, "initial processing failed");
-      assert(visible.querySelectorAll(".super-reader-divider").length === 8, "visible text was not processed exactly once");
-      assert(inner.querySelectorAll(".super-reader-divider").length === 0, "offscreen text was processed");
+      assert(visible.querySelectorAll(".haodu-divider").length === 8, "visible text was not processed exactly once");
+      assert(inner.querySelectorAll(".haodu-divider").length === 0, "offscreen text was processed");
 
       const scanSamples = [];
       for (let i = 0; i < 18; i++) {
         const start = performance.now();
-        const snapshot = SuperReader.read();
+        const snapshot = Haodu.read();
         const elapsed = performance.now() - start;
         assert(snapshot.texts.length === 0, "an unchanged viewport has new work");
         if (i >= 3) scanSamples.push(elapsed);

@@ -9,11 +9,11 @@ const source = readFileSync(join(__dirname, "../src/backend/chunker.js"), "utf8"
 const text = "甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥天地";
 
 function withScores(scoreTokens) {
-  const context = vm.createContext({ Intl, SuperReaderModelBackend: {
+  const context = vm.createContext({ Intl, HaoduModelBackend: {
     scoreTokens, getModelInfo: () => ({ inputRepresentation: "unicode-context-v1" }),
   } });
   vm.runInContext(source, context);
-  return context.SuperReaderChunker;
+  return context.HaoduChunker;
 }
 
 test("confidence is stable unweighted softmax and invalid logits fail closed", () => {

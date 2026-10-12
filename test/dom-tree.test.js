@@ -6,7 +6,7 @@ const vm = require("node:vm");
 
 const context = vm.createContext({});
 vm.runInContext(readFileSync(join(__dirname, "../src/frontend/dom-tree.js"), "utf8"), context);
-const { parentElementAcrossRoots } = context.SuperReader;
+const { parentElementAcrossRoots } = context.Haodu;
 
 test("parent lookup follows slots, ordinary parents, and shadow roots", () => {
   const parent = { nodeType: 1 };

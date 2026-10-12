@@ -1,10 +1,10 @@
 (function defineViewport() {
   "use strict";
 
-  globalThis.SuperReader ??= {};
+  globalThis.Haodu ??= {};
 
   /** Capture viewport bounds as plain numbers, independent of subsequent changes. */
-  globalThis.SuperReader.readViewport = function readViewport(document) {
+  globalThis.Haodu.readViewport = function readViewport(document) {
     const view = document.defaultView;
     const visual = view.visualViewport;
     const left = visual?.offsetLeft ?? 0;
@@ -17,7 +17,7 @@
   };
 
   /** Watch viewport and page-size changes; the reader owns debouncing. */
-  globalThis.SuperReader.watchViewport = function watchViewport(document, onChange) {
+  globalThis.Haodu.watchViewport = function watchViewport(document, onChange) {
     const view = document.defaultView;
     const visual = view.visualViewport;
     // Capture also receives scroll events from nested scrolling containers.

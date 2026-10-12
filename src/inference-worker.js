@@ -8,7 +8,7 @@ self.onmessage = (event) => {
   try {
     self.postMessage({
       id,
-      offsetsByText: globalThis.SuperReaderChunker.process(event.data.texts),
+      offsetsByText: globalThis.HaoduChunker.process(event.data.texts),
     });
   } catch (error) {
     self.postMessage({

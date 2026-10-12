@@ -1,7 +1,7 @@
 (function defineVisibilityFilter() {
   "use strict";
 
-  globalThis.SuperReader ??= {};
+  globalThis.Haodu ??= {};
 
   /**
    * Share eligibility checks and cached styles for one synchronous read.
@@ -11,14 +11,14 @@
    * @param {Document} document
    * @param {{left: number, top: number, right: number, bottom: number}} viewport
    */
-  globalThis.SuperReader.createVisibilityFilter = function createVisibilityFilter(document, viewport) {
-    const { parentElementAcrossRoots } = globalThis.SuperReader;
+  globalThis.Haodu.createVisibilityFilter = function createVisibilityFilter(document, viewport) {
+    const { parentElementAcrossRoots } = globalThis.Haodu;
     const view = document.defaultView;
     const ignored = [
       "script", "style", "noscript", "input", "textarea", "select", "button",
       "code", "pre", "kbd", "samp", "var", "svg", "math", "canvas", "iframe",
       "[hidden]", "[aria-hidden='true']", "[contenteditable]:not([contenteditable='false'])",
-      ".super-reader-divider",
+      ".haodu-divider",
     ].join(",");
     const styleCache = new Map();
     const visibleAreaCache = new Map();

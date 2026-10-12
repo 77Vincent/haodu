@@ -1,6 +1,6 @@
 "use strict";
 
-globalThis.SuperReader ??= {};
+globalThis.Haodu ??= {};
 
 /**
  * Application state, independent of the host's message format.
@@ -50,7 +50,7 @@ globalThis.SuperReader ??= {};
  * @param {ReaderDependencies} dependencies
  * @returns {Reader}
  */
-globalThis.SuperReader.createReader = function createReader({
+globalThis.Haodu.createReader = function createReader({
   read,
   process,
   write,

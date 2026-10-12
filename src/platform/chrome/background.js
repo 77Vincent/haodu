@@ -51,13 +51,13 @@ async function ensureInferencePage() {
 async function runInference(texts) {
   await ensureInferencePage();
   return chrome.runtime.sendMessage({
-    target: "offscreen", type: "SUPER_READER_RUN_INFERENCE", texts,
+    target: "offscreen", type: "HAODU_RUN_INFERENCE", texts,
   });
 }
 
 async function readerStatus(tabId) {
   try {
-    return await chrome.tabs.sendMessage(tabId, { type: "SUPER_READER_PING" }, { frameId: 0 });
+    return await chrome.tabs.sendMessage(tabId, { type: "HAODU_PING" }, { frameId: 0 });
   } catch (_) { /* The document may not have a reader yet. */ }
 }
 
@@ -119,7 +119,7 @@ async function applyToTab(tab) {
     // Injection can outlast a tab switch. Leave that page inert until visited.
     if ((await activeTab())?.id !== tab.id) return;
     const state = await chrome.tabs.sendMessage(tab.id, {
-      type: "SUPER_READER_APPLY_SETTING", enabled,
+      type: "HAODU_APPLY_SETTING", enabled,
     }, { frameId: 0 });
     // A successful reply can predate an error already published by the reader.
     // Only restore a retained error here; transitions publish their own state.
@@ -182,12 +182,12 @@ chrome.runtime.onInstalled.addListener(() => { void applyToActiveTab().catch(() 
 chrome.runtime.onStartup.addListener(() => { void applyToActiveTab().catch(() => {}); });
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id || sender.tab?.id == null || sender.frameId !== 0) return;
-  if (message?.type === "SUPER_READER_STATE") {
+  if (message?.type === "HAODU_STATE") {
     // Page failures don't change the saved global preference or other pages.
     void settingsReady.then(() => updateAction(sender.tab.id, enabled ? message.error : null)).catch(() => {});
     sendResponse({});
   }
-  if (message?.type !== "SUPER_READER_PROCESS") return;
+  if (message?.type !== "HAODU_PROCESS") return;
   void runInference(message.texts).then(sendResponse, (error) => sendResponse({ error: error.message }));
   return true;
 });

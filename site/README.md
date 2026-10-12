@@ -36,7 +36,7 @@
 
 站点布局和样式优先使用 Bootstrap 预定义类，包括栅格、间距、排版、背景和按钮；标题语意块使用 `d-inline-block mw-100`，正文使用 `lh-lg text-break`。自定义 CSS 保留阅读分隔线、卡片边框与阴影，以及悬浮开关的底色、图标、层级和安全间距，位于 `assets/scss/common/_custom.scss`。卡片跟随页面配色，深色模式调整边框颜色。`bootstrapJavascript = false` 关闭完整 Bootstrap 脚本，`assets/js/custom.js` 按需导入移动端菜单所需的 Offcanvas 和语言菜单所需的 Dropdown 组件。
 
-全站通过 `layouts/_partials/head/custom-head.html` 在 HTML 的 `<head>` 中输出 `<meta name="super-reader" content="off">`。即使扩展全局开启，也会跳过这些页面，不运行切分推理，避免影响静态演示开关；其他网站仍按全局设置处理。此标记不依赖域名或页面 JavaScript，部署后同样生效。已安装旧版开发扩展时，重新加载扩展及页面后该规则生效。
+全站通过 `layouts/_partials/head/custom-head.html` 在 HTML 的 `<head>` 中输出 `<meta name="haodu" content="off">`。即使扩展全局开启，也会跳过这些页面，不运行切分推理，避免影响静态演示开关；其他网站仍按全局设置处理。此标记不依赖域名或页面 JavaScript，部署后同样生效。已安装旧版开发扩展时，重新加载扩展及页面后该规则生效。
 
 ## 环境与本地预览
 

@@ -9,7 +9,7 @@ function setup(markDirty = () => false) {
   let notifications = 0;
   const element = (tag = "div", parent = null) => ({
     nodeType: 1, parentElement: parent, isConnected: true, childNodes: [],
-    matches: (selector) => selector === ".super-reader-divider"
+    matches: (selector) => selector === ".haodu-divider"
       ? tag === "marker" : ["script", "style", "link", "pre", "button", "marker"].includes(tag),
   });
   const text = (value, parent = null) => ({ nodeType: 3, nodeValue: value, parentElement: parent });
@@ -30,13 +30,13 @@ function setup(markDirty = () => false) {
     vm.runInContext(readFileSync(join(__dirname, "../src/frontend", file), "utf8"), context);
   }
   // Traversal is separately tested with real TreeWalker in the browser fixtures.
-  context.SuperReader.walkDOM = function* walk(root, skip) {
+  context.Haodu.walkDOM = function* walk(root, skip) {
     if (root.nodeType === 1 && skip(root)) return;
     yield root;
     if (root.shadowRoot) yield* walk(root.shadowRoot, skip);
     for (const child of root.childNodes || []) yield* walk(child, skip);
   };
-  const changes = context.SuperReader.createContentChanges(document, markDirty);
+  const changes = context.Haodu.createContentChanges(document, markDirty);
   const stop = changes.watch(() => { notifications += 1; });
   const mutation = (target, addedNodes = [], removedNodes = []) => ({ type: "childList", target, addedNodes, removedNodes });
   return { changes, stop, observer, html, element, text, mutation, count: () => notifications };

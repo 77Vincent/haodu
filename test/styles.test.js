@@ -23,7 +23,7 @@ test("divider appearance lives in CSS without runtime style configuration", () =
     entry.resources.includes("src/content.css") && entry.matches.includes("<all_urls>")),
   "shadow roots must be able to load the shared extension stylesheet");
   const css = read("src/content.css");
-  assert.match(css, /\.super-reader-divider::before/u);
+  assert.match(css, /\.haodu-divider::before/u);
   assert.match(css, /content:\s*""/u);
   assert.match(css, /width:\s*calc\(1em \/ 6\)/u);
   assert.match(css, /height:\s*1em/u);

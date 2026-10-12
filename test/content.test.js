@@ -75,7 +75,7 @@ function createPage(text = sampleText, tag = "p", useChromeAdapter = false, opte
       const matches = [];
       for (const node of this.childNodes) {
         if (!(node instanceof Element)) continue;
-        if (node.className === "super-reader-divider") matches.push(node);
+        if (node.className === "haodu-divider") matches.push(node);
         matches.push(...node.querySelectorAll());
       }
       return matches;
@@ -102,7 +102,7 @@ function createPage(text = sampleText, tag = "p", useChromeAdapter = false, opte
   document = {
     body, documentElement: html,
     querySelector(selector) {
-      assert.equal(selector, 'meta[name="super-reader"][content="off"]');
+      assert.equal(selector, 'meta[name="haodu"][content="off"]');
       return optedOut ? {} : null;
     },
     defaultView: Object.assign(new EventTarget(), {
@@ -193,7 +193,7 @@ function createPage(text = sampleText, tag = "p", useChromeAdapter = false, opte
       getURL: (path) => `chrome-extension://test-extension/${path}`,
       onMessage: { addListener: (callback) => listeners.push(callback) },
       async sendMessage(message) {
-        if (message.type === "SUPER_READER_STATE") { states.push(message); return {}; }
+        if (message.type === "HAODU_STATE") { states.push(message); return {}; }
         requests.push(Array.from(message.texts));
         return page.infer(message.texts);
       },
@@ -215,13 +215,13 @@ function createPage(text = sampleText, tag = "p", useChromeAdapter = false, opte
     page.applySetting = (enabled) => {
       globalEnabled = enabled;
       let response;
-      listeners[0]({ type: "SUPER_READER_APPLY_SETTING", enabled }, {}, (value) => { response = value; });
+      listeners[0]({ type: "HAODU_APPLY_SETTING", enabled }, {}, (value) => { response = value; });
       return response;
     };
     reader = {
       status() {
         let response;
-        listeners[0]({ type: "SUPER_READER_PING" }, {}, (value) => { response = value; });
+        listeners[0]({ type: "HAODU_PING" }, {}, (value) => { response = value; });
         return response;
       },
       toggle(enabled) { return page.applySetting(enabled); },
@@ -233,7 +233,7 @@ function createPage(text = sampleText, tag = "p", useChromeAdapter = false, opte
     };
   } else {
     // A second adapter implementation uses local callbacks, with no Chrome API.
-    context.SuperReader.createReaderAdapter = () => ({
+    context.Haodu.createReaderAdapter = () => ({
       markerStyleUrl: "http://localhost/src/content.css",
       async process(texts) {
         requests.push(Array.from(texts));
@@ -246,8 +246,8 @@ function createPage(text = sampleText, tag = "p", useChromeAdapter = false, opte
     });
     run("src/start-reader.js");
   }
-  page.write = context.SuperReader.write;
-  page.clear = context.SuperReader.clearMarkers;
+  page.write = context.Haodu.write;
+  page.clear = context.Haodu.clearMarkers;
   return page;
 }
 
@@ -498,20 +498,20 @@ test("Chrome translates state commands and publishing only delivers the supplied
     async sendMessage(message) { messages.push(message); return {}; },
   } } });
   vm.runInContext(readFileSync(join(__dirname, "../src/platform/chrome/content.js"), "utf8"), context);
-  const adapter = context.SuperReader.createReaderAdapter();
+  const adapter = context.Haodu.createReaderAdapter();
   adapter.connect({
     status() { throw new Error("Only a PING should ask for status"); },
     toggle(value) { commands.push(value); return state; },
   });
   let response;
-  listener({ type: "SUPER_READER_APPLY_SETTING", enabled: false }, {}, (value) => { response = value; });
+  listener({ type: "HAODU_APPLY_SETTING", enabled: false }, {}, (value) => { response = value; });
   assert.equal(response, state);
   assert.deepEqual(commands, [false]);
   const finished = { enabled: false, busy: false, error: null };
   adapter.publishState(finished);
   await drainPromises();
   assert.deepEqual(commands, [false], "publishing must not issue another control command");
-  assert.deepEqual({ ...messages[0] }, { type: "SUPER_READER_STATE", ...finished });
+  assert.deepEqual({ ...messages[0] }, { type: "HAODU_STATE", ...finished });
 });
 
 test("an article arriving after the initial empty read is processed when the page grows", async () => {

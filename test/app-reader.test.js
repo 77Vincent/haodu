@@ -75,11 +75,11 @@ function createReader({
 } = {}) {
   const states = [];
   let clears = 0;
-  let factory = context.SuperReader.createReader;
+  let factory = context.Haodu.createReader;
   if (clock) {
     const timedContext = vm.createContext({ Error, setTimeout: clock.setTimeout, clearTimeout: clock.clearTimeout });
     vm.runInContext(source, timedContext);
-    factory = timedContext.SuperReader.createReader;
+    factory = timedContext.Haodu.createReader;
   }
   const reader = factory({
     read,

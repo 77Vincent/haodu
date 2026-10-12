@@ -6,7 +6,7 @@ const vm = require("node:vm");
 
 const context = vm.createContext({});
 vm.runInContext(readFileSync(join(__dirname, "../src/frontend/viewport.js"), "utf8"), context);
-const { readViewport, watchViewport } = context.SuperReader;
+const { readViewport, watchViewport } = context.Haodu;
 
 test("viewport capture uses visual viewport offsets and preserves the captured bounds", () => {
   const visualViewport = { offsetLeft: 12, offsetTop: 34, width: 200, height: 300 };

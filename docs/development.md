@@ -38,6 +38,8 @@ python3 -m http.server 8765 --bind 127.0.0.1
 
 需要更新模型时，在私有仓库训练、验证并导出，再将导出文件写入或复制到本仓库的 `src/boundary-model-data.js`，执行模型对齐验证、测试和扩展打包。网站示例的切点由人工维护并定期审查。两仓库没有 submodule、符号链接或固定相对路径依赖。
 
+模型导出格式为 `haodu-f32-v1`，浏览器全局对象为 `HaoduBoundaryModelData`。使用训练仓库当前的 `training/export_browser_model.py` 导出；历史实验快照中的导出器可能使用过时接口，需要重新导出后再接入。
+
 ## 发布与网站维护
 
 - [扩展打包、网站构建与部署](../release/README.md)

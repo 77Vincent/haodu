@@ -1,10 +1,10 @@
 (function defineDOMTree() {
   "use strict";
 
-  globalThis.SuperReader ??= {};
+  globalThis.Haodu ??= {};
 
   /** Follow the rendered ancestry through slots and shadow hosts. */
-  globalThis.SuperReader.parentElementAcrossRoots = function parentElementAcrossRoots(node) {
+  globalThis.Haodu.parentElementAcrossRoots = function parentElementAcrossRoots(node) {
     const parent = node.assignedSlot || node.parentElement;
     if (parent) return parent;
     // Only a shadow root supplies a host element. A link's .host is a URL string.
@@ -13,7 +13,7 @@
   };
 
   /** Walk ordinary children and nested open shadow roots, visiting each node once. */
-  globalThis.SuperReader.walkDOM = function* walkDOM(root, shouldSkipSubtree = () => false) {
+  globalThis.Haodu.walkDOM = function* walkDOM(root, shouldSkipSubtree = () => false) {
     if (root.nodeType === 1 && shouldSkipSubtree(root)) return;
     yield root;
     if (root.nodeType === 3) return;

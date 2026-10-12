@@ -1,13 +1,13 @@
 "use strict";
 
-globalThis.SuperReader ??= {};
+globalThis.Haodu ??= {};
 
 /**
  * Uses standard Worker APIs. The host supplies the URL and routes requests.
  * @param {{workerUrl: string}} options
  * @returns {InferenceService}
  */
-globalThis.SuperReader.createInferenceService = function createInferenceService({ workerUrl }) {
+globalThis.Haodu.createInferenceService = function createInferenceService({ workerUrl }) {
   let inferenceWorker = null;
   let nextRequestId = 1;
   // Correlate requests from different pages sharing this Worker; no batch queue.

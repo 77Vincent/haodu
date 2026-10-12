@@ -1,28 +1,28 @@
 (function defineProcessedText() {
   "use strict";
 
-  globalThis.SuperReader ??= {};
-  if (globalThis.SuperReader.isProcessedText) return;
+  globalThis.Haodu ??= {};
+  if (globalThis.Haodu.isProcessedText) return;
 
   // Weak keys allow removed text nodes to be collected. No page markup is added.
   let processedNodes = new WeakMap();
 
-  globalThis.SuperReader.isProcessedText = function isProcessedText(node) {
+  globalThis.Haodu.isProcessedText = function isProcessedText(node) {
     const previous = processedNodes.get(node);
     return previous !== undefined && previous.text === node.nodeValue && previous.parent === node.parentNode;
   };
 
-  globalThis.SuperReader.rememberProcessedText = function rememberProcessedText(nodes) {
+  globalThis.Haodu.rememberProcessedText = function rememberProcessedText(nodes) {
     for (const node of nodes) {
       processedNodes.set(node, { text: node.nodeValue, parent: node.parentNode });
     }
   };
 
-  globalThis.SuperReader.clearProcessedText = function clearProcessedText() {
+  globalThis.Haodu.clearProcessedText = function clearProcessedText() {
     processedNodes = new WeakMap();
   };
 
-  globalThis.SuperReader.forgetProcessedText = function forgetProcessedText(nodes) {
+  globalThis.Haodu.forgetProcessedText = function forgetProcessedText(nodes) {
     for (const node of nodes) processedNodes.delete(node);
   };
 })();

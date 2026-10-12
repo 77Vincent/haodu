@@ -1,12 +1,12 @@
 (function defineContentChanges() {
   "use strict";
 
-  globalThis.SuperReader ??= {};
+  globalThis.Haodu ??= {};
 
   /** Detect page text replacement; scheduling and visibility belong to the reader. */
-  globalThis.SuperReader.createContentChanges = function createContentChanges(document, markDirty = () => false) {
-    const { walkDOM, parentElementAcrossRoots } = globalThis.SuperReader;
-    const ignored = "script,style,link,noscript,input,textarea,select,button,code,pre,[contenteditable]:not([contenteditable='false']),.super-reader-divider";
+  globalThis.Haodu.createContentChanges = function createContentChanges(document, markDirty = () => false) {
+    const { walkDOM, parentElementAcrossRoots } = globalThis.Haodu;
+    const ignored = "script,style,link,noscript,input,textarea,select,button,code,pre,[contenteditable]:not([contenteditable='false']),.haodu-divider";
     const options = { subtree: true, childList: true, characterData: true, characterDataOldValue: true };
     const roots = new Set();
     let observer = null;
@@ -44,7 +44,7 @@
       const changed = groupsChanged || records.some((record) => !isIgnored(record.target) && (
         record.type === "characterData" ? hasContent(record.target) || /\p{Script=Han}/u.test(record.oldValue || "") :
           [...record.addedNodes, ...record.removedNodes].some((node) =>
-            hasContent(node) || (node.nodeType === 1 && node.matches(".super-reader-divider")))
+            hasContent(node) || (node.nodeType === 1 && node.matches(".haodu-divider")))
       ));
       // Release removed comment roots instead of retaining them for the session.
       if ([...roots].some((root) => !root.isConnected)) {

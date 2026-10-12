@@ -14,11 +14,11 @@ const {
 } = require("../src/backend/chunker.js");
 
 function withModel(scoreTokens, inputRepresentation = "unicode-context-v1") {
-  const context = vm.createContext({ SuperReaderModelBackend: {
+  const context = vm.createContext({ HaoduModelBackend: {
     scoreTokens, getModelInfo: () => ({ inputRepresentation }),
   }, Intl });
   vm.runInContext(readFileSync(join(__dirname, "../src/backend/chunker.js"), "utf8"), context);
-  return context.SuperReaderChunker;
+  return context.HaoduChunker;
 }
 
 test("context model receives punctuation and numbers without cutting inside times", () => {
@@ -603,13 +603,13 @@ test("chunker rejects incompatible or missing model input metadata", () => {
   for (const inputRepresentation of ["han-only-v1", "unknown", null]) {
     assert.throws(() => withModel(() => [], inputRepresentation), /requires a unicode-context-v1 model backend/u);
   }
-  const context = vm.createContext({ SuperReaderModelBackend: { scoreTokens: () => [] }, Intl });
+  const context = vm.createContext({ HaoduModelBackend: { scoreTokens: () => [] }, Intl });
   assert.throws(() => vm.runInContext(readFileSync(join(__dirname, "../src/backend/chunker.js"), "utf8"), context),
     /requires a unicode-context-v1 model backend/u);
 });
 
 test("never loses whitespace or mixed-language content", () => {
-  const text = "这是 Super Reader 的 2.0 版本，很好用。";
+  const text = "这是 haodu 的 2.0 版本，很好用。";
   assert.equal(chunkText(text).join(""), text);
 });
 

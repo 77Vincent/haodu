@@ -1,14 +1,14 @@
 (function exposeChunker(root, factory) {
   const modelBackend = typeof module === "object" && module.exports
     ? require("./inference.js")
-    : root.SuperReaderModelBackend;
+    : root.HaoduModelBackend;
   const api = factory(modelBackend);
 
   if (typeof module === "object" && module.exports) {
     module.exports = api;
   }
 
-  root.SuperReaderChunker = api;
+  root.HaoduChunker = api;
 })(globalThis, function createChunker(modelBackend) {
   "use strict";
 
