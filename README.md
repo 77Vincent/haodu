@@ -1,5 +1,7 @@
 # 好读
 
+![好读首页：让中文更好读](release/assets/haodu-cover-1280x640.jpg)
+
 Chrome 中文阅读辅助扩展。只有一个全局工具栏开关，保存在本地，刷新页面或重启浏览器后仍保留。页面在获得焦点时应用开关，后台标签页不会因开关变化而收到消息或开始处理。运行代码无需编译；发布时通过白名单复制和打包，只包含扩展运行所需文件。
 
 在 Chrome 中按 **Shift + Option + R**（macOS；其他平台为 **Shift + Alt + R**）可切换开关。快捷键通过 manifest 的 `_execute_action` 触发同一个工具栏点击处理函数，处理中同样不响应，无需额外事件监听。重新加载扩展后生效；可在 `chrome://extensions/shortcuts` 查看或修改绑定。声明方式见 [Chrome 快捷键文档](https://developer.chrome.com/docs/extensions/reference/api/commands#action-commands)。
