@@ -1,4 +1,4 @@
-{{/* Doks 1.9.3 header override: only the desktop/mobile brand uses our wordmark. */}}
+{{/* Doks 1.9.3 header override: localized brand and labels, compact language dropdown. */}}
 {{ if site.Params.doks.alert -}}
   {{ partial "header/alert.html" . }}
 {{ end -}}
@@ -50,7 +50,7 @@
       {{ end -}}
       <div class="offcanvas-header">
         <h5 class="offcanvas-title" id="offcanvasNavSectionLabel">{{ .Section | humanize }}</h5>
-        <button type="button" class="btn btn-link nav-link p-0 ms-auto" data-bs-dismiss="offcanvas" aria-label="Close">
+        <button type="button" class="btn btn-link nav-link p-0 ms-auto" data-bs-dismiss="offcanvas" aria-label="{{ i18n "closeMenu" }}">
           <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
             <path d="M18 6l-12 12"></path>
@@ -72,7 +72,7 @@
     {{ end -}}
 
     <!-- Main navigation button -->
-    <button class="btn btn-link nav-link mx-2 order-3 d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavMain" aria-controls="offcanvasNavMain" aria-label="Open main navigation menu">
+    <button class="btn btn-link nav-link mx-2 order-3 d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavMain" aria-controls="offcanvasNavMain" aria-label="{{ i18n "openMenu" }}">
       <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-menu" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
         <line x1="4" y1="8" x2="20" y2="8"></line>
@@ -87,7 +87,7 @@
       {{ end -}}
       <div class="offcanvas-header">
         <h5 class="offcanvas-title" id="offcanvasNavMainLabel">{{ partial "brand-wordmark.html" . }}</h5>
-        <button type="button" class="btn btn-link nav-link p-0 ms-auto" data-bs-dismiss="offcanvas" aria-label="Close">
+        <button type="button" class="btn btn-link nav-link p-0 ms-auto" data-bs-dismiss="offcanvas" aria-label="{{ i18n "closeMenu" }}">
           <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
             <path d="M18 6l-12 12"></path>
@@ -107,7 +107,8 @@
         </button>
       </div>
       -->
-      <div class="offcanvas-body d-flex flex-column flex-lg-row justify-content-between">
+      <div class="offcanvas-body d-flex flex-column flex-lg-row align-items-lg-center justify-content-lg-end">
+        {{ if .Site.Menus.main -}}
         <ul class="navbar-nav flex-grow-1">
           {{- $current := . -}}
           {{- $section := $current.Section -}}
@@ -139,6 +140,7 @@
             {{ end -}}
           {{ end -}}
         </ul>
+        {{ end -}}
 
         <!-- FlexSearch desktop -->
         {{ partial "main/showFlexSearch" . }}
@@ -153,53 +155,19 @@
         </button>
         {{ end -}}
 
-        <!-- Language dropdown -->
-        {{ if eq site.Params.doks.multilingualMode true -}}
-
-        <div class="dropdown mt-1 order-lg-2">
-          <button class="btn btn-dropdown dropdown-toggle" id="doks-languages" data-bs-toggle="dropdown" aria-expanded="false" data-bs-display="static">
-            <span class="dropdown-caret">
-              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M4 5h7"></path>
-                <path d="M9 3v2c0 4.418 -2.239 8 -5 8"></path>
-                <path d="M5 9c0 2.144 2.952 3.908 6.7 4"></path>
-                <path d="M12 20l4 -9l4 9"></path>
-                <path d="M19.1 18h-6.2"></path>
-              </svg>
-              <span id="doks-language-current">{{ .Site.Language.LanguageName }}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-chevron-down" width="24" height="24" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M6 9l6 6l6 -6"></path>
-              </svg>
+        <!-- Doks language dropdown, with a compact current-language label. -->
+        {{ if and site.Params.doks.multilingualMode .IsTranslated -}}
+        <div class="dropdown d-lg-flex mt-3 mt-lg-0 mx-lg-2 order-lg-2">
+          <button type="button" class="btn btn-dropdown dropdown-toggle m-0" id="doks-languages" data-bs-toggle="dropdown" aria-expanded="false" data-bs-display="static" aria-label="{{ i18n "selectLanguage" }}">
+            <span class="d-inline-flex align-items-center gap-1">
+              <span id="doks-language-current">{{ site.Params.languageShort }}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-chevron-down m-0" width="16" height="16" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6l6 -6"></path></svg>
             </span>
           </button>
-          <ul class="dropdown-menu dropdown-menu-lg-end me-lg-2 shadow rounded border-0" aria-labelledby="doks-languages">
-
-            <li><span class="dropdown-item current" aria-current="true">{{ .Site.Language.LanguageName }}</span></li>
-
-            <li><hr class="dropdown-divider"></li>
-
-            {{ if site.Params.doks.showMissingLanguages -}}
-              {{ $translatedLangs := slice -}}
-              {{ range .Translations -}}
-                {{ $translatedLangs = $translatedLangs | append .Lang }}
-              {{- end }}
-              {{ range site.Languages -}}
-                {{ if and (ne $.Lang .Lang) (not (in $.Params.skipTranslations .Lang)) -}}
-                  {{ $isTranslated := in $translatedLangs .Lang -}}
-                  <li><a class="dropdown-item {{ if not $isTranslated }}untranslated{{ end }}" rel="alternate" href="{{ if $isTranslated }}{{ (index (where $.Translations "Lang" .Lang) 0).RelPermalink }}{{ else }}{{ .Lang | relURL }}{{ end }}" hreflang="{{ .Lang }}" lang="{{ .Lang }}">{{ .LanguageName }}</a></li>
-                {{- end }}
-              {{- end }}
-            {{ else -}}
-              {{ range .Translations -}}
-                <li><a class="dropdown-item" rel="alternate" href="{{ .RelPermalink }}" hreflang="{{ .Lang }}" lang="{{ .Lang }}">{{ .Language.LanguageName }}</a></li>
-              {{- end }}
-            {{- end }}
-              <!--
-              <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="/docs/contributing/how-to-contribute/">Help Translate</a></li>
-              -->
+          <ul class="dropdown-menu dropdown-menu-lg-end shadow rounded border-0" aria-labelledby="doks-languages">
+            {{ range .AllTranslations -}}
+            <li><a class="dropdown-item{{ if eq .Lang $.Lang }} current{{ end }}"{{ if eq .Lang $.Lang }} aria-current="page"{{ end }} rel="alternate" href="{{ .RelPermalink }}" hreflang="{{ .Language.Locale }}" lang="{{ .Language.Locale }}">{{ .Language.Label }}</a></li>
+            {{ end -}}
           </ul>
         </div>
         {{ end -}}
@@ -230,7 +198,7 @@
 
         <!-- Color mode toggler -->
         {{ if and (eq site.Params.doks.colorMode "auto") site.Params.doks.colorModeToggler -}}
-        <button id="buttonColorMode" class="btn btn-link nav-link mt-3 mt-lg-0 p-0 ms-lg-2 me-lg-1" type="button" aria-label="Toggle theme">
+        <button id="buttonColorMode" class="btn btn-link nav-link mt-3 mt-lg-0 p-0 ms-lg-2 me-lg-1" type="button" aria-label="{{ i18n "toggleTheme" }}">
           <svg data-bs-theme-value="dark" xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-moon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
             <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"></path>
@@ -243,9 +211,10 @@
         {{ end -}}
 
         <!-- Social menu -->
-        {{ if .Site.Menus.social -}}
+        {{ $socialMenu := .Site.Menus.social | default hugo.Sites.Default.Menus.social -}}
+        {{ with $socialMenu -}}
         <ul id="socialMenu" class="nav flex-row order-lg-4">
-          {{ range .Site.Menus.social -}}
+          {{ range . -}}
             <li class="nav-item">
               <a class="nav-link social-link" href="{{ .URL | relURL }}">{{ .Pre | safeHTML }}<small class="ms-2 visually-hidden">{{ .Name | safeHTML }}</small></a>
             </li>

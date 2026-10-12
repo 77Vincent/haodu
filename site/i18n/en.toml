@@ -1,0 +1,29 @@
+[installNow]
+other = 'Install now'
+
+[hidePreview]
+other = 'Hide preview'
+
+[showPreview]
+other = 'Show preview'
+
+[openMenu]
+other = 'Open navigation menu'
+
+[closeMenu]
+other = 'Close menu'
+
+[toggleTheme]
+other = 'Toggle theme'
+
+[selectLanguage]
+other = 'Select language'
+
+[notFoundTitle]
+other = 'Page not found'
+
+[notFoundDescription]
+other = 'There is no page at this address.'
+
+[backHome]
+other = 'Back to home'

@@ -1,7 +1,7 @@
 {{ define "main" }}
   <main class="text-center py-5">
-    <h1>页面未找到</h1>
-    <p>这个地址没有对应的页面。</p>
-    <a class="btn btn-primary rounded-pill" href="{{ site.Home.RelPermalink }}">返回首页</a>
+    <h1>{{ i18n "notFoundTitle" }}</h1>
+    <p>{{ i18n "notFoundDescription" }}</p>
+    <a class="btn btn-primary rounded-pill" href="{{ site.Home.RelPermalink }}">{{ i18n "backHome" }}</a>
   </main>
 {{ end }}

@@ -1,0 +1,29 @@
+[installNow]
+other = '现在安装'
+
+[hidePreview]
+other = '关闭辅助预览'
+
+[showPreview]
+other = '开启辅助预览'
+
+[openMenu]
+other = '打开导航菜单'
+
+[closeMenu]
+other = '关闭菜单'
+
+[toggleTheme]
+other = '切换明暗主题'
+
+[selectLanguage]
+other = '选择语言'
+
+[notFoundTitle]
+other = '页面未找到'
+
+[notFoundDescription]
+other = '这个地址没有对应的页面。'
+
+[backHome]
+other = '返回首页'

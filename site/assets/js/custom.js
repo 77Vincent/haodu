@@ -1,5 +1,6 @@
-// The header's mobile menu needs Offcanvas even when the full Bootstrap bundle is disabled.
+// Load only the Bootstrap components used by the header.
 import 'bootstrap/js/dist/offcanvas.js';
+import 'bootstrap/js/dist/dropdown.js';
 
 // Doks binds theme selection to the SVGs. Forward button/keyboard activation
 // to the appropriate SVG so the entire button uses Doks' existing theme logic.
@@ -13,7 +14,7 @@ if (themeButton) {
   });
 }
 
-// Toggle model-generated markers in the lead and demos; brand dividers stay visible.
+// Toggle manually maintained markers in the lead and demos; brand dividers stay visible.
 const readerToggle = document.querySelector('[data-reader-toggle]');
 if (readerToggle) {
   const installButton = document.querySelector('[data-install-button]');
@@ -33,7 +34,7 @@ if (readerToggle) {
     const enabled = readerToggle.getAttribute('aria-pressed') !== 'true';
     markers.forEach((marker) => { marker.hidden = !enabled; });
     readerToggle.setAttribute('aria-pressed', String(enabled));
-    label.textContent = enabled ? '关闭辅助预览' : '开启辅助预览';
+    label.textContent = enabled ? readerToggle.dataset.labelHide : readerToggle.dataset.labelShow;
   });
   readerToggle.hidden = false;
 }
