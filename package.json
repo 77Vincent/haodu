@@ -1,6 +1,6 @@
 {
   "name": "haodu",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "中文阅读辅助，按人类习惯，将长句划分为短句，让阅读更轻松。",
   "scripts": {

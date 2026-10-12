@@ -15,8 +15,8 @@ npm run release:extension
 产物：
 
 - `dist/extension/`：加载已解压的扩展程序时选择这个目录。
-- `dist/haodu-0.1.0.zip`：提交商店的 ZIP，名称取自 manifest 版本。
-- `dist/haodu-0.1.0.zip.sha256`：ZIP 校验值。
+- `dist/haodu-0.2.0.zip`：提交商店的 ZIP，名称取自 manifest 版本。
+- `dist/haodu-0.2.0.zip.sha256`：ZIP 校验值。
 - `dist/extension-release.json`：版本、体积、每个文件的 SHA-256 清单，不放入 ZIP。
 
 `scripts/build-extension.mjs` 明确列出发布文件，拒绝符号链接，检查 JS 语法及 manifest 引用，并固定文件时间和权限。ZIP 不含顶层 `extension/` 目录，也不含 training、site、测试或开发配置。新增运行文件时，需要同时更新打包清单。
