@@ -251,18 +251,18 @@ test("the toolbar menu and icon share the global switch and retain one menu acro
   background.addTab(2);
   await drain();
   const menu = () => background.menus.get("haodu-toggle");
-  assert.equal(menu().title, "开启好读（Alt+Shift+R）");
+  assert.equal(menu().title, "启用（Alt+Shift+R）");
   assert.deepEqual(Array.from(menu().contexts), ["action"]);
   await background.menuClick(1);
   assert.equal(background.saved.enabled, true);
   assert.equal(background.pages.get(1).reader.status().enabled, true);
   assert.equal(background.pages.has(2), false);
-  assert.equal(menu().title, "关闭好读（Alt+Shift+R）");
+  assert.equal(menu().title, "关闭（Alt+Shift+R）");
   await background.restartWorker();
-  assert.equal(menu().title, "关闭好读（Alt+Shift+R）");
+  assert.equal(menu().title, "关闭（Alt+Shift+R）");
   assert.equal(background.menuCreations(), 1);
   await background.click(1);
-  assert.equal(menu().title, "开启好读（Alt+Shift+R）");
+  assert.equal(menu().title, "启用（Alt+Shift+R）");
   assert.equal(background.pages.get(1).reader.status().enabled, false);
   await background.menuClick(1, true);
   assert.equal(background.saved.enabled, true);
@@ -275,11 +275,11 @@ test("the toolbar menu follows changed and cleared shortcuts without showing the
   await background.focus(1);
   background.setShortcut("⌃⇧H");
   await background.focus(1);
-  assert.equal(background.menus.get("haodu-toggle").title, "开启好读（⌃⇧H）");
+  assert.equal(background.menus.get("haodu-toggle").title, "启用（⌃⇧H）");
   assert.equal(background.titles.get(1), "好读（⌃⇧H / 点击开启）");
   background.setShortcut("");
   await background.focus(1);
-  assert.equal(background.menus.get("haodu-toggle").title, "开启好读");
+  assert.equal(background.menus.get("haodu-toggle").title, "启用");
   assert.equal(background.titles.get(1), "好读（点击开启）");
 });
 

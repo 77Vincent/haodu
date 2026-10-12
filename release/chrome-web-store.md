@@ -36,7 +36,7 @@
 | `offscreen justification` | 在浏览器的隐藏扩展页面中创建 Worker，运行随扩展打包的中文切分模型。多个网页共享同一份模型，避免重复加载。所需脚本、词表和模型权重均包含在扩展包内，网页文本仅在浏览器本地传递和计算。 |
 | `scripting justification` | 在用户开启阅读辅助后，向当前符合条件的网页注入扩展包内的阅读脚本和 CSS，用于读取可见的中文文本、添加视觉分隔线，并在关闭时撤销这些标记。注入代码不来自远程服务器。 |
 | `storage justification` | 仅使用 chrome.storage.local 保存全局阅读辅助开关（enabled），以便浏览器重启后保留用户选择。不存储网页正文、网页地址、浏览历史或推理结果，不使用 chrome.storage.sync。 |
-| `contextMenus justification` | 在扩展工具栏图标的右键菜单中提供「开启好读／关闭好读」，显示当前快捷键，并复用同一个阅读辅助开关。仅添加图标菜单，不读取菜单选中的网页内容。 |
+| `contextMenus justification` | 在扩展工具栏图标的右键菜单中提供「启用／关闭」，显示当前快捷键，并复用同一个阅读辅助开关。仅添加图标菜单，不读取菜单选中的网页内容。 |
 | `Host permission justification` | 用户开启后，需要在其访问及切换到的 HTTP/HTTPS 网页上持续提供阅读辅助，因此申请这两类网页的网站访问权限；只使用 activeTab 无法在未再次点击扩展的其他网页上延续该设置。file:// 权限用于用户另行启用“允许访问文件网址”后处理本地 HTML 文件。读取的中文文本仅在本机计算，不上传到开发者或第三方。 |
 
 **Are you using remote code?**：选择 **No, I am not using remote code**，无需填写远程代码 Justification。脚本、样式、模型词表和权重均随上传的 ZIP 打包，没有外部脚本加载或云端推理；本地 Worker 与本地 `importScripts()` 不属于远程代码。[官方填写说明](https://developer.chrome.com/docs/webstore/cws-dashboard-privacy#declare_any_remote_code)。

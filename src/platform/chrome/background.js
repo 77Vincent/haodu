@@ -24,7 +24,7 @@ async function refreshShortcut() {
 }
 
 function updateToggleMenu() {
-  const title = `${enabled ? "关闭" : "开启"}好读${actionShortcut ? `（${actionShortcut}）` : ""}`;
+  const title = `${enabled ? "关闭" : "启用"}${actionShortcut ? `（${actionShortcut}）` : ""}`;
   // Menus outlive the worker. Update the existing item, creating it only if
   // absent. Callbacks also work on Chrome versions before Promise support.
   return new Promise((resolve) => {
