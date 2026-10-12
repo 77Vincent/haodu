@@ -3,6 +3,7 @@ import { readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { checkSiteSeo } from './check-site-seo.mjs';
 
 const { values } = parseArgs({ options: {
   'base-url': { type: 'string' }, preview: { type: 'boolean', default: false },
@@ -34,10 +35,7 @@ for (const page of ['index.html', 'en/index.html', 'privacy/index.html', '404.ht
     throw new Error(`${page} contains a development or placeholder URL.`);
   }
 }
-for (const filename of url ? ['sitemap.xml', 'robots.txt'] : []) {
-  const body = await readFile(join(destination, filename), 'utf8');
-  if (!body.includes(url.href)) throw new Error(`${filename} does not reference the release URL.`);
-}
+await checkSiteSeo(destination, url);
 console.log(values.preview
   ? `Static preview: ${output}/ — noindex; rebuild with a real --base-url before publishing.`
   : `Static release: ${output}/ — ${url.href}`);

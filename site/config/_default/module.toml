@@ -90,6 +90,11 @@
   source = "assets"
   target = "assets"
 
+# A single source image for the README, GitHub preview and website share cards.
+[[mounts]]
+  source = "../release/assets/haodu-cover-1280x640.jpg"
+  target = "assets/images/haodu-cover-1280x640.jpg"
+
 ## static
 [[mounts]]
   source = "node_modules/@thulite/doks-core/static"

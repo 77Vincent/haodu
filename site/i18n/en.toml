@@ -27,3 +27,6 @@ other = 'There is no page at this address.'
 
 [backHome]
 other = 'Back to home'
+
+[socialImageAlt]
+other = 'haodu homepage showing reading assistance for long Chinese sentences'

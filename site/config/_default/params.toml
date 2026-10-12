@@ -6,6 +6,8 @@ chromeWebStoreURL = 'https://chromewebstore.google.com/detail/haodu/REPLACE_WITH
 footer = '好读'
 mainSections = []
 math = false
+# Reuse the README/social cover through the asset mount in module.toml.
+images = ['images/haodu-cover-1280x640.jpg']
 
 [doks]
   colorMode = 'auto'

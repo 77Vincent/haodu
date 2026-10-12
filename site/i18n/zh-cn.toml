@@ -27,3 +27,6 @@ other = '这个地址没有对应的页面。'
 
 [backHome]
 other = '返回首页'
+
+[socialImageAlt]
+other = '好读首页：中文长句的阅读辅助切分示例'

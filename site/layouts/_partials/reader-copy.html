@@ -2,5 +2,7 @@
 {{- $chunks := split .text "｜" -}}
 {{- $dividerClass := .dividerClass | default "reader-divider" -}}
 {{- range $index, $chunk := $chunks -}}
+  {{- /* Keep English words separated in extracted text without widening the bar. */ -}}
+  {{- if and $index $.separator }}<span class="visually-hidden">{{ $.separator }}</span>{{ end -}}
   <span class="d-inline-block mw-100">{{ $chunk }}{{ if lt $index (sub (len $chunks) 1) }}<span class="{{ $dividerClass }}" aria-hidden="true"></span>{{ end }}</span>
 {{- end -}}

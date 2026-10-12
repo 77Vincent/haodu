@@ -72,7 +72,7 @@ npm --prefix site run build
 npm run release:site -- --base-url https://haodu.site/
 ```
 
-该入口必须指定真实 HTTPS 地址，输出到独立的 `dist/site/`，并检查中英文首页、隐私页、扩展跳过标记、sitemap 和 robots 地址。它不会修改开发配置；部署只上传 `dist/site/` 的内容。详细步骤见 [`../release/README.md`](../release/README.md)。
+该入口必须指定真实 HTTPS 地址，输出到独立的 `dist/site/`，并检查中英文首页、隐私页、扩展跳过标记及下面列出的 SEO 元信息。它不会修改开发配置；部署只上传 `dist/site/` 的内容。详细步骤见 [`../release/README.md`](../release/README.md)。
 
 只需检查本地构建产物时，运行 `npm run release:site:preview`，生成 `dist/site-preview/`，用本地静态服务器预览即可。预览产物禁用抓取并标记 noindex，不能当作正式发布包。
 
@@ -91,6 +91,21 @@ npm --prefix site run build -- --baseURL https://example.org/haodu/
 ```
 
 页面使用 Doks/Thulite 的 SEO 集成生成元信息和 sitemap，保留自定义的 `robots.txt`。404 页面设有 `noindex`。子路径部署时，爬虫读取域名根目录的 `/robots.txt`，需在根配置中添加对应 sitemap 地址。
+
+## SEO
+
+- 标题与描述来自各页面 front matter；中英文首页分别使用自己的 canonical。HTML 与 sitemap 中的语言互链统一为 `zh-cn` / `en`，包含页面自身及指向中文首页的 `x-default`。
+- 分享卡片复用 [`haodu-cover-1280x640.jpg`](../release/assets/haodu-cover-1280x640.jpg)。`module.toml` 将这一个文件挂载为站点资源，Thulite 输出 Open Graph / Twitter 大图，项目补充实际尺寸和中英文替代文字。换封面后重新构建即可，不需维护第二份图片。
+- 两个首页的 `WebSite` 结构化数据描述同一个网站，主名称为「好读」，别名为 `haodu`。
+- 页面正文在静态 HTML 中可读取，不依赖 JavaScript。英文 H1 的分隔线处保留文本空格，避免文本提取后变成 `Chineseeasier`，不增加视觉间距。中文演示区保留在中英文首页，使用 `data-nosnippet` 避免书籍例文被 Google 抽作产品搜索摘要；不影响演示显示及正文收录。搜索摘要仍由搜索引擎决定。
+- 正式站允许抓取；开发和预览页、所有 404 页面使用 `noindex`。sitemap 索引包含两种语言的子 sitemap，仅列出两个首页及隐私政策，不包含 404 或语言重定向页。
+- [`check-site-seo.mjs`](../scripts/check-site-seo.mjs) 随发布和预览构建执行，检查标题、描述、H1、canonical、语言互链、收录设置、分享图片文件、JSON-LD 和 sitemap 覆盖；不通过就终止构建。
+
+主题的描述长度提醒使用统一的 110–160 长度区间，不能当作中英文 SEO 的硬性标准。保持当前准确简洁的描述，不为消除提醒填充文字；Google 会根据设备宽度截断摘要，见[官方说明](https://developers.google.com/search/docs/appearance/snippet)。
+
+**部署后仍需核验：** 域名 HTTPS 可访问；首页、英文页、隐私页、robots 和 sitemap 返回正确内容；无效路径返回真实 HTTP 404；HTTP 与备用域名跳转到正式 HTTPS 域名。然后在 Google Search Console 验证域名、提交 `/sitemap.xml` 并查看 URL 检查和实际 Core Web Vitals；这些线上状态不能由本地构建确认。安装入口的商店占位地址仍需在扩展发布后替换。
+
+2026-10-12 本地审查时，`https://haodu.site/` 的外部访问未成功，本机请求报 TLS 握手失败，因此未确认线上收录、跳转和性能状态；以上修补尚需重新部署。
 
 ## 维护
 
