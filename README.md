@@ -1,4 +1,9 @@
-# 好读 · haodu
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="release/assets/haodu-wordmark-dark.svg">
+    <img src="release/assets/haodu-wordmark.svg" alt="好读 · haodu" width="259" height="52">
+  </picture>
+</h1>
 
 让中文更好读
 
