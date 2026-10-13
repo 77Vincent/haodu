@@ -24,12 +24,6 @@ title = '好读 · 让中文更好读 · Chrome / Edge 浏览器阅读辅助扩�
 畏惧死亡，恰恰说明｜对人身上鲜活的一切｜怀有无限眷恋。而所有那些｜从未做出决定性举动｜来升华自己生命的人，所有那些畏惧｜并赞美软弱的人，这些人害怕死亡，是因为死亡｜会对他们未曾参与的人生｜施加惩罚。他们从来没有真正生活过，也就活得意犹未尽。
 {{< /reader-demo >}}
 
-[wang-xiaobo-quote-source]: https://lib.zzjc.edu.cn/__local/D/16/2D/B07E386DFA01230D113B61A11B0_49F98466_186C05.pdf?e=.pdf "《沉默的大多数》中的《思维的乐趣》"
-
-{{< reader-demo source="王小波《沉默的大多数》" >}}
-一个人｜倘若需要从思想中得到快乐，那么｜他的第一个欲望就是学习。
-{{< /reader-demo >}}
-
 [three-body-quote-source]: https://read.douban.com/reader/ebook/594929363/toc/2 "《三体Ⅱ：黑暗森林》序章"
 
 {{< reader-demo source="刘慈欣《三体Ⅱ：黑暗森林》" >}}
