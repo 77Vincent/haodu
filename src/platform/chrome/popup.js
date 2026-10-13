@@ -3,7 +3,13 @@
 const toggle = document.getElementById("reader-toggle");
 const label = document.getElementById("reader-toggle-state");
 const hueSlider = document.getElementById("divider-hue");
+const widthSlider = document.getElementById("divider-width");
 const { normalizeHue, validHue, colorForHue, gradient } = Haodu.dividerColor;
+const { normalizeWidth, validWidth } = Haodu.dividerWidth;
+let confirmedWidth = 2;
+let widthRevision = 0;
+let widthEdit = 0;
+let widthPending = 0;
 let confirmedHue = 0;
 let colorRevision = 0;
 let colorEdit = 0;
@@ -46,6 +52,36 @@ async function saveHue() {
   }
 }
 
+function renderWidth(width) {
+  widthSlider.value = String(width);
+  document.body.style.setProperty("--selected-divider-width", String(width));
+  widthSlider.setAttribute("aria-valuetext", `第 ${width} 档，共 5 档`);
+}
+
+async function saveWidth() {
+  const width = Number(widthSlider.value);
+  const edit = ++widthEdit;
+  widthPending += 1;
+  renderWidth(width);
+  try {
+    const response = await chrome.runtime.sendMessage({ type: "HAODU_SET_DIVIDER_WIDTH", dividerWidth: width });
+    if (!validWidth(response?.dividerWidth)) throw new Error(response?.error || "Width unavailable");
+    if (edit === widthEdit) {
+      confirmedWidth = response.dividerWidth;
+      renderWidth(confirmedWidth);
+      widthSlider.title = "拖动调整分隔线粗细";
+    }
+  } catch (error) {
+    if (edit === widthEdit) {
+      renderWidth(confirmedWidth);
+      widthSlider.title = "粗细保存失败，请重试";
+    }
+    console.warn("[haodu] Could not save width:", error.message);
+  } finally {
+    widthPending -= 1;
+  }
+}
+
 function render() {
   toggle.setAttribute("aria-checked", String(enabled));
   label.textContent = enabled ? "开启" : "关闭";
@@ -77,6 +113,11 @@ chrome.storage.onChanged.addListener((changes, area) => {
     confirmedHue = normalizeHue(changes.dividerHue.newValue);
     if (!colorPending) renderHue(confirmedHue);
   }
+  if (changes.dividerWidth) {
+    widthRevision += 1;
+    confirmedWidth = normalizeWidth(changes.dividerWidth.newValue);
+    if (!widthPending) renderWidth(confirmedWidth);
+  }
 });
 
 async function requestState(next) {
@@ -85,6 +126,7 @@ async function requestState(next) {
   toggle.disabled = true;
   const startRevision = revision;
   const startColorRevision = colorRevision;
+  const startWidthRevision = widthRevision;
   try {
     const response = await chrome.runtime.sendMessage(next === undefined
       ? { type: "HAODU_GET_ENABLED" }
@@ -96,6 +138,9 @@ async function requestState(next) {
       if (colorRevision === startColorRevision) confirmedHue = normalizeHue(response.dividerHue);
       renderHue(confirmedHue);
       hueSlider.disabled = false;
+      if (widthRevision === startWidthRevision) confirmedWidth = normalizeWidth(response.dividerWidth);
+      renderWidth(confirmedWidth);
+      widthSlider.disabled = false;
     }
     toggle.title = "";
     toggle.disabled = false;
@@ -111,5 +156,6 @@ async function requestState(next) {
 
 toggle.addEventListener("click", () => { void requestState(!enabled); });
 hueSlider.addEventListener("input", () => { void saveHue(); });
+widthSlider.addEventListener("input", () => { void saveWidth(); });
 void requestState();
 void showShortcut();

@@ -45,7 +45,7 @@ body {
 #reader-toggle[aria-checked="true"] #reader-toggle-state::before {
   content: "";
   display: inline-block;
-  width: calc(1em / 6);
+  width: calc(1em * var(--selected-divider-width, 2) / 12);
   height: 1em;
   margin: 0 0.08em;
   vertical-align: -0.15em;
@@ -93,7 +93,8 @@ body {
   transition: background-color 150ms ease;
 }
 
-#divider-hue {
+#divider-hue,
+#divider-width {
   --divider-thumb-width: 14px;
   appearance: none;
   display: block;
@@ -121,7 +122,8 @@ body {
   outline-offset: -1px;
 }
 
-#divider-hue::-webkit-slider-thumb {
+#divider-hue::-webkit-slider-thumb,
+#divider-width::-webkit-slider-thumb {
   appearance: none;
   /* Paint the thumb above the track's outline without changing its travel. */
   position: relative;
@@ -136,12 +138,24 @@ body {
   box-shadow: 0 1px 1.5px #0003, 0 2px 3px #0002;
 }
 
-#divider-hue:focus-visible {
+#divider-width::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--disabled);
+}
+
+#divider-width::-webkit-slider-thumb {
+  margin-top: -8px;
+}
+
+#divider-hue:focus-visible,
+#divider-width:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
-#divider-hue:disabled {
+#divider-hue:disabled,
+#divider-width:disabled {
   opacity: 0.5;
   cursor: default;
 }
@@ -191,6 +205,17 @@ body {
   /* Dividers use the system palette in this mode; keep the saved hue intact. */
   #divider-hue {
     display: none;
+  }
+
+  #divider-width::-webkit-slider-runnable-track {
+    background: CanvasText;
+  }
+
+  #divider-width::-webkit-slider-thumb {
+    background: Highlight;
+    border-color: Canvas;
+    outline: 1px solid CanvasText;
+    box-shadow: none;
   }
 
   .switch-track {

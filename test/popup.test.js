@@ -7,7 +7,7 @@ const vm = require("node:vm");
 const drain = () => new Promise((resolve) => setImmediate(resolve));
 
 function createPopup({ shortcut = "Alt+Shift+U", shortcutError = false } = {}) {
-  let click, storageChanged, hueInput;
+  let click, storageChanged, hueInput, widthInput;
   const requests = [];
   const warnings = [];
   const label = { textContent: "关闭" };
@@ -18,6 +18,11 @@ function createPopup({ shortcut = "Alt+Shift+U", shortcutError = false } = {}) {
     value: "0", disabled: true, title: "", attributes: {},
     setAttribute(name, value) { this.attributes[name] = value; },
     addEventListener(name, callback) { assert.equal(name, "input"); hueInput = callback; },
+  };
+  const width = {
+    value: "2", disabled: true, title: "", attributes: {},
+    setAttribute(name, value) { this.attributes[name] = value; },
+    addEventListener(name, callback) { assert.equal(name, "input"); widthInput = callback; },
   };
   const toggle = {
     disabled: true, title: "", checked: "false",
@@ -30,6 +35,7 @@ function createPopup({ shortcut = "Alt+Shift+U", shortcutError = false } = {}) {
       if (id === "reader-shortcut") return shortcutText;
       if (id === "shortcut-hint") return shortcutHint;
       if (id === "divider-hue") return hue;
+      if (id === "divider-width") return width;
       assert.equal(id, "reader-toggle");
       return toggle;
     } },
@@ -46,8 +52,11 @@ function createPopup({ shortcut = "Alt+Shift+U", shortcutError = false } = {}) {
     },
   });
   vm.runInContext(readFileSync(join(__dirname, "../src/divider-color.js"), "utf8"), context);
+  vm.runInContext(readFileSync(join(__dirname, "../src/divider-width.js"), "utf8"), context);
   vm.runInContext(readFileSync(join(__dirname, "../src/platform/chrome/popup.js"), "utf8"), context);
-  return { toggle, label, hue, body, shortcutText, shortcutHint, requests, warnings, click: () => click(),
+  return { toggle, label, hue, width, body, shortcutText, shortcutHint, requests, warnings, click: () => click(),
+    inputWidth(value) { width.value = String(value); widthInput(); },
+    changeWidth(value) { storageChanged({ dividerWidth: { newValue: value } }, "local"); },
     inputHue(value) { hue.value = String(value); hueInput(); },
     changeHue(value) { storageChanged({ dividerHue: { newValue: value } }, "local"); },
     change(value, area = "local") { storageChanged({ enabled: { newValue: value } }, area); },
@@ -83,6 +92,56 @@ test("the popup reads without toggling and prevents duplicate requests until a c
   await drain();
   assert.equal(popup.toggle.checked, "false");
   assert.equal(popup.label.textContent, "关闭");
+});
+
+test("width defaults to step two and restores saved steps without writing on open", async () => {
+  for (const [saved, expected] of [[undefined, 2], [1, 1], [5, 5], [0, 2], [6, 2], ["3", 2]]) {
+    const popup = createPopup();
+    assert.equal(popup.width.disabled, true);
+    popup.requests[0].resolve({ enabled: true, dividerWidth: saved });
+    await drain();
+    assert.equal(popup.width.value, String(expected));
+    assert.equal(popup.width.disabled, false);
+    assert.equal(popup.body.style["--selected-divider-width"], String(expected));
+    assert.equal(popup.requests.length, 1);
+  }
+});
+
+test("width storage changes supersede a stale initial reply and reset to step two when removed", async () => {
+  const popup = createPopup();
+  popup.changeWidth(4);
+  popup.requests[0].resolve({ enabled: false, dividerWidth: 2 });
+  await drain();
+  assert.equal(popup.width.value, "4");
+  popup.changeWidth(undefined);
+  assert.equal(popup.width.value, "2");
+});
+
+test("width sends every step immediately, keeps the latest drag and restores on save failure", async () => {
+  const popup = createPopup();
+  popup.requests[0].resolve({ enabled: true, dividerHue: 180, dividerWidth: 2 });
+  await drain();
+  const color = popup.body.style["--selected-divider-color"];
+  popup.inputWidth(1);
+  popup.inputWidth(5);
+  assert.equal(popup.requests[1].type, "HAODU_SET_DIVIDER_WIDTH");
+  assert.equal(popup.requests[1].dividerWidth, 1);
+  assert.equal(popup.requests[2].dividerWidth, 5);
+  popup.changeWidth(1);
+  popup.requests[1].resolve({ dividerWidth: 1 });
+  await drain();
+  assert.equal(popup.width.value, "5");
+  popup.changeWidth(5);
+  popup.requests[2].resolve({ dividerWidth: 5 });
+  await drain();
+  assert.equal(popup.width.value, "5");
+  popup.inputWidth(3);
+  popup.requests[3].reject(new Error("Storage unavailable"));
+  await drain();
+  assert.equal(popup.width.value, "5");
+  assert.match(popup.width.title, /保存失败/u);
+  assert.equal(popup.body.style["--selected-divider-color"], color);
+  assert.equal(popup.toggle.checked, "true");
 });
 
 test("the color band restores a saved hue and does not save or toggle merely on opening", async () => {

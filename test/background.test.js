@@ -57,6 +57,7 @@ function createBackground(saved = {}) {
     runScript("src/app/reader.js", context);
     runScript("src/platform/chrome/content.js", context);
     context.Haodu.setMarkerColor = (color) => { page.color = color; };
+    context.Haodu.setMarkerWidth = (width) => { page.width = width; };
     const adapter = context.Haodu.createReaderAdapter();
     page.reader = context.Haodu.createReader({
       read() { page.reads += 1; return { texts: ["需要处理的中文"] }; },
@@ -170,9 +171,8 @@ function createBackground(saved = {}) {
   const manifest = JSON.parse(readFileSync(join(__dirname, "../manifest.json"), "utf8"));
   const boot = () => {
     const context = vm.createContext({ console, chrome, URL });
-    context.importScripts = (path) => {
-      assert.equal(path, "../../divider-color.js");
-      runScript("src/divider-color.js", context);
+    context.importScripts = (...paths) => {
+      for (const path of paths) runScript(join("src/platform/chrome", path), context);
     };
     runScript(manifest.background.service_worker, context);
   };
@@ -310,6 +310,55 @@ test("color selection works while off or busy and rejects invalid or untrusted v
   await drain();
 });
 
+test("width steps persist in order and update existing active readers without inference", async () => {
+  const background = createBackground();
+  assert.equal((await background.popup({ type: "HAODU_GET_ENABLED" })).dividerWidth, 2);
+  await background.shortcut(1);
+  await background.focus(2);
+  const first = background.pages.get(1);
+  const active = background.pages.get(2);
+  const marker = active.marker;
+  const reads = active.reads;
+  for (const dividerWidth of [1, 2, 3, 4, 5]) {
+    const reply = await background.popup({ type: "HAODU_SET_DIVIDER_WIDTH", dividerWidth });
+    assert.equal(reply.dividerWidth, dividerWidth);
+    assert.equal(background.saved.dividerWidth, dividerWidth);
+    assert.equal(active.width, dividerWidth);
+  }
+  assert.equal(first.width, 2);
+  assert.equal(active.marker, marker);
+  assert.equal(active.reads, reads);
+  await background.focus(1);
+  assert.equal(first.width, 5);
+  await Promise.all([4, 2, 1].map((dividerWidth) => background.popup({ type: "HAODU_SET_DIVIDER_WIDTH", dividerWidth })));
+  assert.equal(background.saved.dividerWidth, 1);
+  await background.restartWorker();
+  assert.equal((await background.popup({ type: "HAODU_GET_ENABLED" })).dividerWidth, 1);
+  await background.navigate(1);
+  assert.equal(background.pages.get(1).width, 1);
+});
+
+test("width selection while off saves without injection and rejects invalid or untrusted input", async () => {
+  const background = createBackground({ dividerWidth: "5" });
+  await background.focus(1);
+  assert.equal((await background.popup({ type: "HAODU_GET_ENABLED" })).dividerWidth, 2);
+  await background.popup({ type: "HAODU_SET_DIVIDER_WIDTH", dividerWidth: 4 });
+  assert.equal(background.injected.length, 0);
+  assert.equal(background.creations(), 0);
+  for (const dividerWidth of [0, 6, 1.5, "3", null, NaN]) {
+    assert.equal(await background.popup({ type: "HAODU_SET_DIVIDER_WIDTH", dividerWidth }), undefined);
+  }
+  for (const sender of [
+    { id: "test-extension", url: "https://example.com/", tab: { id: 1 }, frameId: 0 },
+    { id: "other-extension", url: "chrome-extension://test-extension/src/popup.html" },
+  ]) assert.equal(await background.popup({ type: "HAODU_SET_DIVIDER_WIDTH", dividerWidth: 5 }, sender), undefined);
+  assert.equal(background.writes.length, 1);
+  await background.shortcut(1);
+  assert.equal(background.pages.get(1).width, 4);
+  await background.popup({ type: "HAODU_SET_DIVIDER_HUE", dividerHue: 180 });
+  assert.equal(background.saved.dividerWidth, 4, "color changes must preserve width");
+});
+
 test("popup controls reject page senders and invalid values", async () => {
   const background = createBackground();
   await background.focus(1);
@@ -340,6 +389,7 @@ test("the saved switch is global but toggles and focus leave every inactive tab 
   await background.shortcut(1);
   assert.deepEqual(background.injected, [1]);
   assert.deepEqual(background.injectedFiles[0], [
+    "src/divider-width.js",
     "src/frontend/dom-tree.js", "src/frontend/viewport.js", "src/frontend/visibility.js", "src/frontend/processed-text.js",
     "src/frontend/read.js", "src/frontend/write.js", "src/frontend/content-changes.js", "src/app/reader.js",
     "src/platform/chrome/content.js", "src/start-reader.js",

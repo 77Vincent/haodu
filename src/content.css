@@ -1,7 +1,7 @@
 .haodu-divider::before {
   display: inline-block !important;
-  /* Match the site's 18px paragraph / 3px divider baseline. */
-  width: calc(1em / 6) !important;
+  /* Five steps; level 2 preserves the original 18px text / 3px divider. */
+  width: calc(1em * var(--haodu-divider-width, 2) / 12) !important;
   height: 1em !important;
   margin: 0 0.08em !important;
   border: 0 !important;

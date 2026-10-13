@@ -1,7 +1,8 @@
 "use strict";
 
-importScripts("../../divider-color.js");
+importScripts("../../divider-color.js", "../../divider-width.js");
 const { validHue, normalizeHue, colorForHue } = Haodu.dividerColor;
+const { validWidth, normalizeWidth } = Haodu.dividerWidth;
 
 // Chrome entry point: toolbar, script loading, routing, and offscreen host.
 const INFERENCE_PAGE = "src/inference.html";
@@ -9,17 +10,19 @@ const POPUP_PAGE = "src/popup.html";
 let creatingInferencePage = null;
 let enabled = false;
 let dividerHue = 0;
-let colorWrites = Promise.resolve();
+let dividerWidth = 2;
+let appearanceWrites = Promise.resolve();
 let toggling = false;
 let checkingActiveTab = false;
 let checkPending = false;
 let actionShortcut = "";
 const settingsReady = Promise.all([
-  chrome.storage.local.get({ enabled: false, dividerHue: 0 }),
+  chrome.storage.local.get({ enabled: false, dividerHue: 0, dividerWidth: 2 }),
   refreshShortcut(),
 ]).then(([saved]) => {
   enabled = saved.enabled;
   dividerHue = normalizeHue(saved.dividerHue);
+  dividerWidth = normalizeWidth(saved.dividerWidth);
   return updateAction();
 });
 
@@ -108,6 +111,7 @@ async function injectReader(tabId) {
     await chrome.scripting.executeScript({
       target: { tabId },
       files: [
+        "src/divider-width.js",
         "src/frontend/dom-tree.js", "src/frontend/viewport.js", "src/frontend/visibility.js", "src/frontend/processed-text.js",
         "src/frontend/read.js", "src/frontend/write.js", "src/frontend/content-changes.js", "src/app/reader.js",
         "src/platform/chrome/content.js", "src/start-reader.js",
@@ -137,7 +141,7 @@ async function applyToTab(tab) {
     // Injection can outlast a tab switch. Leave that page inert until visited.
     if ((await activeTab())?.id !== tab.id) return;
     const state = await chrome.tabs.sendMessage(tab.id, {
-      type: "HAODU_APPLY_SETTING", enabled, dividerColor: colorForHue(dividerHue),
+      type: "HAODU_APPLY_SETTING", enabled, dividerColor: colorForHue(dividerHue), dividerWidth,
     }, { frameId: 0 });
     // A successful reply can predate an error already published by the reader.
     // Only restore a retained error here; transitions publish their own state.
@@ -191,7 +195,7 @@ async function toggleGlobal(tab, requestedEnabled) {
 }
 
 function setDividerHue(hue) {
-  const update = colorWrites.then(async () => {
+  const update = appearanceWrites.then(async () => {
     await settingsReady;
     if (hue === dividerHue) return;
     await chrome.storage.local.set({ dividerHue: hue });
@@ -203,7 +207,24 @@ function setDividerHue(hue) {
       type: "HAODU_SET_DIVIDER_COLOR", color: colorForHue(hue),
     }, { frameId: 0 }).catch(() => {});
   });
-  colorWrites = update.catch(() => {});
+  appearanceWrites = update.catch(() => {});
+  return update;
+}
+
+function setDividerWidth(width) {
+  const update = appearanceWrites.then(async () => {
+    await settingsReady;
+    if (width === dividerWidth) return;
+    await chrome.storage.local.set({ dividerWidth: width });
+    dividerWidth = width;
+    const tab = await activeTab();
+    if (!await supportsReader(tab)) return;
+    // Resize only existing markers, just as color changes do.
+    await chrome.tabs.sendMessage(tab.id, {
+      type: "HAODU_SET_DIVIDER_WIDTH", dividerWidth: width,
+    }, { frameId: 0 }).catch(() => {});
+  });
+  appearanceWrites = update.catch(() => {});
   return update;
 }
 
@@ -224,11 +245,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sender.id === chrome.runtime.id && sender.url === chrome.runtime.getURL(POPUP_PAGE)) {
     const isSet = message?.type === "HAODU_SET_ENABLED" && typeof message.enabled === "boolean";
     const isColor = message?.type === "HAODU_SET_DIVIDER_HUE" && validHue(message.dividerHue);
-    if (!isSet && !isColor && message?.type !== "HAODU_GET_ENABLED") return;
+    const isWidth = message?.type === "HAODU_SET_DIVIDER_WIDTH" && validWidth(message.dividerWidth);
+    if (!isSet && !isColor && !isWidth && message?.type !== "HAODU_GET_ENABLED") return;
     void settingsReady.then(async () => {
       if (isSet) await toggleGlobal(undefined, message.enabled);
       if (isColor) await setDividerHue(message.dividerHue);
-      return { enabled, dividerHue };
+      if (isWidth) await setDividerWidth(message.dividerWidth);
+      return { enabled, dividerHue, dividerWidth };
     }).then(sendResponse, (error) => sendResponse({ error: error.message }));
     return true;
   }

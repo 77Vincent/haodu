@@ -29,10 +29,16 @@ globalThis.Haodu.createReaderAdapter = function createChromeReaderAdapter() {
           sendResponse({});
           return;
         }
+        if (message?.type === "HAODU_SET_DIVIDER_WIDTH") {
+          Haodu.setMarkerWidth(message.dividerWidth);
+          sendResponse({});
+          return;
+        }
         if (message?.type !== "HAODU_APPLY_SETTING" || typeof message.enabled !== "boolean") return;
         // A demonstration page can opt out so its own marker toggle stays independent.
         const optedOut = document.querySelector('meta[name="haodu"][content="off"]');
         Haodu.setMarkerColor(message.dividerColor);
+        Haodu.setMarkerWidth(message.dividerWidth);
         sendResponse(reader.toggle(message.enabled && !optedOut));
       });
     },

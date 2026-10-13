@@ -180,6 +180,7 @@ function createPage(text = sampleText, tag = "p", useChromeAdapter = false, opte
   const run = (path) => vm.runInContext(
     readFileSync(join(__dirname, "..", path), "utf8"), context, { filename: path },
   );
+  run("src/divider-width.js");
   run("src/frontend/dom-tree.js");
   run("src/frontend/viewport.js");
   run("src/frontend/visibility.js");
@@ -250,6 +251,7 @@ function createPage(text = sampleText, tag = "p", useChromeAdapter = false, opte
   page.write = context.Haodu.write;
   page.clear = context.Haodu.clearMarkers;
   page.setColor = context.Haodu.setMarkerColor;
+  page.setWidth = context.Haodu.setMarkerWidth;
   return page;
 }
 
@@ -272,6 +274,32 @@ test("recoloring retains original nodes, marker identity and inference results; 
   page.click();
   await page.finish();
   assert.equal(page.markers()[0].style["--haodu-divider-color"], "#1744ff");
+});
+
+test("resizing changes only owned marker styles and new markers retain the selected width", async () => {
+  const page = createPage();
+  const anchor = page.paragraph.childNodes[0];
+  const foreign = page.element("span");
+  foreign.className = "haodu-divider";
+  page.click();
+  await page.finish();
+  const marker = page.markers().find((node) => node !== foreign);
+  assert.equal(marker.style["--haodu-divider-width"], "2");
+  for (const width of [1, 2, 3, 4, 5]) {
+    page.setWidth(width);
+    assert.equal(marker.style["--haodu-divider-width"], String(width));
+  }
+  for (const width of [0, 6, 1.5, "3", undefined]) page.setWidth(width);
+  assert.equal(marker.style["--haodu-divider-width"], "5");
+  assert.equal(foreign.style["--haodu-divider-width"], undefined);
+  assert.ok(page.markers().includes(marker));
+  assert.equal(page.paragraph.childNodes[0], anchor);
+  assert.equal(page.paragraph.textContent, sampleText);
+  assert.equal(page.requests.length, 1);
+  page.click();
+  page.click();
+  await page.finish();
+  assert.equal(page.markers().find((node) => node !== foreign).style["--haodu-divider-width"], "5");
 });
 
 test("the page is inert until toggled, then renders and restores its original text", async () => {
@@ -523,18 +551,24 @@ test("Chrome translates state commands and publishing only delivers the supplied
   vm.runInContext(readFileSync(join(__dirname, "../src/platform/chrome/content.js"), "utf8"), context);
   const colors = [];
   context.Haodu.setMarkerColor = (color) => colors.push(color);
+  const widths = [];
+  context.Haodu.setMarkerWidth = (width) => widths.push(width);
   const adapter = context.Haodu.createReaderAdapter();
   adapter.connect({
     status() { throw new Error("Only a PING should ask for status"); },
     toggle(value) { commands.push(value); return state; },
   });
   let response;
-  listener({ type: "HAODU_APPLY_SETTING", enabled: false }, {}, (value) => { response = value; });
+  listener({ type: "HAODU_APPLY_SETTING", enabled: false, dividerWidth: 2 }, {}, (value) => { response = value; });
+  assert.deepEqual(widths, [2]);
   assert.equal(response, state);
   assert.deepEqual(commands, [false]);
   listener({ type: "HAODU_SET_DIVIDER_COLOR", color: "#1744ff" }, {}, () => {});
   assert.equal(colors.at(-1), "#1744ff");
   assert.deepEqual(commands, [false], "color updates do not invoke toggle or status");
+  listener({ type: "HAODU_SET_DIVIDER_WIDTH", dividerWidth: 5 }, {}, () => {});
+  assert.deepEqual(widths, [2, 5]);
+  assert.deepEqual(commands, [false], "width updates do not invoke toggle or status");
   const finished = { enabled: false, busy: false, error: null };
   adapter.publishState(finished);
   await drainPromises();

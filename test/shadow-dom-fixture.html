@@ -12,6 +12,7 @@
 <button id="run">Run shadow DOM tests</button>
 <div id="fixture"></div>
 <pre id="results">Not run</pre>
+<script src="../src/divider-width.js"></script>
 <script src="../src/frontend/dom-tree.js"></script>
 <script src="../src/frontend/viewport.js"></script>
 <script src="../src/frontend/visibility.js"></script>
@@ -87,6 +88,33 @@
       await until(() => markers(late).length === 1, "new comment was not processed");
       assert(background(markers(late)[0]) === "rgb(23, 68, 255)", "new marker forgot the selected color");
     } finally { Haodu.setMarkerColor("#ff1744"); }
+  });
+
+  test("five width steps resize ordinary and shadow markers, preserve the default and require no new inference", async () => {
+    const root = shadow();
+    const ordinary = paragraph(fixture);
+    const nested = paragraph(root);
+    ordinary.style.fontSize = nested.style.fontSize = "18px";
+    await enable();
+    const existing = [markers(ordinary)[0], markers(nested)[0]];
+    const width = (marker) => parseFloat(getComputedStyle(marker, "::before").width);
+    await until(() => existing.every((marker) => width(marker) === 3), "step 2 did not retain the original 3px width at 18px text");
+    const count = inputs.length;
+    const original = [ordinary.textContent, nested.textContent];
+    try {
+      for (const [step, pixels] of [[1, 1.5], [2, 3], [3, 4.5], [4, 6], [5, 7.5]]) {
+        Haodu.setMarkerWidth(step);
+        assert(existing.every((marker) => width(marker) === pixels), `step ${step} has the wrong rendered width`);
+      }
+      await delay(450);
+      assert(inputs.length === count, "resizing triggered new inference");
+      assert(markers(ordinary)[0] === existing[0] && markers(nested)[0] === existing[1], "resizing replaced the markers");
+      assert(ordinary.textContent === original[0] && nested.textContent === original[1], "resizing changed the text");
+      const late = paragraph(root, "粗细调整之后新出现的评论文字");
+      late.style.fontSize = "18px";
+      await until(() => markers(late).length === 1, "new comment was not processed");
+      assert(width(markers(late)[0]) === 7.5, "new marker forgot the width setting");
+    } finally { Haodu.setMarkerWidth(2); }
   });
 
   test("replacing a processed title with identical text restores markers without any size or viewport change", async () => {

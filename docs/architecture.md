@@ -6,7 +6,7 @@
 
 ## 开关与页面状态
 
-Chrome 中文阅读辅助扩展。点击工具栏图标只打开弹出面板，面板内有「阅读辅助」开关和一条分隔线颜色色带。全局开关和颜色偏好保存在本地，刷新页面或重启浏览器后仍保留。页面在获得焦点时应用设置，后台标签页不会因设置变化而收到消息或开始处理。运行代码无需编译；发布时通过白名单复制和打包，只包含扩展运行所需文件。
+Chrome 中文阅读辅助扩展。点击工具栏图标只打开弹出面板，面板内有「阅读辅助」开关、分隔线颜色色带和五档粗细滑块。全局开关、颜色和粗细偏好保存在本地，刷新页面或重启浏览器后仍保留。页面在获得焦点时应用设置，后台标签页不会因设置变化而收到消息或开始处理。运行代码无需编译；发布时通过白名单复制和打包，只包含扩展运行所需文件。
 
 默认在 Chrome 中按 **Option + Shift + U**（macOS：⌥⇧U；其他平台为 **Alt + Shift + U**）可直接切换开关。快捷键使用独立的 `haodu-toggle` 命令，由后台的 `commands.onCommand` 处理，不打开面板。修改 manifest 后需重新加载扩展；实际绑定以 `chrome://extensions/shortcuts` 为准，也可在该页面修改。从旧版 `_execute_action` 命令升级时，应检查新命令的实际绑定。声明方式见 [Chrome 快捷键文档](https://developer.chrome.com/docs/extensions/reference/api/commands)。
 
@@ -16,7 +16,9 @@ Chrome 中文阅读辅助扩展。点击工具栏图标只打开弹出面板，�
 
 拖动色带时，面板立即发送颜色请求，后台按接收顺序保存，避免快速拖动或关闭面板丢失最终选择。色带以现有红色 `#ff1744` 为起点，沿完整色相环变化；仅保存整数色相偏移。调色不受 reader 忙碌锁限制，只更新当前页面已有标记上的颜色变量，不改写文本、不重新推理，也不因调色注入脚本。新增标记沿用当前颜色，普通 DOM 和 open Shadow DOM 使用相同规则；工具栏品牌图标及开关状态色保持不变。
 
-切回已经处理的页面时，同步当前全局开关和颜色。开关相同就保留原有标记和处理记录，即使页面在后台期间错过了关闭再开启也无需重做。新标签页在首次聚焦时处理，当前页面刷新后重新处理。后台页面只在下次聚焦时响应，没有向所有标签页广播、遍历后台页面或后台同步任务。
+粗细滑块保存 1–5 的整数档位，默认第二档。宽度为档位 × 1em / 12，第二档保持原来的 1em / 6；其余档位分别为原粗度的 0.5、1.5、2、2.5 倍。粗细和颜色共用后台保存队列，只更新自有标记的样式；新标记沿用当前设置，不重新切分原文。面板开启状态文字中的分隔线也同步预览粗细。
+
+切回已经处理的页面时，同步当前全局开关、颜色和粗细。开关相同就保留原有标记和处理记录，即使页面在后台期间错过了关闭再开启也无需重做。新标签页在首次聚焦时处理，当前页面刷新后重新处理。后台页面只在下次聚焦时响应，没有向所有标签页广播、遍历后台页面或后台同步任务。
 
 ## 核心流程
 
@@ -44,7 +46,7 @@ Chrome 中文阅读辅助扩展。点击工具栏图标只打开弹出面板，�
 | `src/frontend/content-changes.js` | 观察文档及读取时发现的 open shadow root 的文本和子节点变化；请求刷新，并在同步写入标记时暂停观察 |
 | `src/frontend/visibility.js` | `createVisibilityFilter(document, viewport)` 提供 `shouldSkipSubtree(element)` 和 `getVisibleArea(node)`；负责分支排除、隐藏判断及祖先溢出裁剪，样式缓存仅用于本次读取 |
 | `src/frontend/processed-text.js` | 独立记录已处理文本节点及其当前值、父节点；由 reader 在写入成功后记录、关闭或失败时重置 |
-| `src/frontend/write.js` | 校验源节点、插入标记及 shadow root 样式，返回成功处理的文本片段；`setMarkerColor()` 更新自有标记颜色，`clearMarkers()` 清理，包括已脱离文档的根 |
+| `src/frontend/write.js` | 校验源节点、插入标记及 shadow root 样式，返回成功处理的文本片段；`setMarkerColor()` / `setMarkerWidth()` 更新自有标记的颜色和粗细，`clearMarkers()` 清理，包括已脱离文档的根 |
 | `src/backend/chunker.js` | `process(texts)` 返回每段文本的 UTF-16 分隔位置；负责标点分句、词语保护和模型驱动的递归切分 |
 | `src/backend/inference.js` | 纯 JavaScript CNN 数值计算，只接受模型数据输入 |
 | `src/boundary-model-data.js` | 导出的模型结构、词表和权重 |
@@ -52,9 +54,10 @@ Chrome 中文阅读辅助扩展。点击工具栏图标只打开弹出面板，�
 | `src/inference-service.js` | 管理标准 Worker 生命周期、请求与响应对应、超时及错误 |
 | `src/start-reader.js` | 每页的通用装配入口：将 DOM 工具和适配器注入 reader，再连接控件 |
 | `src/start-inference.js` | 推理宿主的通用装配入口：创建服务、连接宿主消息 |
-| `src/platform/chrome/background.js` | Chrome 入口：保存全局开关和颜色，聚焦及当前页面加载完成时检查状态，按需注入脚本，转发推理消息并创建隐藏页面 |
-| `src/popup.html`、`src/popup.css`、`src/platform/chrome/popup.js` | 工具栏弹出面板、开关与颜色偏好的状态同步 |
+| `src/platform/chrome/background.js` | Chrome 入口：保存全局开关、颜色和粗细，聚焦及当前页面加载完成时检查状态，按需注入脚本，转发推理消息并创建隐藏页面 |
+| `src/popup.html`、`src/popup.css`、`src/platform/chrome/popup.js` | 工具栏弹出面板、开关与分隔线外观偏好的状态同步 |
 | `src/divider-color.js` | 面板和后台共用的色相校验、颜色换算和连续色带 |
+| `src/divider-width.js` | 共用的五档粗细校验和默认值 |
 | `src/platform/chrome/content.js` | 将 Chrome 消息转换成 `reader.toggle(flag)` / `status()`，转发推理请求与状态通知 |
 | `src/platform/chrome/inference.js` | 提供 Worker 地址，将 Chrome 消息连接到推理服务 |
 | `src/platform/interfaces.js` | 适配器的 JSDoc 接口说明，无运行时代码 |
@@ -118,7 +121,7 @@ adapter.connect(reader);
 
 适配器只翻译接口：将设置消息传给 `reader.toggle(flag)`，将 `PING` 转成 `status()`，转发整个 `texts` 数组并提供分隔线样式地址。`publishState()` 仅发送通知，不再触发任何 reader 控制操作。DOM 引用始终留在页面里。当前启动代码明确加载 Chrome 适配器；其他浏览器可提供同一个应用接口的实现。
 
-后台使用 `chrome.storage.local` 只保存 `{ enabled, dividerHue }`，按钮以全局开关为准，页面错误单独显示。标签页切换、浏览器窗口聚焦及当前标签页加载完成时，只查询当前窗口的活动标签页；`PING` 检查页面是否已有 reader，随后通过 `APPLY_SETTING` 传递目标布尔值和颜色。reader 负责忽略相同状态和忙碌时的开关请求。若聚焦时 reader 仍在处理，开关同步请求会被忽略，颜色仍会更新；任务完成后不会补做开关同步，下次空闲时的聚焦检查再应用全局状态。当前页面忙碌时，开关操作不响应；其他后台页面不会被查询。
+后台使用 `chrome.storage.local` 只保存 `{ enabled, dividerHue, dividerWidth }`，按钮以全局开关为准，页面错误单独显示。标签页切换、浏览器窗口聚焦及当前标签页加载完成时，只查询当前窗口的活动标签页；`PING` 检查页面是否已有 reader，随后通过 `APPLY_SETTING` 传递目标布尔值、颜色和粗细。reader 负责忽略相同状态和忙碌时的开关请求。若聚焦时 reader 仍在处理，开关同步请求会被忽略，颜色和粗细仍会更新；任务完成后不会补做开关同步，下次空闲时的聚焦检查再应用全局状态。当前页面忙碌时，开关操作不响应；其他后台页面不会被查询。
 
 后台同时只做一次活动页检查。检查期间若再次聚焦或页面刷新完成，只设一个 `checkPending` 标志；当前检查结束后重新查询最新活动页和当前文档，不保存中间标签页队列。旧文档的延迟状态回复不再让新文档错过检查。
 
