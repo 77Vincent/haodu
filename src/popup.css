@@ -4,7 +4,7 @@
   --text: #1d2d35;
   --muted: #66717a;
   --focus: hsl(234, 100%, 60%);
-  --disabled: #8b9098;
+  --disabled: #a8adb4;
   color-scheme: light dark;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
