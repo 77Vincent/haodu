@@ -1,15 +1,21 @@
 :root {
+  /* Match the site's Doks palette and reading indicator without loading its CSS. */
+  --surface: #fff;
+  --text: #1d2d35;
+  --focus: hsl(234, 100%, 60%);
+  --enabled: #ff1744;
+  --disabled: #8b9098;
   color-scheme: light dark;
-  font-family: system-ui, sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 body {
-  width: 220px;
+  width: 240px;
   margin: 0;
-  padding: 12px;
+  padding: 6px;
   box-sizing: border-box;
-  background: #fff;
-  color: #202124;
+  background: var(--surface);
+  color: var(--text);
 }
 
 #reader-toggle {
@@ -18,19 +24,20 @@ body {
   justify-content: space-between;
   gap: 24px;
   width: 100%;
-  min-height: 44px;
-  padding: 8px;
+  margin: 6px 0px;
   border: 0;
   border-radius: 8px;
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 14px;
+  font-size: 16px;
+  /* line-height: 1.5; */
+  text-align: start;
   cursor: pointer;
 }
 
 #reader-toggle:focus-visible {
-  outline: 2px solid #ff1744;
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -38,45 +45,65 @@ body {
   cursor: default;
 }
 
+#reader-toggle:disabled .switch-track {
+  opacity: 0.5;
+}
+
 .switch-track {
-  flex: 0 0 40px;
-  height: 24px;
-  border-radius: 12px;
-  background: #767676;
+  flex: 0 0 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--disabled);
+  transition: background-color 150ms ease;
 }
 
 .switch-track::before {
   content: "";
   display: block;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   margin: 3px;
   border-radius: 50%;
   background: #fff;
   box-shadow: 0 1px 2px #0003;
+  transition: transform 150ms ease;
 }
 
 #reader-toggle[aria-checked="true"] .switch-track {
-  background: #ff1744;
+  background: var(--enabled);
 }
 
 #reader-toggle[aria-checked="true"] .switch-track::before {
-  transform: translateX(16px);
+  transform: translateX(18px);
 }
 
 @media (prefers-color-scheme: dark) {
-  body {
-    background: #202124;
-    color: #f1f3f4;
+  :root {
+    --surface: hsl(224, 10%, 10%);
+    --text: hsl(224, 6%, 77%);
+    --focus: hsl(224, 100%, 85%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch-track,
+  .switch-track::before {
+    transition: none;
   }
 }
 
 @media (forced-colors: active) {
   .switch-track {
-    outline: 1px solid ButtonText;
+    forced-color-adjust: none;
+    background: ButtonText;
+  }
+
+  #reader-toggle[aria-checked="true"] .switch-track {
+    background: Highlight;
   }
 
   .switch-track::before {
-    background: ButtonText;
+    background: Canvas;
+    box-shadow: none;
   }
 }

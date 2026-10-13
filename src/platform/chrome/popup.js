@@ -1,12 +1,14 @@
 "use strict";
 
 const toggle = document.getElementById("reader-toggle");
+const label = document.getElementById("reader-toggle-label");
 let enabled = false;
 let pending = false;
 let revision = 0;
 
 function render() {
   toggle.setAttribute("aria-checked", String(enabled));
+  label.textContent = enabled ? "开启" : "关闭";
 }
 
 // Subscribe before the first read so a shortcut change cannot be lost
