@@ -67,9 +67,11 @@ test("the popup reads without toggling and prevents duplicate requests until a c
   const popup = createPopup();
   assert.equal(popup.requests[0].type, "HAODU_GET_ENABLED");
   assert.equal(popup.toggle.disabled, true);
-  popup.requests[0].resolve({ enabled: false });
+  popup.requests[0].resolve({ enabled: false, dividerHue: 180, dividerWidth: 4 });
   await drain();
   assert.equal(popup.toggle.disabled, false);
+  assert.equal(popup.hue.disabled, true);
+  assert.equal(popup.width.disabled, true);
   popup.click();
   popup.click();
   assert.equal(popup.requests.length, 2);
@@ -81,17 +83,28 @@ test("the popup reads without toggling and prevents duplicate requests until a c
   await drain();
   assert.equal(popup.toggle.checked, "false");
   assert.equal(popup.toggle.disabled, false);
+  assert.equal(popup.hue.disabled, true);
+  assert.equal(popup.width.disabled, true);
   popup.click();
   popup.requests[2].resolve({ enabled: true });
   await drain();
   assert.equal(popup.toggle.checked, "true");
   assert.equal(popup.label.textContent, "开启");
+  assert.equal(popup.hue.disabled, false);
+  assert.equal(popup.width.disabled, false);
+  assert.equal(popup.hue.value, "180");
+  assert.equal(popup.width.value, "4");
   popup.click();
   assert.equal(popup.requests[3].enabled, false);
   popup.requests[3].resolve({ enabled: false });
   await drain();
   assert.equal(popup.toggle.checked, "false");
   assert.equal(popup.label.textContent, "关闭");
+  assert.equal(popup.hue.disabled, true);
+  assert.equal(popup.width.disabled, true);
+  assert.equal(popup.hue.value, "180");
+  assert.equal(popup.width.value, "4");
+  assert.equal(popup.requests.length, 4, "toggling must not rewrite appearance settings");
 });
 
 test("width defaults to step two and restores saved steps without writing on open", async () => {
@@ -150,7 +163,7 @@ test("the color band restores a saved hue and does not save or toggle merely on 
   popup.requests[0].resolve({ enabled: false, dividerHue: 0 });
   await drain();
   assert.equal(popup.hue.value, "180", "a newer storage event beats a stale initial reply");
-  assert.equal(popup.hue.disabled, false);
+  assert.equal(popup.hue.disabled, true);
   assert.equal(popup.requests.length, 1);
   popup.changeHue(undefined);
   assert.equal(popup.hue.value, "0");
@@ -208,9 +221,13 @@ test("a shortcut lookup failure leaves the hint hidden and the switch usable", a
 test("storage changes from shortcuts supersede stale initial and change replies", async () => {
   const popup = createPopup();
   popup.change(true);
+  assert.equal(popup.hue.disabled, true, "wait for saved settings before allowing edits");
+  assert.equal(popup.width.disabled, true);
   popup.requests[0].resolve({ enabled: false });
   await drain();
   assert.equal(popup.toggle.checked, "true");
+  assert.equal(popup.hue.disabled, false);
+  assert.equal(popup.width.disabled, false);
   popup.change(false, "sync");
   assert.equal(popup.toggle.checked, "true");
   popup.click();
@@ -223,6 +240,40 @@ test("storage changes from shortcuts supersede stale initial and change replies"
   popup.change(false);
   assert.equal(popup.toggle.checked, "false");
   assert.equal(popup.label.textContent, "关闭");
+  assert.equal(popup.hue.disabled, true);
+  assert.equal(popup.width.disabled, true);
+
+  popup.click();
+  popup.change(true);
+  popup.change(false);
+  popup.requests[2].resolve({ enabled: true });
+  await drain();
+  assert.equal(popup.hue.disabled, true, "a stale reply cannot enable sliders after a shortcut turns off");
+  assert.equal(popup.width.disabled, true);
+});
+
+test("appearance saves completing after switch-off preserve values without enabling sliders", async () => {
+  const popup = createPopup();
+  popup.requests[0].resolve({ enabled: true });
+  await drain();
+  popup.inputHue(180);
+  popup.inputWidth(4);
+  popup.change(false);
+  popup.changeHue(180);
+  popup.changeWidth(4);
+  popup.requests[1].resolve({ dividerHue: 180 });
+  popup.requests[2].resolve({ dividerWidth: 4 });
+  await drain();
+  assert.equal(popup.hue.disabled, true);
+  assert.equal(popup.width.disabled, true);
+  assert.equal(popup.hue.value, "180");
+  assert.equal(popup.width.value, "4");
+  popup.change(true);
+  assert.equal(popup.hue.disabled, false);
+  assert.equal(popup.width.disabled, false);
+  assert.equal(popup.hue.value, "180");
+  assert.equal(popup.width.value, "4");
+  assert.equal(popup.requests.length, 3);
 });
 
 test("a messaging failure preserves the confirmed state without an unhandled rejection", async () => {
@@ -234,12 +285,17 @@ test("a messaging failure preserves the confirmed state without an unhandled rej
   await drain();
   assert.equal(popup.toggle.checked, "true");
   assert.equal(popup.toggle.disabled, false);
+  assert.equal(popup.hue.disabled, false);
+  assert.equal(popup.width.disabled, false);
   assert.equal(popup.warnings.length, 1);
   assert.match(popup.toggle.title, /重新打开/u);
 
   const failedRead = createPopup();
+  failedRead.change(true);
   failedRead.requests[0].resolve(undefined);
   await drain();
   assert.equal(failedRead.toggle.disabled, true);
+  assert.equal(failedRead.hue.disabled, true);
+  assert.equal(failedRead.width.disabled, true);
   assert.equal(failedRead.warnings.length, 1);
 });

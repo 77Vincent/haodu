@@ -169,6 +169,7 @@ body {
 
 #divider-hue:disabled,
 #divider-width:disabled {
+  filter: grayscale(0.4);
   opacity: 0.5;
   cursor: default;
 }

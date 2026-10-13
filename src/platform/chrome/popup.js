@@ -15,6 +15,7 @@ let colorRevision = 0;
 let colorEdit = 0;
 let colorPending = 0;
 let enabled = false;
+let settingsLoaded = false;
 let pending = false;
 let revision = 0;
 document.body.style.setProperty("--divider-spectrum", gradient);
@@ -85,6 +86,8 @@ async function saveWidth() {
 function render() {
   toggle.setAttribute("aria-checked", String(enabled));
   label.textContent = enabled ? "开启" : "关闭";
+  hueSlider.disabled = !settingsLoaded || !enabled;
+  widthSlider.disabled = !settingsLoaded || !enabled;
 }
 
 async function showShortcut() {
@@ -133,15 +136,14 @@ async function requestState(next) {
       : { type: "HAODU_SET_ENABLED", enabled: next });
     if (typeof response?.enabled !== "boolean") throw new Error(response?.error || "State unavailable");
     if (revision === startRevision) enabled = response.enabled;
-    render();
     if (next === undefined) {
       if (colorRevision === startColorRevision) confirmedHue = normalizeHue(response.dividerHue);
       renderHue(confirmedHue);
-      hueSlider.disabled = false;
       if (widthRevision === startWidthRevision) confirmedWidth = normalizeWidth(response.dividerWidth);
       renderWidth(confirmedWidth);
-      widthSlider.disabled = false;
+      settingsLoaded = true;
     }
+    render();
     toggle.title = "";
     toggle.disabled = false;
   } catch (error) {
