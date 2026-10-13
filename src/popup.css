@@ -73,6 +73,7 @@ body {
   height: 24px;
   border-radius: 2px;
   background: var(--disabled);
+  box-shadow: inset 0 1px 1.5px #0002, inset 0 2px 3px #0001;
   transition: background-color 150ms ease;
 }
 
@@ -121,12 +122,13 @@ body {
 .switch-track::before {
   content: "";
   display: block;
-  /* A flat vertical bar echoes the divider in the logo. */
+  /* A vertical bar echoes the divider in the logo. */
   width: 12px;
   border-radius: 1px;
   height: 18px;
   margin: 3px;
   background: #fff;
+  box-shadow: 0 1px 1.5px #0002, 0 2px 3px #0001;
   transition: transform 150ms ease;
 }
 
@@ -163,6 +165,7 @@ body {
   .switch-track {
     forced-color-adjust: none;
     background: ButtonText;
+    box-shadow: none;
   }
 
   #reader-toggle[aria-checked="true"] .switch-track {
@@ -171,5 +174,6 @@ body {
 
   .switch-track::before {
     background: Canvas;
+    box-shadow: none;
   }
 }
