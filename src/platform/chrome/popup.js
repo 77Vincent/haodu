@@ -11,6 +11,18 @@ function render() {
   label.textContent = enabled ? "开启" : "关闭";
 }
 
+async function showShortcut() {
+  try {
+    const commands = await chrome.commands.getAll();
+    document.getElementById("reader-shortcut").textContent =
+      commands.find((command) => command.name === "haodu-toggle")?.shortcut || "未设置";
+    document.getElementById("shortcut-hint").hidden = false;
+  } catch (error) {
+    // A shortcut lookup failure must not prevent the switch from working.
+    console.warn("[haodu] Could not read shortcut:", error.message);
+  }
+}
+
 // Subscribe before the first read so a shortcut change cannot be lost
 // while the popup is loading. Only the background writes the global setting.
 chrome.storage.onChanged.addListener((changes, area) => {
@@ -46,3 +58,4 @@ async function requestState(next) {
 
 toggle.addEventListener("click", () => { void requestState(!enabled); });
 void requestState();
+void showShortcut();

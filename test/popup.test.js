@@ -6,11 +6,13 @@ const vm = require("node:vm");
 
 const drain = () => new Promise((resolve) => setImmediate(resolve));
 
-function createPopup() {
+function createPopup({ shortcut = "Alt+Shift+U", shortcutError = false } = {}) {
   let click, storageChanged;
   const requests = [];
   const warnings = [];
   const label = { textContent: "关闭" };
+  const shortcutText = { textContent: "" };
+  const shortcutHint = { hidden: true };
   const toggle = {
     disabled: true, title: "", checked: "false",
     setAttribute(name, value) { assert.equal(name, "aria-checked"); this.checked = value; },
@@ -19,11 +21,17 @@ function createPopup() {
   const context = vm.createContext({
     document: { getElementById: (id) => {
       if (id === "reader-toggle-label") return label;
+      if (id === "reader-shortcut") return shortcutText;
+      if (id === "shortcut-hint") return shortcutHint;
       assert.equal(id, "reader-toggle");
       return toggle;
     } },
     console: { warn: (...args) => warnings.push(args) },
     chrome: {
+      commands: { async getAll() {
+        if (shortcutError) throw new Error("Commands unavailable");
+        return [{ name: "other-command", shortcut: "Ctrl+Shift+X" }, { name: "haodu-toggle", shortcut }];
+      } },
       storage: { onChanged: { addListener: (callback) => { storageChanged = callback; } } },
       runtime: { sendMessage: (request) => new Promise((resolve, reject) => {
         requests.push({ ...request, resolve, reject });
@@ -31,7 +39,7 @@ function createPopup() {
     },
   });
   vm.runInContext(readFileSync(join(__dirname, "../src/platform/chrome/popup.js"), "utf8"), context);
-  return { toggle, label, requests, warnings, click: () => click(),
+  return { toggle, label, shortcutText, shortcutHint, requests, warnings, click: () => click(),
     change(value, area = "local") { storageChanged({ enabled: { newValue: value } }, area); },
   };
 }
@@ -65,6 +73,29 @@ test("the popup reads without toggling and prevents duplicate requests until a c
   await drain();
   assert.equal(popup.toggle.checked, "false");
   assert.equal(popup.label.textContent, "关闭");
+});
+
+test("the popup shows the actual shortcut, including custom, macOS and cleared bindings", async () => {
+  for (const shortcut of ["Alt+Shift+U", "Ctrl+Shift+Y", "⌥⇧U", ""]) {
+    const popup = createPopup({ shortcut });
+    assert.equal(popup.shortcutHint.hidden, true);
+    await drain();
+    assert.equal(popup.shortcutText.textContent, shortcut || "未设置");
+    assert.equal(popup.shortcutHint.hidden, false);
+    assert.equal(popup.requests.length, 1, "reading the shortcut must not toggle the reader");
+  }
+});
+
+test("a shortcut lookup failure leaves the hint hidden and the switch usable", async () => {
+  const popup = createPopup({ shortcutError: true });
+  popup.requests[0].resolve({ enabled: true });
+  await drain();
+  assert.equal(popup.shortcutHint.hidden, true);
+  assert.equal(popup.toggle.disabled, false);
+  assert.equal(popup.toggle.checked, "true");
+  assert.equal(popup.warnings.length, 1);
+  popup.click();
+  assert.equal(popup.requests[1].enabled, false);
 });
 
 test("storage changes from shortcuts supersede stale initial and change replies", async () => {

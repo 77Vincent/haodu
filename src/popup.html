@@ -10,7 +10,10 @@
   <body>
     <button id="reader-toggle" type="button" role="switch" aria-label="阅读辅助" aria-checked="false" disabled>
       <span id="reader-toggle-label">关闭</span>
-      <span class="switch-track" aria-hidden="true"></span>
+      <span class="switch-controls">
+        <span id="shortcut-hint" class="shortcut-hint" hidden><kbd id="reader-shortcut"></kbd></span>
+        <span class="switch-track" aria-hidden="true"></span>
+      </span>
     </button>
   </body>
 </html>
