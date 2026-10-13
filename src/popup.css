@@ -2,7 +2,7 @@
   /* Match the site's Doks palette and reading indicator without loading its CSS. */
   --surface: #fff;
   --text: #1d2d35;
-  --muted: #66717a;
+  --muted: #818b93;
   --focus: hsl(234, 100%, 60%);
   --disabled: #a8adb4;
   --control-outline: rgb(0 0 0 / 8%);
