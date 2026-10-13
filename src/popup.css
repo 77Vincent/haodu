@@ -27,7 +27,7 @@ body {
   width: 100%;
   margin: 6px 0px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 0;
   background: transparent;
   color: inherit;
   font: inherit;
@@ -71,7 +71,6 @@ body {
 .switch-track {
   flex: 0 0 44px;
   height: 26px;
-  border-radius: 999px;
   background: var(--disabled);
   transition: background-color 150ms ease;
 }
@@ -121,12 +120,11 @@ body {
 .switch-track::before {
   content: "";
   display: block;
-  width: 20px;
+  /* A flat vertical bar echoes the divider in the logo. */
+  width: 10px;
   height: 20px;
   margin: 3px;
-  border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 2px #0003;
   transition: transform 150ms ease;
 }
 
@@ -135,7 +133,7 @@ body {
 }
 
 #reader-toggle[aria-checked="true"] .switch-track::before {
-  transform: translateX(18px);
+  transform: translateX(28px);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -171,6 +169,5 @@ body {
 
   .switch-track::before {
     background: Canvas;
-    box-shadow: none;
   }
 }
