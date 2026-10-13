@@ -101,11 +101,11 @@ body {
 #divider-hue::-webkit-slider-thumb {
   appearance: none;
   box-sizing: border-box;
-  width: 12px;
-  height: 18px;
-  margin-top: -3px;
+  width: 13px;
+  height: 20px;
+  margin-top: -5px;
   border: 2px solid #fff;
-  border-radius: 1px;
+  border-radius: 2px;
   background: var(--selected-divider-color, #ff1744);
   box-shadow: 0 1px 1.5px #0003, 0 2px 3px #0002;
 }
