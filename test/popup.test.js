@@ -26,7 +26,7 @@ function createPopup({ shortcut = "Alt+Shift+U", shortcutError = false } = {}) {
   };
   const context = vm.createContext({
     document: { body, getElementById: (id) => {
-      if (id === "reader-toggle-label") return label;
+      if (id === "reader-toggle-state") return label;
       if (id === "reader-shortcut") return shortcutText;
       if (id === "shortcut-hint") return shortcutHint;
       if (id === "divider-hue") return hue;

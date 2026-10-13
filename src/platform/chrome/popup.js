@@ -1,7 +1,7 @@
 "use strict";
 
 const toggle = document.getElementById("reader-toggle");
-const label = document.getElementById("reader-toggle-label");
+const label = document.getElementById("reader-toggle-state");
 const hueSlider = document.getElementById("divider-hue");
 const { normalizeHue, validHue, colorForHue, gradient } = Haodu.dividerColor;
 let confirmedHue = 0;

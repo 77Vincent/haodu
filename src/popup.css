@@ -37,6 +37,20 @@ body {
   cursor: pointer;
 }
 
+#reader-toggle-label {
+  white-space: nowrap;
+}
+
+#reader-toggle[aria-checked="true"] #reader-toggle-state::before {
+  content: "";
+  display: inline-block;
+  width: calc(1em / 6);
+  height: 1em;
+  margin: 0 0.08em;
+  vertical-align: -0.15em;
+  background: var(--selected-divider-color, #ff1744);
+}
+
 #reader-toggle:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
@@ -164,6 +178,10 @@ body {
 }
 
 @media (forced-colors: active) {
+  #reader-toggle[aria-checked="true"] #reader-toggle-state::before {
+    background: CanvasText;
+  }
+
   /* Dividers use the system palette in this mode; keep the saved hue intact. */
   #divider-hue {
     display: none;
