@@ -11,7 +11,7 @@ const drain = () => new Promise((resolve) => setImmediate(resolve));
 
 function createBackground(saved = {}) {
   let click, menuClick, message, navigate, activate, focusWindow, startup, install;
-  let shortcut = "Alt+Shift+R";
+  let shortcut = "Alt+Shift+U";
   let menuCreations = 0;
   const menus = new Map();
   let activeId = null;
@@ -251,18 +251,18 @@ test("the toolbar menu and icon share the global switch and retain one menu acro
   background.addTab(2);
   await drain();
   const menu = () => background.menus.get("haodu-toggle");
-  assert.equal(menu().title, "启用（Alt+Shift+R）");
+  assert.equal(menu().title, "启用（Alt+Shift+U）");
   assert.deepEqual(Array.from(menu().contexts), ["action"]);
   await background.menuClick(1);
   assert.equal(background.saved.enabled, true);
   assert.equal(background.pages.get(1).reader.status().enabled, true);
   assert.equal(background.pages.has(2), false);
-  assert.equal(menu().title, "关闭（Alt+Shift+R）");
+  assert.equal(menu().title, "关闭（Alt+Shift+U）");
   await background.restartWorker();
-  assert.equal(menu().title, "关闭（Alt+Shift+R）");
+  assert.equal(menu().title, "关闭（Alt+Shift+U）");
   assert.equal(background.menuCreations(), 1);
   await background.click(1);
-  assert.equal(menu().title, "启用（Alt+Shift+R）");
+  assert.equal(menu().title, "启用（Alt+Shift+U）");
   assert.equal(background.pages.get(1).reader.status().enabled, false);
   await background.menuClick(1, true);
   assert.equal(background.saved.enabled, true);
@@ -565,7 +565,7 @@ test("protected pages are skipped before contacting or injecting into the page",
     background.badges.set(1, "ERR");
     await background.focus(1);
     assert.equal(background.badges.get(1), "", url);
-    assert.equal(background.titles.get(1), "好读（Alt+Shift+R / 点击关闭）", url);
+    assert.equal(background.titles.get(1), "好读（Alt+Shift+U / 点击关闭）", url);
   }
   assert.equal(background.commands.length, 0);
   assert.equal(background.cssInjections.length, 0);

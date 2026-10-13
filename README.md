@@ -28,7 +28,7 @@ npm run release:extension
 2. 点击**加载已解压的扩展程序**，选择生成的 `dist/extension/` 目录。
 3. 打开中文网页，点击工具栏中的好读图标开启辅助，再次点击关闭；也可右键图标，选择「启用」或「关闭」。红色表示开启，灰色表示关闭。
 
-快捷键：macOS 使用 **Shift + Option + R**，其他平台使用 **Shift + Alt + R**。可在 `chrome://extensions/shortcuts` 修改。
+默认快捷键：macOS 使用 **Option + Shift + U**（⌥⇧U），其他平台使用 **Alt + Shift + U**。可在 `chrome://extensions/shortcuts` 查看或修改实际绑定。
 
 开关状态会在切换网页、刷新页面及重启浏览器后保留。使用本地 HTML 文件时，需要在扩展设置中开启“允许访问文件网址”。
 

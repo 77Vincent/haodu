@@ -9,7 +9,7 @@ test("the keyboard shortcut invokes the toolbar action without a popup", () => {
   const manifest = JSON.parse(read("manifest.json"));
   assert.equal(manifest.action.default_popup, undefined);
   assert.deepEqual(manifest.commands, {
-    _execute_action: { suggested_key: "Alt+Shift+R" },
+    _execute_action: { suggested_key: "Alt+Shift+U" },
   });
   assert.equal(manifest.content_scripts, undefined);
   assert.equal(manifest.permissions.includes("storage"), true);

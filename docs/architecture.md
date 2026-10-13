@@ -8,7 +8,7 @@
 
 Chrome 中文阅读辅助扩展。只有一个全局工具栏开关，保存在本地，刷新页面或重启浏览器后仍保留。页面在获得焦点时应用开关，后台标签页不会因开关变化而收到消息或开始处理。运行代码无需编译；发布时通过白名单复制和打包，只包含扩展运行所需文件。
 
-在 Chrome 中按 **Shift + Option + R**（macOS；其他平台为 **Shift + Alt + R**）可切换开关。快捷键通过 manifest 的 `_execute_action` 触发同一个工具栏点击处理函数，处理中同样不响应，无需额外事件监听。重新加载扩展后生效；可在 `chrome://extensions/shortcuts` 查看或修改绑定。声明方式见 [Chrome 快捷键文档](https://developer.chrome.com/docs/extensions/reference/api/commands#action-commands)。
+默认在 Chrome 中按 **Option + Shift + U**（macOS：⌥⇧U；其他平台为 **Alt + Shift + U**）可切换开关。快捷键通过 manifest 的 `_execute_action` 触发同一个工具栏点击处理函数，处理中同样不响应，无需额外事件监听。修改 manifest 后需重新加载扩展；实际绑定以 `chrome://extensions/shortcuts` 为准，也可在该页面修改。声明方式见 [Chrome 快捷键文档](https://developer.chrome.com/docs/extensions/reference/api/commands#action-commands)。
 
 图标悬停提示和右键菜单显示当前开关操作及 Chrome 实际配置的快捷键。悬停提示合并为一行「好读（按键组合 / 点击开启）」或「好读（按键组合 / 点击关闭）」，保留 Chrome 返回的按键符号。快捷键在后台启动及检查当前标签页时读取，修改后切回网页即可更新；未绑定或浏览器未返回绑定时只显示点击操作，不回退到默认建议值。悬停提示在错误状态下优先显示错误信息。
 
