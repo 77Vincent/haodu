@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "好读",
   "version": "0.2.0",
-  "minimum_chrome_version": "109",
+  "minimum_chrome_version": "113",
   "description": "中文阅读辅助，按人类习惯，将长句划分为短句，让阅读更轻松。",
   "homepage_url": "https://haodu.site/",
   "permissions": ["offscreen", "scripting", "storage"],

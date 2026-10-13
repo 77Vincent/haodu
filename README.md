@@ -16,7 +16,7 @@
 
 ## 安装使用
 
-从源码安装需要 Node.js 24.13+ 和 `zip`（macOS 自带）。
+需要 Chrome 113 或更新版本。从源码安装还需要 Node.js 24.13+ 和 `zip`（macOS 自带）。
 
 ```sh
 git clone https://github.com/77Vincent/haodu.git

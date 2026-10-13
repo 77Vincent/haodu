@@ -10,3 +10,11 @@
   pointer-events: none !important;
   content: "" !important;
 }
+
+@media (forced-colors: active) {
+  .haodu-divider::before {
+    /* System colors survive forced-color adjustment. Keep the separator
+       visible against Canvas without changing the saved color preference. */
+    background-color: CanvasText !important;
+  }
+}

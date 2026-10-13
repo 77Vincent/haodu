@@ -156,6 +156,11 @@ body {
 }
 
 @media (forced-colors: active) {
+  /* Dividers use the system palette in this mode; keep the saved hue intact. */
+  #divider-hue {
+    display: none;
+  }
+
   .switch-track {
     forced-color-adjust: none;
     background: ButtonText;
