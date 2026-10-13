@@ -236,8 +236,11 @@
   }
 
   function chunkByModel(text, segmenter, minConfidence) {
+    // Only adjacent source Han characters can form a divider. Mixed-language
+    // notices and isolated names should not run a CNN with no possible cut.
+    if (visualLength(text) < MIN_SPLIT_VISUAL_LENGTH || !/\p{Script=Han}{2}/u.test(text)) return [text];
     const tokens = tokenizeContext(text);
-    if (tokens.length < 2 || visualLength(text) < MIN_SPLIT_VISUAL_LENGTH) return [text];
+    if (tokens.length < 2) return [text];
     if (!modelBackend || typeof modelBackend.scoreTokens !== "function") {
       throw new Error("haodu model backend must load before the chunker");
     }
@@ -266,6 +269,18 @@
         )),
     );
 
+    function isAllowedGap(index) {
+      const boundary = tokens[index + 1].index;
+      return boundary > tokens[index].index && hanBoundaryOffsets.has(boundary) &&
+        !protectedBoundaryOffsets.has(boundary);
+    }
+    // Count structurally valid gaps once, including word protection. A child
+    // without any can stop before inference, regardless of its visual length.
+    const allowedGapCounts = new Uint32Array(tokens.length);
+    for (let index = 1; index < tokens.length; index += 1) {
+      allowedGapCounts[index] = allowedGapCounts[index - 1] + Number(isAllowedGap(index - 1));
+    }
+
     function scoreRange(start, end) {
       const scores = scoreTokenWindows(tokens.slice(start, end).map((token) => token.segment));
       // Combine windows before normalization, including any short final window.
@@ -278,7 +293,8 @@
       const length = visualOffsets[end] - visualOffsets[start];
       if (
         end - start < 2 ||
-        length < MIN_SPLIT_VISUAL_LENGTH
+        length < MIN_SPLIT_VISUAL_LENGTH ||
+        allowedGapCounts[end - 1] === allowedGapCounts[start]
       ) {
         ranges.push({ start, end });
         continue;
@@ -294,9 +310,7 @@
       const selected = selectBestBoundary(
         scores,
         (index) => (requiredConfidence === 0 || confidence[index] > requiredConfidence) &&
-          tokens[start + index + 1].index > tokens[start + index].index &&
-          hanBoundaryOffsets.has(tokens[start + index + 1].index) &&
-          !protectedBoundaryOffsets.has(tokens[start + index + 1].index),
+          isAllowedGap(start + index),
       );
       const boundaryAfter = selected === null ? null : selected + start;
       if (boundaryAfter === null) {

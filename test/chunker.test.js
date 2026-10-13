@@ -21,6 +21,31 @@ function withModel(scoreTokens, inputRepresentation = "unicode-context-v1") {
   return context.HaoduChunker;
 }
 
+test("long notices without legal Han gaps skip inference, including protected names", () => {
+  const chunker = withModel(() => { throw new Error("no legal gap can use these scores"); });
+  const english = "mentioned you in the conversation about the upcoming release meeting and would like you to review the latest document.";
+  for (const text of [english, `王 ${english}`, `王 ${english} 明`, `张三 ${english}`]) {
+    assert.ok(chunker.visualLength(text) >= 13);
+    assert.deepEqual(Array.from(chunker.process([text])[0]), []);
+  }
+});
+
+test("recursive children with no legal gap skip inference without changing normalization", () => {
+  const english = " mentioned you in the conversation about the upcoming release meeting and would like you to review the latest document.";
+  const text = `甲乙${english}`;
+  const inputs = [];
+  const chunker = withModel((tokens) => {
+    inputs.push(tokens.join(""));
+    return tokens.slice(1).map((_, index) => index === 0 ? 100 : -100);
+  });
+  assert.deepEqual(Array.from(chunker.chunkText(text, { segmenter: null })), ["甲", `乙${english}`]);
+  assert.deepEqual(inputs, [text]);
+
+  const dominated = withModel((tokens) => tokens.slice(1).map((_, index) => index === 2 ? 100 : 0));
+  assert.deepEqual(Array.from(dominated.chunkText(text, { segmenter: null })), [text],
+    "an invalid gap still contributes to softmax; never renormalize only legal gaps");
+});
+
 test("context model receives punctuation and numbers without cutting inside times", () => {
   const calls = [];
   const chunker = withModel((tokens) => {
