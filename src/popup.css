@@ -104,10 +104,10 @@ body {
   width: 12px;
   height: 18px;
   margin-top: -3px;
-  border: 0;
+  border: 2px solid #fff;
   border-radius: 1px;
-  background: #fff;
-  box-shadow: 0 1px 1.5px #0002, 0 2px 3px #0001;
+  background: var(--selected-divider-color, #ff1744);
+  box-shadow: 0 1px 1.5px #0003, 0 2px 3px #0002;
 }
 
 #divider-hue:focus-visible {
