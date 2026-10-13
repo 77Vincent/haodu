@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>好读</title>
     <link rel="stylesheet" href="popup.css">
+    <script src="divider-color.js" defer></script>
     <script src="platform/chrome/popup.js" defer></script>
   </head>
   <body>
@@ -15,5 +16,7 @@
         <span class="switch-track" aria-hidden="true"></span>
       </span>
     </button>
+    <input id="divider-hue" type="range" min="0" max="360" step="1" value="0"
+      aria-label="分隔线颜色" title="拖动调整分隔线颜色" disabled>
   </body>
 </html>

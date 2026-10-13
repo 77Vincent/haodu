@@ -5,7 +5,7 @@
   height: 1em !important;
   margin: 0 0.08em !important;
   border: 0 !important;
-  background-color: #ff1744 !important;
+  background-color: var(--haodu-divider-color, #ff1744) !important;
   vertical-align: -0.15em !important;
   pointer-events: none !important;
   content: "" !important;

@@ -16,6 +16,7 @@ const files = [
   'src/app/reader.js',
   'src/backend/chunker.js', 'src/backend/inference.js', 'src/boundary-model-data.js',
   'src/content.css',
+  'src/divider-color.js',
   'src/frontend/content-changes.js', 'src/frontend/dom-tree.js',
   'src/frontend/processed-text.js', 'src/frontend/read.js',
   'src/frontend/viewport.js', 'src/frontend/visibility.js', 'src/frontend/write.js',

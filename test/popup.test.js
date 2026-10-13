@@ -7,22 +7,29 @@ const vm = require("node:vm");
 const drain = () => new Promise((resolve) => setImmediate(resolve));
 
 function createPopup({ shortcut = "Alt+Shift+U", shortcutError = false } = {}) {
-  let click, storageChanged;
+  let click, storageChanged, hueInput;
   const requests = [];
   const warnings = [];
   const label = { textContent: "关闭" };
   const shortcutText = { textContent: "" };
   const shortcutHint = { hidden: true };
+  const hue = {
+    value: "0", disabled: true, title: "", attributes: {},
+    style: { setProperty(name, value) { this[name] = value; } },
+    setAttribute(name, value) { this.attributes[name] = value; },
+    addEventListener(name, callback) { assert.equal(name, "input"); hueInput = callback; },
+  };
   const toggle = {
     disabled: true, title: "", checked: "false",
     setAttribute(name, value) { assert.equal(name, "aria-checked"); this.checked = value; },
     addEventListener(name, callback) { assert.equal(name, "click"); click = callback; },
   };
   const context = vm.createContext({
-    document: { getElementById: (id) => {
+    document: { body: { style: { setProperty() {} } }, getElementById: (id) => {
       if (id === "reader-toggle-label") return label;
       if (id === "reader-shortcut") return shortcutText;
       if (id === "shortcut-hint") return shortcutHint;
+      if (id === "divider-hue") return hue;
       assert.equal(id, "reader-toggle");
       return toggle;
     } },
@@ -38,8 +45,11 @@ function createPopup({ shortcut = "Alt+Shift+U", shortcutError = false } = {}) {
       }) },
     },
   });
+  vm.runInContext(readFileSync(join(__dirname, "../src/divider-color.js"), "utf8"), context);
   vm.runInContext(readFileSync(join(__dirname, "../src/platform/chrome/popup.js"), "utf8"), context);
-  return { toggle, label, shortcutText, shortcutHint, requests, warnings, click: () => click(),
+  return { toggle, label, hue, shortcutText, shortcutHint, requests, warnings, click: () => click(),
+    inputHue(value) { hue.value = String(value); hueInput(); },
+    changeHue(value) { storageChanged({ dividerHue: { newValue: value } }, "local"); },
     change(value, area = "local") { storageChanged({ enabled: { newValue: value } }, area); },
   };
 }
@@ -73,6 +83,44 @@ test("the popup reads without toggling and prevents duplicate requests until a c
   await drain();
   assert.equal(popup.toggle.checked, "false");
   assert.equal(popup.label.textContent, "关闭");
+});
+
+test("the color band restores a saved hue and does not save or toggle merely on opening", async () => {
+  const popup = createPopup();
+  popup.changeHue(180);
+  popup.requests[0].resolve({ enabled: false, dividerHue: 0 });
+  await drain();
+  assert.equal(popup.hue.value, "180", "a newer storage event beats a stale initial reply");
+  assert.equal(popup.hue.disabled, false);
+  assert.equal(popup.requests.length, 1);
+  popup.changeHue(undefined);
+  assert.equal(popup.hue.value, "0");
+  assert.equal(popup.hue.style["--selected-divider-color"], "#ff1744");
+});
+
+test("dragging sends the final color immediately and earlier replies do not move the thumb back", async () => {
+  const popup = createPopup();
+  popup.requests[0].resolve({ enabled: true, dividerHue: 0 });
+  await drain();
+  popup.inputHue(80);
+  popup.inputHue(180);
+  assert.equal(popup.requests[1].type, "HAODU_SET_DIVIDER_HUE");
+  assert.equal(popup.requests[2].dividerHue, 180);
+  popup.changeHue(80);
+  popup.requests[1].resolve({ dividerHue: 80 });
+  await drain();
+  assert.equal(popup.hue.value, "180");
+  popup.changeHue(180);
+  popup.requests[2].resolve({ dividerHue: 180 });
+  await drain();
+  assert.equal(popup.hue.value, "180");
+  assert.equal(popup.toggle.checked, "true");
+  popup.inputHue(230);
+  popup.requests[3].reject(new Error("Storage unavailable"));
+  await drain();
+  assert.equal(popup.hue.value, "180");
+  assert.match(popup.hue.title, /保存失败/u);
+  assert.equal(popup.toggle.disabled, false);
 });
 
 test("the popup shows the actual shortcut, including custom, macOS and cleared bindings", async () => {

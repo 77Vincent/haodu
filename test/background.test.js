@@ -56,6 +56,7 @@ function createBackground(saved = {}) {
     } } });
     runScript("src/app/reader.js", context);
     runScript("src/platform/chrome/content.js", context);
+    context.Haodu.setMarkerColor = (color) => { page.color = color; };
     const adapter = context.Haodu.createReaderAdapter();
     page.reader = context.Haodu.createReader({
       read() { page.reads += 1; return { texts: ["需要处理的中文"] }; },
@@ -167,7 +168,14 @@ function createBackground(saved = {}) {
     },
   };
   const manifest = JSON.parse(readFileSync(join(__dirname, "../manifest.json"), "utf8"));
-  const boot = () => runScript(manifest.background.service_worker, vm.createContext({ console, chrome, URL }));
+  const boot = () => {
+    const context = vm.createContext({ console, chrome, URL });
+    context.importScripts = (path) => {
+      assert.equal(path, "../../divider-color.js");
+      runScript("src/divider-color.js", context);
+    };
+    runScript(manifest.background.service_worker, context);
+  };
   boot();
 
   function addTab(id, url = "https://example.com/", status = "complete") {
@@ -247,6 +255,59 @@ test("opening the popup only reads state; its switch and shortcut share the save
   assert.equal((await background.popup({ type: "HAODU_GET_ENABLED" })).enabled, true);
   await background.popup({ type: "HAODU_SET_ENABLED", enabled: false });
   assert.equal(background.pages.get(1).reader.status().enabled, false);
+});
+
+test("color writes persist in order and update only the active reader without running inference", async () => {
+  const background = createBackground();
+  await background.shortcut(1);
+  await background.focus(2);
+  const first = background.pages.get(1);
+  const active = background.pages.get(2);
+  const marker = active.marker;
+  const reads = active.reads;
+  const reply = await background.popup({ type: "HAODU_SET_DIVIDER_HUE", dividerHue: 180 });
+  assert.equal(reply.dividerHue, 180);
+  assert.equal(background.saved.dividerHue, 180);
+  assert.equal(first.color, "#ff1744");
+  assert.notEqual(active.color, "#ff1744");
+  assert.equal(active.marker, marker);
+  assert.equal(active.reads, reads);
+  await background.focus(1);
+  assert.equal(first.color, active.color);
+  await Promise.all([60, 120, 240].map((dividerHue) => background.popup({ type: "HAODU_SET_DIVIDER_HUE", dividerHue })));
+  assert.equal(background.saved.dividerHue, 240);
+  const color = first.color;
+  await background.restartWorker();
+  assert.equal((await background.popup({ type: "HAODU_GET_ENABLED" })).dividerHue, 240);
+  await background.navigate(1);
+  assert.equal(background.pages.get(1).color, color);
+});
+
+test("color selection works while off or busy and rejects invalid or untrusted values", async () => {
+  const background = createBackground();
+  await background.focus(1);
+  await background.popup({ type: "HAODU_SET_DIVIDER_HUE", dividerHue: 90 });
+  assert.equal(background.injected.length, 0);
+  assert.equal(background.creations(), 0);
+  for (const dividerHue of [-1, 361, 1.5, "90", null, NaN]) {
+    assert.equal(await background.popup({ type: "HAODU_SET_DIVIDER_HUE", dividerHue }), undefined);
+  }
+  assert.equal(await background.popup({ type: "HAODU_SET_DIVIDER_HUE", dividerHue: 5 },
+    { id: "other-extension", url: "chrome-extension://test-extension/src/popup.html" }), undefined);
+  assert.equal(background.writes.length, 1);
+  await background.shortcut(1);
+  const page = background.pages.get(1);
+  page.reader.toggle(false);
+  let finish;
+  page.process = () => new Promise((resolve) => { finish = resolve; });
+  page.reader.toggle(true);
+  const reads = page.reads;
+  await background.popup({ type: "HAODU_SET_DIVIDER_HUE", dividerHue: 0 });
+  assert.equal(page.color, "#ff1744");
+  assert.equal(page.reader.status().busy, true);
+  assert.equal(page.reads, reads);
+  finish([[]]);
+  await drain();
 });
 
 test("popup controls reject page senders and invalid values", async () => {

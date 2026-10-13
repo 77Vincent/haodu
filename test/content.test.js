@@ -63,6 +63,7 @@ function createPage(text = sampleText, tag = "p", useChromeAdapter = false, opte
       this.childNodes = [];
       this.attributes = {};
       this.className = "";
+      this.style = { setProperty(name, value) { this[name] = value; } };
     }
     get textContent() { return this.childNodes.map((node) => node.textContent).join(""); }
     append(node) { node.remove(); this.childNodes.push(node); node.parentNode = this; }
@@ -248,8 +249,30 @@ function createPage(text = sampleText, tag = "p", useChromeAdapter = false, opte
   }
   page.write = context.Haodu.write;
   page.clear = context.Haodu.clearMarkers;
+  page.setColor = context.Haodu.setMarkerColor;
   return page;
 }
+
+test("recoloring retains original nodes, marker identity and inference results; new markers use the selected color", async () => {
+  const page = createPage();
+  const anchor = page.paragraph.childNodes[0];
+  page.click();
+  await page.finish();
+  const marker = page.markers()[0];
+  assert.equal(marker.style["--haodu-divider-color"], "#ff1744");
+  page.setColor("#1744ff");
+  assert.equal(page.markers()[0], marker);
+  assert.equal(marker.style["--haodu-divider-color"], "#1744ff");
+  assert.equal(page.paragraph.childNodes[0], anchor);
+  assert.equal(page.paragraph.textContent, sampleText);
+  assert.equal(page.requests.length, 1);
+  page.setColor("url(https://example.com/)");
+  assert.equal(marker.style["--haodu-divider-color"], "#1744ff");
+  page.click();
+  page.click();
+  await page.finish();
+  assert.equal(page.markers()[0].style["--haodu-divider-color"], "#1744ff");
+});
 
 test("the page is inert until toggled, then renders and restores its original text", async () => {
   const page = createPage();
@@ -498,6 +521,8 @@ test("Chrome translates state commands and publishing only delivers the supplied
     async sendMessage(message) { messages.push(message); return {}; },
   } } });
   vm.runInContext(readFileSync(join(__dirname, "../src/platform/chrome/content.js"), "utf8"), context);
+  const colors = [];
+  context.Haodu.setMarkerColor = (color) => colors.push(color);
   const adapter = context.Haodu.createReaderAdapter();
   adapter.connect({
     status() { throw new Error("Only a PING should ask for status"); },
@@ -507,6 +532,9 @@ test("Chrome translates state commands and publishing only delivers the supplied
   listener({ type: "HAODU_APPLY_SETTING", enabled: false }, {}, (value) => { response = value; });
   assert.equal(response, state);
   assert.deepEqual(commands, [false]);
+  listener({ type: "HAODU_SET_DIVIDER_COLOR", color: "#1744ff" }, {}, () => {});
+  assert.equal(colors.at(-1), "#1744ff");
+  assert.deepEqual(commands, [false], "color updates do not invoke toggle or status");
   const finished = { enabled: false, busy: false, error: null };
   adapter.publishState(finished);
   await drainPromises();

@@ -77,6 +77,48 @@ body {
   transition: background-color 150ms ease;
 }
 
+#divider-hue {
+  appearance: none;
+  display: block;
+  box-sizing: border-box;
+  width: calc(100% - 12px);
+  height: 28px;
+  margin: 8px 6px 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+#divider-hue::-webkit-slider-runnable-track {
+  height: 12px;
+  border-radius: 999px;
+  background: var(--divider-spectrum, #ff1744);
+}
+
+#divider-hue::-webkit-slider-thumb {
+  appearance: none;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  margin-top: -4px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--selected-divider-color, #ff1744);
+  box-shadow: 0 0 0 1px #0003, 0 1px 4px #0004;
+}
+
+#divider-hue:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+#divider-hue:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .switch-track::before {
   content: "";
   display: block;

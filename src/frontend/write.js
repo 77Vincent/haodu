@@ -8,6 +8,15 @@
   const markers = new Set();
   const markedSources = new Set();
   const shadowStyles = new Map();
+  let markerColor = "#ff1744";
+
+  globalThis.Haodu.setMarkerColor = function setMarkerColor(color) {
+    if (typeof color !== "string" || !/^#[0-9a-f]{6}$/iu.test(color) || color === markerColor) return;
+    markerColor = color;
+    // Touch only our markers, including those inside shadow roots. The page's
+    // own elements and text remain unchanged, and no new inference is needed.
+    for (const marker of markers) marker.style.setProperty("--haodu-divider-color", color, "important");
+  };
 
   function ensureShadowStyle(root, styleUrl) {
     if (!root.host) return;
@@ -39,6 +48,7 @@
       const marker = document.createElement("span");
       marker.className = HAODU_SELECTOR;
       marker.setAttribute("aria-hidden", "true");
+      marker.style.setProperty("--haodu-divider-color", markerColor, "important");
       right.before(marker);
       markers.add(marker);
       sourceMarkers.push(marker);

@@ -17,7 +17,7 @@ test("the toolbar opens a popup while the keyboard shortcut toggles directly", (
   assert.deepEqual(manifest.host_permissions, ["http://*/*", "https://*/*", "file:///*"]);
 });
 
-test("divider appearance lives in CSS without runtime style configuration", () => {
+test("divider geometry lives in CSS with a configurable color and the original red fallback", () => {
   const manifest = JSON.parse(read("manifest.json"));
   assert.ok(manifest.web_accessible_resources.some((entry) =>
     entry.resources.includes("src/content.css") && entry.matches.includes("<all_urls>")),
@@ -27,10 +27,10 @@ test("divider appearance lives in CSS without runtime style configuration", () =
   assert.match(css, /content:\s*""/u);
   assert.match(css, /width:\s*calc\(1em \/ 6\)/u);
   assert.match(css, /height:\s*1em/u);
-  assert.match(css, /background-color:\s*#ff1744/u);
+  assert.match(css, /background-color:\s*var\(--haodu-divider-color,\s*#ff1744\)/u);
   for (const path of [
     "src/app/reader.js", "src/frontend/read.js", "src/frontend/write.js", "src/platform/chrome/background.js",
   ]) {
-    assert.doesNotMatch(read(path), /dividerWidth|dividerColor|style\.setProperty/u);
+    assert.doesNotMatch(read(path), /dividerWidth/u);
   }
 });

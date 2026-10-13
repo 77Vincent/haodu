@@ -66,6 +66,29 @@
     assert(reader.status().enabled, reader.status().error);
   }
 
+  test("changing color repaints existing and new ordinary and shadow dividers without inference", async () => {
+    const root = shadow();
+    const ordinary = paragraph(fixture);
+    const nested = paragraph(root);
+    const original = [ordinary.textContent, nested.textContent];
+    await enable();
+    const existing = [markers(ordinary)[0], markers(nested)[0]];
+    const background = (marker) => getComputedStyle(marker, "::before").backgroundColor;
+    await until(() => existing.every((marker) => background(marker) === "rgb(255, 23, 68)"), "default red stylesheet did not load");
+    const count = inputs.length;
+    try {
+      Haodu.setMarkerColor("#1744ff");
+      assert(existing.every((marker) => background(marker) === "rgb(23, 68, 255)"), "ordinary or shadow marker color was not updated");
+      assert(markers(ordinary)[0] === existing[0] && markers(nested)[0] === existing[1], "markers were replaced");
+      assert(ordinary.textContent === original[0] && nested.textContent === original[1], "recoloring changed text");
+      await delay(450);
+      assert(inputs.length === count, "recoloring caused inference");
+      const late = paragraph(root, "调色之后新出现的评论文字");
+      await until(() => markers(late).length === 1, "new comment was not processed");
+      assert(background(markers(late)[0]) === "rgb(23, 68, 255)", "new marker forgot the selected color");
+    } finally { Haodu.setMarkerColor("#ff1744"); }
+  });
+
   test("replacing a processed title with identical text restores markers without any size or viewport change", async () => {
     const p = paragraph(fixture, "精灵6号和小米SU7，谁才是年轻人的驾驶者之车");
     const original = p.textContent;
@@ -129,7 +152,7 @@
     assert(inputs.length === 1 && inputs[0][0] === original, "nested comment was missed");
     assert(markers(inner).length === 2, "expected both original text nodes");
     assert(p.textContent === fullText && p.contains(bold), "markup or text was changed");
-    await until(() => getComputedStyle(markers(inner)[0], "::before").borderInlineStartWidth === "3px", "shadow marker stylesheet did not load");
+    await until(() => getComputedStyle(markers(inner)[0], "::before").backgroundColor === "rgb(255, 23, 68)", "shadow marker stylesheet did not load");
     const stableStates = states.length;
     await delay(500);
     assert(states.length === stableStates && inputs.length === 1, "marker writes caused a feedback refresh");
