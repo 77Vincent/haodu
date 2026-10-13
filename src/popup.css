@@ -5,6 +5,7 @@
   --muted: #66717a;
   --focus: hsl(234, 100%, 60%);
   --disabled: #a8adb4;
+  --control-outline: rgb(0 0 0 / 8%);
   color-scheme: light dark;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -87,7 +88,8 @@ body {
   height: 24px;
   border-radius: 2px;
   background: var(--disabled);
-  box-shadow: inset 0 1px 1.5px #0002, inset 0 2px 3px #0001;
+  outline: 1px solid var(--control-outline);
+  outline-offset: -1px;
   transition: background-color 150ms ease;
 }
 
@@ -115,11 +117,15 @@ body {
   background-size: calc(100% - var(--divider-thumb-width)) 100%;
   background-position: center;
   background-repeat: no-repeat;
-  box-shadow: inset 0 1px 1.5px #0002, inset 0 2px 3px #0001;
+  outline: 1px solid var(--control-outline);
+  outline-offset: -1px;
 }
 
 #divider-hue::-webkit-slider-thumb {
   appearance: none;
+  /* Paint the thumb above the track's outline without changing its travel. */
+  position: relative;
+  z-index: 1;
   box-sizing: border-box;
   width: var(--divider-thumb-width);
   height: 20px;
@@ -190,7 +196,7 @@ body {
   .switch-track {
     forced-color-adjust: none;
     background: ButtonText;
-    box-shadow: none;
+    outline-color: ButtonText;
   }
 
   #reader-toggle[aria-checked="true"] .switch-track {
