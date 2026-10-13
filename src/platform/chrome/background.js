@@ -2,6 +2,7 @@
 
 // Chrome entry point: toolbar, script loading, routing, and offscreen host.
 const INFERENCE_PAGE = "src/inference.html";
+const POPUP_PAGE = "src/popup.html";
 const TOGGLE_MENU_ID = "haodu-toggle";
 let creatingInferencePage = null;
 let enabled = false;
@@ -20,7 +21,7 @@ const settingsReady = Promise.all([
 async function refreshShortcut() {
   // Use the active binding, not the suggestion: users can change or clear it.
   const commands = await chrome.commands.getAll().catch(() => []);
-  actionShortcut = commands.find((command) => command.name === "_execute_action")?.shortcut || "";
+  actionShortcut = commands.find((command) => command.name === "haodu-toggle")?.shortcut || "";
 }
 
 function updateToggleMenu() {
@@ -42,8 +43,8 @@ function updateToggleMenu() {
 
 function updateAction(tabId, error) {
   // Busy is a click lock, not a visual state.
-  const shortcutHint = actionShortcut ? `${actionShortcut} / ` : "";
-  const title = error || `好读（${shortcutHint}点击${enabled ? "关闭" : "开启"}）`;
+  const shortcutHint = actionShortcut ? ` / ${actionShortcut} 切换` : "";
+  const title = error || `好读（${enabled ? "已开启" : "已关闭"}${shortcutHint}）`;
   const icon = enabled ? "on" : "off";
   return Promise.all([
     chrome.action.setIcon({ tabId, path: {
@@ -180,16 +181,17 @@ async function applyToActiveTab() {
   }
 }
 
-async function toggleGlobal(tab) {
+async function toggleGlobal(tab, requestedEnabled) {
   if (toggling) return;
   toggling = true;
   try {
     await settingsReady;
     tab ??= await activeTab();
-    // Only the clicked page's task locks this click. Other tabs apply the new
+    // Only the active page's task locks this change. Other tabs apply the new
     // setting when visited, without interrupting their current operation.
     if (await supportsReader(tab) && (await readerStatus(tab.id))?.busy) return;
-    const next = !enabled;
+    const next = requestedEnabled ?? !enabled;
+    if (next === enabled) return;
     await chrome.storage.local.set({ enabled: next });
     enabled = next;
     await updateAction();
@@ -201,7 +203,9 @@ async function toggleGlobal(tab) {
   }
 }
 
-chrome.action.onClicked.addListener((tab) => { void toggleGlobal(tab); });
+chrome.commands.onCommand.addListener((command, tab) => {
+  if (command === "haodu-toggle") void toggleGlobal(tab);
+});
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === TOGGLE_MENU_ID) void toggleGlobal(tab);
 });
@@ -216,6 +220,15 @@ chrome.tabs.onUpdated.addListener((tabId, change, tab) => {
 chrome.runtime.onInstalled.addListener(() => { void applyToActiveTab().catch(() => {}); });
 chrome.runtime.onStartup.addListener(() => { void applyToActiveTab().catch(() => {}); });
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (sender.id === chrome.runtime.id && sender.url === chrome.runtime.getURL(POPUP_PAGE)) {
+    const isSet = message?.type === "HAODU_SET_ENABLED" && typeof message.enabled === "boolean";
+    if (!isSet && message?.type !== "HAODU_GET_ENABLED") return;
+    void settingsReady.then(async () => {
+      if (isSet) await toggleGlobal(undefined, message.enabled);
+      return { enabled };
+    }).then(sendResponse, (error) => sendResponse({ error: error.message }));
+    return true;
+  }
   if (sender.id !== chrome.runtime.id || sender.tab?.id == null || sender.frameId !== 0) return;
   if (message?.type === "HAODU_STATE") {
     // Page failures don't change the saved global preference or other pages.

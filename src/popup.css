@@ -1,0 +1,82 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  width: 220px;
+  margin: 0;
+  padding: 12px;
+  box-sizing: border-box;
+  background: #fff;
+  color: #202124;
+}
+
+#reader-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+#reader-toggle:focus-visible {
+  outline: 2px solid #ff1744;
+  outline-offset: 2px;
+}
+
+#reader-toggle:disabled {
+  cursor: default;
+}
+
+.switch-track {
+  flex: 0 0 40px;
+  height: 24px;
+  border-radius: 12px;
+  background: #767676;
+}
+
+.switch-track::before {
+  content: "";
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: 3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px #0003;
+}
+
+#reader-toggle[aria-checked="true"] .switch-track {
+  background: #ff1744;
+}
+
+#reader-toggle[aria-checked="true"] .switch-track::before {
+  transform: translateX(16px);
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #202124;
+    color: #f1f3f4;
+  }
+}
+
+@media (forced-colors: active) {
+  .switch-track {
+    outline: 1px solid ButtonText;
+  }
+
+  .switch-track::before {
+    background: ButtonText;
+  }
+}

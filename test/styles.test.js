@@ -5,11 +5,11 @@ const { join } = require("node:path");
 
 const read = (path) => readFileSync(join(__dirname, "..", path), "utf8");
 
-test("the keyboard shortcut invokes the toolbar action without a popup", () => {
+test("the toolbar opens a popup while the keyboard shortcut toggles directly", () => {
   const manifest = JSON.parse(read("manifest.json"));
-  assert.equal(manifest.action.default_popup, undefined);
+  assert.equal(manifest.action.default_popup, "src/popup.html");
   assert.deepEqual(manifest.commands, {
-    _execute_action: { suggested_key: "Alt+Shift+U" },
+    "haodu-toggle": { suggested_key: "Alt+Shift+U", description: "开启或关闭阅读辅助" },
   });
   assert.equal(manifest.content_scripts, undefined);
   assert.equal(manifest.permissions.includes("storage"), true);

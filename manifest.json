@@ -15,14 +15,16 @@
   },
   "action": {
     "default_title": "好读",
+    "default_popup": "src/popup.html",
     "default_icon": {
       "16": "icons/off-16.png",
       "32": "icons/off-32.png"
     }
   },
   "commands": {
-    "_execute_action": {
-      "suggested_key": "Alt+Shift+U"
+    "haodu-toggle": {
+      "suggested_key": "Alt+Shift+U",
+      "description": "开启或关闭阅读辅助"
     }
   },
   "background": {

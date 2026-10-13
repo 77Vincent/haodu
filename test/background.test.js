@@ -10,7 +10,7 @@ const runScript = (path, context) => vm.runInContext(
 const drain = () => new Promise((resolve) => setImmediate(resolve));
 
 function createBackground(saved = {}) {
-  let click, menuClick, message, navigate, activate, focusWindow, startup, install;
+  let command, menuClick, message, navigate, activate, focusWindow, startup, install;
   let shortcut = "Alt+Shift+U";
   let menuCreations = 0;
   const menus = new Map();
@@ -77,9 +77,10 @@ function createBackground(saved = {}) {
   }
 
   const chrome = {
-    commands: { async getAll() {
-      return [{ name: "_execute_action", shortcut }];
-    } },
+    commands: {
+      onCommand: { addListener: (callback) => { command = callback; } },
+      async getAll() { return [{ name: "haodu-toggle", shortcut }]; },
+    },
     contextMenus: {
       onClicked: { addListener: (callback) => { menuClick = callback; } },
       create(properties, callback) {
@@ -99,7 +100,7 @@ function createBackground(saved = {}) {
       },
     },
     action: {
-      onClicked: { addListener: (callback) => { click = callback; } },
+      onClicked: { addListener: () => { throw new Error("Toolbar clicks must only open the popup"); } },
       async setBadgeText({ tabId, text }) { badges.set(tabId, text); },
       async setIcon({ tabId, path }) {
         const resolved = {};
@@ -221,7 +222,12 @@ function createBackground(saved = {}) {
       return resume;
     },
     creations: () => creations,
-    async click(id) { select(id); click(tabs.get(id)); await drain(); },
+    async shortcut(id) { select(id); command("haodu-toggle", tabs.get(id)); await drain(); },
+    popup(request, sender = { id: chrome.runtime.id, url: chrome.runtime.getURL("src/popup.html") }) {
+      return new Promise((resolve) => {
+        if (message(request, sender, resolve) !== true) resolve(undefined);
+      });
+    },
     async menuClick(id, withoutTab = false) {
       select(id);
       menuClick({ menuItemId: "haodu-toggle" }, withoutTab ? undefined : tabs.get(id));
@@ -246,7 +252,43 @@ function createBackground(saved = {}) {
   };
 }
 
-test("the toolbar menu and icon share the global switch and retain one menu across worker restarts", async () => {
+test("opening the popup only reads state; its switch, shortcut and menu share the saved setting", async () => {
+  const background = createBackground();
+  await background.focus(1);
+  assert.equal((await background.popup({ type: "HAODU_GET_ENABLED" })).enabled, false);
+  assert.equal(background.writes.length, 0);
+  assert.equal(background.injected.length, 0);
+  assert.equal((await background.popup({ type: "HAODU_SET_ENABLED", enabled: true })).enabled, true);
+  await drain();
+  assert.equal(background.saved.enabled, true);
+  assert.equal(background.pages.get(1).reader.status().enabled, true);
+  const writes = background.writes.length;
+  await background.popup({ type: "HAODU_SET_ENABLED", enabled: true });
+  assert.equal(background.writes.length, writes, "repeated SET requests must not toggle back");
+  await background.shortcut(1);
+  assert.equal((await background.popup({ type: "HAODU_GET_ENABLED" })).enabled, false);
+  await background.menuClick(1);
+  assert.equal((await background.popup({ type: "HAODU_GET_ENABLED" })).enabled, true);
+  await background.restartWorker();
+  assert.equal((await background.popup({ type: "HAODU_GET_ENABLED" })).enabled, true);
+  await background.popup({ type: "HAODU_SET_ENABLED", enabled: false });
+  assert.equal(background.pages.get(1).reader.status().enabled, false);
+});
+
+test("popup controls reject page senders and invalid values", async () => {
+  const background = createBackground();
+  await background.focus(1);
+  const request = { type: "HAODU_SET_ENABLED", enabled: true };
+  for (const sender of [
+    { id: "test-extension", url: "https://example.com/", tab: { id: 1 }, frameId: 0 },
+    { id: "another-extension", url: "chrome-extension://test-extension/src/popup.html" },
+    { id: "test-extension", url: "chrome-extension://test-extension/src/inference.html" },
+  ]) assert.equal(await background.popup(request, sender), undefined);
+  assert.equal(await background.popup({ type: "HAODU_SET_ENABLED", enabled: "false" }), undefined);
+  assert.equal(background.writes.length, 0);
+});
+
+test("the toolbar menu and keyboard shortcut share the global switch and retain one menu across worker restarts", async () => {
   const background = createBackground();
   background.addTab(2);
   await drain();
@@ -261,7 +303,7 @@ test("the toolbar menu and icon share the global switch and retain one menu acro
   await background.restartWorker();
   assert.equal(menu().title, "关闭（Alt+Shift+U）");
   assert.equal(background.menuCreations(), 1);
-  await background.click(1);
+  await background.shortcut(1);
   assert.equal(menu().title, "启用（Alt+Shift+U）");
   assert.equal(background.pages.get(1).reader.status().enabled, false);
   await background.menuClick(1, true);
@@ -276,17 +318,17 @@ test("the toolbar menu follows changed and cleared shortcuts without showing the
   background.setShortcut("⌃⇧H");
   await background.focus(1);
   assert.equal(background.menus.get("haodu-toggle").title, "启用（⌃⇧H）");
-  assert.equal(background.titles.get(1), "好读（⌃⇧H / 点击开启）");
+  assert.equal(background.titles.get(1), "好读（已关闭 / ⌃⇧H 切换）");
   background.setShortcut("");
   await background.focus(1);
   assert.equal(background.menus.get("haodu-toggle").title, "启用");
-  assert.equal(background.titles.get(1), "好读（点击开启）");
+  assert.equal(background.titles.get(1), "好读（已关闭）");
 });
 
 test("the saved switch is global but toggles and focus leave every inactive tab untouched", async () => {
   const background = createBackground();
   background.addTab(2);
-  await background.click(1);
+  await background.shortcut(1);
   assert.deepEqual(background.injected, [1]);
   assert.deepEqual(background.injectedFiles[0], [
     "src/frontend/dom-tree.js", "src/frontend/viewport.js", "src/frontend/visibility.js", "src/frontend/processed-text.js",
@@ -305,7 +347,7 @@ test("the saved switch is global but toggles and focus leave every inactive tab 
   assert.equal(first.marker, marker);
   assert.equal(first.reads, 1);
   const beforeToggle = background.commands.length;
-  await background.click(2); // OFF only touches the focused tab.
+  await background.shortcut(2); // OFF only touches the focused tab.
   assert.equal(background.saved.enabled, false);
   assert.equal(background.pages.get(2).reader.status().enabled, false);
   assert.equal(first.reader.status().enabled, true);
@@ -326,7 +368,7 @@ test("the saved switch is global but toggles and focus leave every inactive tab 
 
 test("active reloads and new tabs use the saved switch; background reloads wait for focus", async () => {
   const background = createBackground();
-  await background.click(1);
+  await background.shortcut(1);
   const oldPage = background.pages.get(1);
   await background.navigate(1);
   assert.notEqual(background.pages.get(1), oldPage);
@@ -342,7 +384,7 @@ test("active reloads and new tabs use the saved switch; background reloads wait 
   assert.equal(background.pages.has(1), false, "an inactive page reload must not initialize a reader");
   await background.focus(1);
   assert.equal(background.pages.get(1).reads, 1);
-  await background.click(1);
+  await background.shortcut(1);
   await background.navigate(1);
   await background.focus(3);
   assert.equal(background.pages.has(1), false);
@@ -371,9 +413,9 @@ test("page opt-out survives focus, navigation and global toggles without disabli
   assert.notEqual(reloaded, portal);
   assert.equal(reloaded.reader.status().enabled, false);
   assert.equal(reloaded.reads, 0);
-  await background.click(1);
+  await background.shortcut(1);
   assert.equal(background.saved.enabled, false);
-  await background.click(1);
+  await background.shortcut(1);
   assert.equal(background.saved.enabled, true);
   assert.equal(reloaded.reader.status().enabled, false);
   assert.equal(reloaded.reads, 0);
@@ -385,13 +427,13 @@ test("page opt-out survives focus, navigation and global toggles without disabli
 
 test("a tab that missed OFF and ON keeps its existing results when focused again", async () => {
   const background = createBackground();
-  await background.click(1);
+  await background.shortcut(1);
   const first = background.pages.get(1);
   const marker = first.marker;
   await background.focus(2);
   const beforeToggle = background.commands.length;
-  await background.click(2);
-  await background.click(2);
+  await background.shortcut(2);
+  await background.shortcut(2);
   assert.ok(background.commands.slice(beforeToggle).every(({ id }) => id === 2));
   assert.equal(first.reads, 1);
   assert.equal(first.marker, marker);
@@ -407,7 +449,7 @@ test("a tab that missed OFF and ON keeps its existing results when focused again
 
 test("worker and browser restarts retain the setting and window focus only checks its active tab", async () => {
   const background = createBackground();
-  await background.click(1);
+  await background.shortcut(1);
   const marker = background.pages.get(1).marker;
   await background.restartWorker();
   await background.focus(1);
@@ -425,7 +467,7 @@ test("worker and browser restarts retain the setting and window focus only check
     16: "chrome-extension://test-extension/icons/on-16.png",
     32: "chrome-extension://test-extension/icons/on-32.png",
   });
-  await restarted.click(1);
+  await restarted.shortcut(1);
   const stopped = createBackground(background.saved);
   await stopped.focus(1);
   assert.equal(stopped.pages.size, 0);
@@ -433,7 +475,7 @@ test("worker and browser restarts retain the setting and window focus only check
 
 test("busy clicks are ignored without flicker, and inactive pages are neither queried nor stopped", async () => {
   const background = createBackground();
-  await background.click(1);
+  await background.shortcut(1);
   const title = background.titles.get(1);
   const icon = background.icons.get(1);
   let complete;
@@ -443,8 +485,9 @@ test("busy clicks are ignored without flicker, and inactive pages are neither qu
   first.reader.toggle(true);
   await drain();
   const writes = background.writes.length;
-  await background.click(1);
+  await background.shortcut(1);
   await background.menuClick(1);
+  assert.equal((await background.popup({ type: "HAODU_SET_ENABLED", enabled: false })).enabled, true);
   assert.equal(background.writes.length, writes, "busy clicks are discarded");
   assert.equal(background.badges.get(1), "");
   assert.deepEqual(background.icons.get(1), icon);
@@ -452,7 +495,7 @@ test("busy clicks are ignored without flicker, and inactive pages are neither qu
   assert.equal(background.disabled.size, 0);
   await background.focus(2);
   const beforeToggle = background.commands.length;
-  await background.click(2);
+  await background.shortcut(2);
   assert.equal(background.saved.enabled, false);
   assert.equal(first.reader.status().busy, true);
   assert.ok(background.commands.slice(beforeToggle).every(({ id }) => id === 2));
@@ -465,14 +508,14 @@ test("busy clicks are ignored without flicker, and inactive pages are neither qu
 
 test("a busy tab ignores global OFF and synchronizes on its next idle focus", async () => {
   const background = createBackground();
-  await background.click(1);
+  await background.shortcut(1);
   const first = background.pages.get(1);
   let finish;
   first.reader.toggle(false);
   first.process = () => new Promise((resolve) => { finish = resolve; });
   first.reader.toggle(true);
   await background.focus(2);
-  await background.click(2); // Global OFF.
+  await background.shortcut(2); // Global OFF.
   await background.focus(1); // The running reader ignores OFF.
   assert.equal(first.reader.status().busy, true);
   assert.equal(first.reader.status().enabled, true);
@@ -493,7 +536,7 @@ test("a busy tab ignores global OFF and synchronizes on its next idle focus", as
 
 test("page failures stay local and focusing again doesn't retry or flip the global switch", async () => {
   const background = createBackground();
-  await background.click(1);
+  await background.shortcut(1);
   const first = background.pages.get(1);
   first.reader.toggle(false);
   first.process = async () => { throw new Error("failed"); };
@@ -504,14 +547,14 @@ test("page failures stay local and focusing again doesn't retry or flip the glob
   assert.equal(background.badges.get(1), "ERR");
   await background.focus(2);
   assert.equal(background.pages.get(2).reader.status().enabled, true);
-  await background.click(2);
-  await background.click(2);
+  await background.shortcut(2);
+  await background.shortcut(2);
   await background.focus(1);
   assert.equal(first.reads, reads);
   assert.equal(background.badges.get(1), "ERR");
   first.process = async () => [[]];
-  await background.click(1);
-  await background.click(1);
+  await background.shortcut(1);
+  await background.shortcut(1);
   assert.equal(first.reader.status().enabled, true);
   assert.equal(background.badges.get(1), "");
   assert.deepEqual(background.icons.get(1), {
@@ -522,7 +565,7 @@ test("page failures stay local and focusing again doesn't retry or flip the glob
 
 test("a delayed busy command reply cannot erase a newer inference error", async () => {
   const background = createBackground();
-  await background.click(1);
+  await background.shortcut(1);
   const first = background.pages.get(1);
   first.reader.toggle(false);
   first.process = async () => { throw new Error("model failed"); };
@@ -539,7 +582,7 @@ test("a delayed busy command reply cannot erase a newer inference error", async 
 test("restricted pages allow switching the global preference without script injection", async () => {
   const background = createBackground();
   background.addTab(1, "chrome://extensions/");
-  await background.click(1);
+  await background.shortcut(1);
   assert.equal(background.saved.enabled, true);
   assert.equal(background.injected.length, 0);
   assert.equal(background.cssInjections.length, 0);
@@ -565,7 +608,7 @@ test("protected pages are skipped before contacting or injecting into the page",
     background.badges.set(1, "ERR");
     await background.focus(1);
     assert.equal(background.badges.get(1), "", url);
-    assert.equal(background.titles.get(1), "好读（Alt+Shift+U / 点击关闭）", url);
+    assert.equal(background.titles.get(1), "好读（已开启 / Alt+Shift+U 切换）", url);
   }
   assert.equal(background.commands.length, 0);
   assert.equal(background.cssInjections.length, 0);
@@ -680,7 +723,7 @@ test("switching away during script loading leaves that tab inert until it is foc
 
 test("a reload finishing during an old status check gets a fresh check without another focus event", async () => {
   const background = createBackground();
-  await background.click(1);
+  await background.shortcut(1);
   const oldPage = background.pages.get(1);
   const resume = background.pauseStatus(1);
   await background.focus(1);
@@ -695,7 +738,7 @@ test("a reload finishing during an old status check gets a fresh check without a
 
 test("overlapping focus events recheck only the latest active tab", async () => {
   const background = createBackground();
-  await background.click(1);
+  await background.shortcut(1);
   const resume = background.pauseStatus(1);
   await background.focus(1);
   await background.focus(2);

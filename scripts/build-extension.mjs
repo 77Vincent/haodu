@@ -20,8 +20,9 @@ const files = [
   'src/frontend/processed-text.js', 'src/frontend/read.js',
   'src/frontend/viewport.js', 'src/frontend/visibility.js', 'src/frontend/write.js',
   'src/inference.html', 'src/inference-service.js', 'src/inference-worker.js',
+  'src/popup.html', 'src/popup.css',
   'src/platform/chrome/background.js', 'src/platform/chrome/content.js',
-  'src/platform/chrome/inference.js',
+  'src/platform/chrome/inference.js', 'src/platform/chrome/popup.js',
   'src/start-inference.js', 'src/start-reader.js',
 ].sort();
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -32,6 +33,7 @@ if (manifest.manifest_version !== 3 || !/^\d+(?:\.\d+){0,3}$/.test(manifest.vers
 const metadata = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
 if (metadata.version !== manifest.version) throw new Error('package.json and manifest.json versions differ.');
 const references = [manifest.background?.service_worker,
+  ...(manifest.action?.default_popup ? [manifest.action.default_popup] : []),
   ...Object.values(manifest.icons || {}), ...Object.values(manifest.action?.default_icon || {}),
   ...(manifest.web_accessible_resources || []).flatMap(({ resources }) => resources),
 ];
