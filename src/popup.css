@@ -4,7 +4,6 @@
   --text: #1d2d35;
   --muted: #66717a;
   --focus: hsl(234, 100%, 60%);
-  --enabled: #ff1744;
   --disabled: #8b9098;
   color-scheme: light dark;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -132,7 +131,7 @@ body {
 }
 
 #reader-toggle[aria-checked="true"] .switch-track {
-  background: var(--enabled);
+  background: var(--selected-divider-color, #ff1744);
 }
 
 #reader-toggle[aria-checked="true"] .switch-track::before {

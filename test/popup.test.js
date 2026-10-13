@@ -13,9 +13,9 @@ function createPopup({ shortcut = "Alt+Shift+U", shortcutError = false } = {}) {
   const label = { textContent: "关闭" };
   const shortcutText = { textContent: "" };
   const shortcutHint = { hidden: true };
+  const body = { style: { setProperty(name, value) { this[name] = value; } } };
   const hue = {
     value: "0", disabled: true, title: "", attributes: {},
-    style: { setProperty(name, value) { this[name] = value; } },
     setAttribute(name, value) { this.attributes[name] = value; },
     addEventListener(name, callback) { assert.equal(name, "input"); hueInput = callback; },
   };
@@ -25,7 +25,7 @@ function createPopup({ shortcut = "Alt+Shift+U", shortcutError = false } = {}) {
     addEventListener(name, callback) { assert.equal(name, "click"); click = callback; },
   };
   const context = vm.createContext({
-    document: { body: { style: { setProperty() {} } }, getElementById: (id) => {
+    document: { body, getElementById: (id) => {
       if (id === "reader-toggle-label") return label;
       if (id === "reader-shortcut") return shortcutText;
       if (id === "shortcut-hint") return shortcutHint;
@@ -47,7 +47,7 @@ function createPopup({ shortcut = "Alt+Shift+U", shortcutError = false } = {}) {
   });
   vm.runInContext(readFileSync(join(__dirname, "../src/divider-color.js"), "utf8"), context);
   vm.runInContext(readFileSync(join(__dirname, "../src/platform/chrome/popup.js"), "utf8"), context);
-  return { toggle, label, hue, shortcutText, shortcutHint, requests, warnings, click: () => click(),
+  return { toggle, label, hue, body, shortcutText, shortcutHint, requests, warnings, click: () => click(),
     inputHue(value) { hue.value = String(value); hueInput(); },
     changeHue(value) { storageChanged({ dividerHue: { newValue: value } }, "local"); },
     change(value, area = "local") { storageChanged({ enabled: { newValue: value } }, area); },
@@ -95,7 +95,7 @@ test("the color band restores a saved hue and does not save or toggle merely on 
   assert.equal(popup.requests.length, 1);
   popup.changeHue(undefined);
   assert.equal(popup.hue.value, "0");
-  assert.equal(popup.hue.style["--selected-divider-color"], "#ff1744");
+  assert.equal(popup.body.style["--selected-divider-color"], "#ff1744");
 });
 
 test("dragging sends the final color immediately and earlier replies do not move the thumb back", async () => {

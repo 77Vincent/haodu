@@ -16,7 +16,7 @@ document.body.style.setProperty("--divider-spectrum", gradient);
 function renderHue(hue) {
   hueSlider.value = String(hue);
   const color = colorForHue(hue);
-  hueSlider.style.setProperty("--selected-divider-color", color);
+  document.body.style.setProperty("--selected-divider-color", color);
   hueSlider.setAttribute("aria-valuetext", color);
 }
 
