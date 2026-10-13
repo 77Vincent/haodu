@@ -69,7 +69,7 @@ body {
 }
 
 .switch-track {
-  flex: 0 0 44px;
+  flex: 0 0 40px;
   height: 24px;
   border-radius: 2px;
   background: var(--disabled);
@@ -135,7 +135,7 @@ body {
 }
 
 #reader-toggle[aria-checked="true"] .switch-track::before {
-  transform: translateX(25px);
+  transform: translateX(22px);
 }
 
 @media (prefers-color-scheme: dark) {
