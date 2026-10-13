@@ -59,7 +59,7 @@ test("the popup reads without toggling and prevents duplicate requests until a c
   assert.equal(popup.toggle.checked, "false");
 });
 
-test("storage changes from shortcuts or menus supersede stale initial and change replies", async () => {
+test("storage changes from shortcuts supersede stale initial and change replies", async () => {
   const popup = createPopup();
   popup.change(true);
   popup.requests[0].resolve({ enabled: false });

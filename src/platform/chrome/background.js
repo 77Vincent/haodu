@@ -3,7 +3,6 @@
 // Chrome entry point: toolbar, script loading, routing, and offscreen host.
 const INFERENCE_PAGE = "src/inference.html";
 const POPUP_PAGE = "src/popup.html";
-const TOGGLE_MENU_ID = "haodu-toggle";
 let creatingInferencePage = null;
 let enabled = false;
 let toggling = false;
@@ -24,23 +23,6 @@ async function refreshShortcut() {
   actionShortcut = commands.find((command) => command.name === "haodu-toggle")?.shortcut || "";
 }
 
-function updateToggleMenu() {
-  const title = `${enabled ? "关闭" : "启用"}${actionShortcut ? `（${actionShortcut}）` : ""}`;
-  // Menus outlive the worker. Update the existing item, creating it only if
-  // absent. Callbacks also work on Chrome versions before Promise support.
-  return new Promise((resolve) => {
-    const properties = { title, contexts: ["action"] };
-    chrome.contextMenus.update(TOGGLE_MENU_ID, properties, () => {
-      if (!chrome.runtime.lastError) return resolve();
-      chrome.contextMenus.create({ id: TOGGLE_MENU_ID, ...properties }, () => {
-        const error = chrome.runtime.lastError;
-        if (error) console.warn("[haodu] Could not create toolbar menu:", error.message);
-        resolve(); // A menu failure must not prevent the reader from running.
-      });
-    });
-  });
-}
-
 function updateAction(tabId, error) {
   // Busy is a click lock, not a visual state.
   const shortcutHint = actionShortcut ? ` / ${actionShortcut} 切换` : "";
@@ -54,7 +36,6 @@ function updateAction(tabId, error) {
     } }),
     chrome.action.setBadgeText({ tabId, text: error ? "ERR" : "" }),
     chrome.action.setTitle({ tabId, title }),
-    updateToggleMenu(),
   ]);
 }
 
@@ -205,9 +186,6 @@ async function toggleGlobal(tab, requestedEnabled) {
 
 chrome.commands.onCommand.addListener((command, tab) => {
   if (command === "haodu-toggle") void toggleGlobal(tab);
-});
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === TOGGLE_MENU_ID) void toggleGlobal(tab);
 });
 chrome.tabs.onActivated.addListener(() => { void applyToActiveTab().catch(() => {}); });
 chrome.windows.onFocusChanged.addListener((windowId) => {

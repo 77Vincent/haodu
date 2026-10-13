@@ -9,7 +9,7 @@ function render() {
   toggle.setAttribute("aria-checked", String(enabled));
 }
 
-// Subscribe before the first read so a shortcut/menu change cannot be lost
+// Subscribe before the first read so a shortcut change cannot be lost
 // while the popup is loading. Only the background writes the global setting.
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local" || !changes.enabled) return;

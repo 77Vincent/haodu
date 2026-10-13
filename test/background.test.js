@@ -10,10 +10,8 @@ const runScript = (path, context) => vm.runInContext(
 const drain = () => new Promise((resolve) => setImmediate(resolve));
 
 function createBackground(saved = {}) {
-  let command, menuClick, message, navigate, activate, focusWindow, startup, install;
+  let command, message, navigate, activate, focusWindow, startup, install;
   let shortcut = "Alt+Shift+U";
-  let menuCreations = 0;
-  const menus = new Map();
   let activeId = null;
   let offscreen = false;
   let fileAccess = false;
@@ -80,24 +78,6 @@ function createBackground(saved = {}) {
     commands: {
       onCommand: { addListener: (callback) => { command = callback; } },
       async getAll() { return [{ name: "haodu-toggle", shortcut }]; },
-    },
-    contextMenus: {
-      onClicked: { addListener: (callback) => { menuClick = callback; } },
-      create(properties, callback) {
-        assert.ok(manifest.permissions.includes("contextMenus"));
-        assert.equal(menus.has(properties.id), false, "worker restarts must not duplicate menus");
-        menus.set(properties.id, { ...properties });
-        menuCreations += 1;
-        queueMicrotask(callback);
-        return properties.id;
-      },
-      update(id, properties, callback) {
-        queueMicrotask(() => {
-          if (menus.has(id)) Object.assign(menus.get(id), properties);
-          else chrome.runtime.lastError = { message: "Cannot find menu item" };
-          try { callback(); } finally { delete chrome.runtime.lastError; }
-        });
-      },
     },
     action: {
       onClicked: { addListener: () => { throw new Error("Toolbar clicks must only open the popup"); } },
@@ -202,9 +182,8 @@ function createBackground(saved = {}) {
 
   return {
     pages, badges, icons, titles, disabled, commands, queries, writes, saved, tabs, injected, injectedFiles, requests,
-    addTab, optedOutTabs, cssInjections, injectionErrors, menus,
+    addTab, optedOutTabs, cssInjections, injectionErrors,
     setShortcut(value) { shortcut = value; },
-    menuCreations: () => menuCreations,
     setFileAccess(allowed) { fileAccess = allowed; },
     pauseInjection(id) {
       let resume;
@@ -228,11 +207,6 @@ function createBackground(saved = {}) {
         if (message(request, sender, resolve) !== true) resolve(undefined);
       });
     },
-    async menuClick(id, withoutTab = false) {
-      select(id);
-      menuClick({ menuItemId: "haodu-toggle" }, withoutTab ? undefined : tabs.get(id));
-      await drain();
-    },
     async focus(id) { select(id); activate({ tabId: id }); await drain(); },
     async windowFocus(id) { select(id); focusWindow(2); await drain(); },
     async navigate(id) {
@@ -252,7 +226,7 @@ function createBackground(saved = {}) {
   };
 }
 
-test("opening the popup only reads state; its switch, shortcut and menu share the saved setting", async () => {
+test("opening the popup only reads state; its switch and shortcut share the saved setting", async () => {
   const background = createBackground();
   await background.focus(1);
   assert.equal((await background.popup({ type: "HAODU_GET_ENABLED" })).enabled, false);
@@ -267,7 +241,7 @@ test("opening the popup only reads state; its switch, shortcut and menu share th
   assert.equal(background.writes.length, writes, "repeated SET requests must not toggle back");
   await background.shortcut(1);
   assert.equal((await background.popup({ type: "HAODU_GET_ENABLED" })).enabled, false);
-  await background.menuClick(1);
+  await background.shortcut(1);
   assert.equal((await background.popup({ type: "HAODU_GET_ENABLED" })).enabled, true);
   await background.restartWorker();
   assert.equal((await background.popup({ type: "HAODU_GET_ENABLED" })).enabled, true);
@@ -288,40 +262,14 @@ test("popup controls reject page senders and invalid values", async () => {
   assert.equal(background.writes.length, 0);
 });
 
-test("the toolbar menu and keyboard shortcut share the global switch and retain one menu across worker restarts", async () => {
-  const background = createBackground();
-  background.addTab(2);
-  await drain();
-  const menu = () => background.menus.get("haodu-toggle");
-  assert.equal(menu().title, "启用（Alt+Shift+U）");
-  assert.deepEqual(Array.from(menu().contexts), ["action"]);
-  await background.menuClick(1);
-  assert.equal(background.saved.enabled, true);
-  assert.equal(background.pages.get(1).reader.status().enabled, true);
-  assert.equal(background.pages.has(2), false);
-  assert.equal(menu().title, "关闭（Alt+Shift+U）");
-  await background.restartWorker();
-  assert.equal(menu().title, "关闭（Alt+Shift+U）");
-  assert.equal(background.menuCreations(), 1);
-  await background.shortcut(1);
-  assert.equal(menu().title, "启用（Alt+Shift+U）");
-  assert.equal(background.pages.get(1).reader.status().enabled, false);
-  await background.menuClick(1, true);
-  assert.equal(background.saved.enabled, true);
-  assert.equal(background.pages.get(1).reader.status().enabled, true);
-  assert.equal(background.menus.size, 1);
-});
-
-test("the toolbar menu follows changed and cleared shortcuts without showing the suggested binding", async () => {
+test("the toolbar tooltip follows changed and cleared shortcuts without showing the suggested binding", async () => {
   const background = createBackground();
   await background.focus(1);
   background.setShortcut("⌃⇧H");
   await background.focus(1);
-  assert.equal(background.menus.get("haodu-toggle").title, "启用（⌃⇧H）");
   assert.equal(background.titles.get(1), "好读（已关闭 / ⌃⇧H 切换）");
   background.setShortcut("");
   await background.focus(1);
-  assert.equal(background.menus.get("haodu-toggle").title, "启用");
   assert.equal(background.titles.get(1), "好读（已关闭）");
 });
 
@@ -486,7 +434,6 @@ test("busy clicks are ignored without flicker, and inactive pages are neither qu
   await drain();
   const writes = background.writes.length;
   await background.shortcut(1);
-  await background.menuClick(1);
   assert.equal((await background.popup({ type: "HAODU_SET_ENABLED", enabled: false })).enabled, true);
   assert.equal(background.writes.length, writes, "busy clicks are discarded");
   assert.equal(background.badges.get(1), "");
