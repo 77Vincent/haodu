@@ -138,10 +138,23 @@ body {
   box-shadow: 0 1px 1.5px #0003, 0 2px 3px #0002;
 }
 
+#divider-width {
+  position: relative;
+}
+
+#divider-width::before {
+  content: "";
+  position: absolute;
+  inset: 11.5px calc(var(--divider-thumb-width) / 10);
+  background: var(--muted);
+  /* Clip only the decoration, leaving the thumb and its shadow intact. */
+  clip-path: polygon(0 40%, 100% 0, 100% 100%, 0 70%);
+  pointer-events: none;
+}
+
 #divider-width::-webkit-slider-runnable-track {
   height: 4px;
-  border-radius: 2px;
-  background: var(--disabled);
+  background: transparent;
 }
 
 #divider-width::-webkit-slider-thumb {
@@ -207,7 +220,8 @@ body {
     display: none;
   }
 
-  #divider-width::-webkit-slider-runnable-track {
+  #divider-width::before {
+    forced-color-adjust: none;
     background: CanvasText;
   }
 
