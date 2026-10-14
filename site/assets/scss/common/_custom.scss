@@ -1,7 +1,20 @@
 // Use Bootstrap classes for layout and appearance, with custom reading markers,
 // card borders/shadows and floating preview control spacing.
 .btn.btn-install {
-  @include button-variant(#ff1744, #ff1744, #fff, $hover-color: #fff, $active-color: #fff, $disabled-color: #fff);
+  // Keep Bootstrap's button states while using the preview's live color.
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--selected-divider-color, #ff1744);
+  --bs-btn-border-color: var(--bs-btn-bg);
+  --bs-btn-hover-color: var(--bs-btn-color);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--bs-btn-bg), #000 15%);
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--bs-btn-bg), #000 20%);
+  --bs-btn-focus-box-shadow: 0 0 0 #{$btn-focus-width} color-mix(in srgb, var(--bs-btn-bg) 50%, transparent);
+  --bs-btn-active-color: var(--bs-btn-color);
+  --bs-btn-active-bg: var(--bs-btn-hover-border-color);
+  --bs-btn-active-border-color: color-mix(in srgb, var(--bs-btn-bg), #000 25%);
+  --bs-btn-disabled-color: var(--bs-btn-color);
+  --bs-btn-disabled-bg: var(--bs-btn-bg);
+  --bs-btn-disabled-border-color: var(--bs-btn-border-color);
   --install-shadow: 8px 8px 0 rgb(0 0 0 / 60%);
   --bs-btn-active-shadow: var(--install-shadow);
   color: var(--bs-btn-color);
@@ -68,6 +81,10 @@
 
 .reader-divider::before {
   width: calc(1em * var(--selected-divider-width, 2) / 12);
+}
+
+.reader-divider::before,
+:where(#page-title) .brand-divider::before {
   background-color: var(--selected-divider-color, #ff1744);
 }
 
