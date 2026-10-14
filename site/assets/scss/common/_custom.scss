@@ -1,5 +1,17 @@
 // Use Bootstrap classes for layout and appearance, with custom reading markers,
 // card borders/shadows and floating preview control spacing.
+.btn.btn-install {
+  @include button-variant(#ff1744, #ff1744, #fff, $hover-color: #fff, $active-color: #fff, $disabled-color: #fff);
+  --install-shadow: 8px 8px 0 rgb(0 0 0 / 60%);
+  --bs-btn-active-shadow: var(--install-shadow);
+  color: var(--bs-btn-color);
+  box-shadow: var(--install-shadow);
+
+  &:focus-visible {
+    box-shadow: var(--install-shadow), var(--bs-btn-focus-box-shadow);
+  }
+}
+
 .reader-preview-controls {
   // Float while reading, then stay above the footer without covering its links.
   position: sticky;
@@ -10,7 +22,7 @@
   max-width: calc(100% - 2rem);
   margin: 0 auto 2rem;
   padding: 6px;
-  border: 1px solid var(--control-outline);
+  border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 2px;
   background: var(--surface);
   box-shadow: 0 2px 8px #0002;
@@ -76,6 +88,10 @@
 }
 
 @include color-mode(dark) {
+  .btn.btn-install {
+    --install-shadow: 8px 8px 0 rgb(0 0 0 / 90%);
+  }
+
   .reader-demo-paper {
     border: 1px solid rgba(255, 255, 255, 0.3);
   }
