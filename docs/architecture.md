@@ -56,7 +56,8 @@ Chrome 中文阅读辅助扩展。点击工具栏图标只打开弹出面板，�
 | `src/start-inference.js` | 推理宿主的通用装配入口：创建服务、连接宿主消息 |
 | `src/platform/chrome/background.js` | Chrome 入口：保存全局开关、颜色和粗细，聚焦及当前页面加载完成时检查状态，按需注入脚本，转发推理消息并创建隐藏页面 |
 | `src/popup.html`、`src/popup.css`、`src/platform/chrome/popup.js` | 工具栏弹出面板、开关与分隔线外观偏好的状态同步 |
-| `src/divider-color.js` | 面板和后台共用的色相校验、颜色换算和连续色带 |
+| `src/reader-controls.css` | 扩展面板与站点预览共用的开关、色带、粗细滑块样式 |
+| `src/divider-color.js` | 面板、后台和站点预览共用的色相校验、颜色换算和连续色带 |
 | `src/divider-width.js` | 共用的五档粗细校验和默认值 |
 | `src/platform/chrome/content.js` | 将 Chrome 消息转换成 `reader.toggle(flag)` / `status()`，转发推理请求与状态通知 |
 | `src/platform/chrome/inference.js` | 提供 Worker 地址，将 Chrome 消息连接到推理服务 |

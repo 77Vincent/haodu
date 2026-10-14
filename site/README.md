@@ -6,7 +6,7 @@
 
 配置参考官方 Doks starter，其 MIT 许可保留在 `LICENSE-Doks.txt`。
 
-中文品牌文字标志为「好｜读」，英文为「hao｜du」，由 `layouts/_partials/brand-wordmark.html` 统一生成。导航栏和移动端菜单通过本地 `header/header.html` 覆盖使用它；该文件基于 Doks 1.9.3 的导航模板，调整品牌、界面译文及语言选择菜单，升级主题时需同步检查。中英文品牌分隔线与正文共用颜色及随字号缩放的比例，固定显示，不受阅读辅助开关影响。正文和页面元数据中的品牌名仍为「好读」和小写 `haodu`。
+中文品牌文字标志为「好｜读」，英文为「hao｜du」，由 `layouts/_partials/brand-wordmark.html` 统一生成。导航栏和移动端菜单通过本地 `header/header.html` 覆盖使用它；该文件基于 Doks 1.9.3 的导航模板，调整品牌、界面译文及语言选择菜单，升级主题时需同步检查。中英文品牌分隔线固定为品牌红色并随字号缩放，始终显示，不受预览开关、颜色及粗细调节影响。正文和页面元数据中的品牌名仍为「好读」和小写 `haodu`。
 
 网站 favicon 与插件图标统一为透明底的红色粗竖线，颜色为 `#ff1744`；在仓库根目录运行 `npm run icons:generate` 可同时重新生成 SVG、插件各尺寸 PNG 和 `static/favicon.png`。
 
@@ -26,15 +26,17 @@
 
 中文首页位于 `/`，英文首页位于 `/en/`，通过页头的 Doks 语言下拉菜单切换语言，按钮使用 `中` / `En` 简写，菜单保留完整语言名称。`content/_index.en.md` 仅维护英文标题、介绍和元信息，按钮等界面文案放在 `i18n/`。两种首页都通过 `hugo.Sites.Default.Home.Content` 渲染 `content/_index.md` 中的同一份中文 demo，包括引用来源和手写切点，不复制或翻译示例。隐私政策暂保留中文，英文页脚会标明其语言。
 
-安装入口位于顶部中央，使用 `btn-primary`；阅读辅助开关固定在视口底部中央，使用带实色底和阴影的 `btn-outline-primary`，通过 `ResizeObserver` 与安装按钮保持同样尺寸，图标开启为红色、关闭为灰色。悬浮按钮脱离文档流，不额外增加页面底部或页脚高度。开关控制简介及所有演示段落中的分隔线，主标题和品牌分隔线始终显示。卡片使用自定义边框和阴影，间距使用 Bootstrap 的 `p-3 p-md-4`。没有 JavaScript 时仍显示静态示例，开关隐藏。
+安装入口位于顶部中央，使用 `btn-primary`；视口底部中央的悬浮面板包含预览开关、连续色带和五档粗细滑块，与扩展共用控件样式及颜色、粗细规则。默认开启、品牌红色、第二档粗细；拖动实时更新简介及示例分隔线，关闭后两项滑块禁用并淡化、去色，再开启时保留选择。主标题和品牌分隔线固定显示。预览设置仅作用于当前页面，刷新恢复默认，不读写扩展偏好；高对比度模式隐藏色带并使用系统颜色。面板使用底部 sticky 定位，阅读时悬浮，滚至页尾时停在页脚上方，不覆盖链接、不增加页脚本身高度。卡片使用自定义边框和阴影，间距使用 Bootstrap 的 `p-3 p-md-4`。没有 JavaScript 时仍显示静态示例，面板隐藏。
+
+面板后方有一层固定在视口底部、200px 高的渐变遮罩，从透明过渡到页面底色（浅色为白色，深色跟随主题），降低背景文字对控件的干扰。遮罩不拦截点击，不改变布局；页脚文字和链接保持在遮罩上方。
 
 演示引用可用 `{{< reader-demo source="罗素《幸福之路》" >}}` 指定来源，模板直接显示该文字。来源在卡片内渲染为正文之后的独立段落，使用 Bootstrap 的 `text-end mb-0` 靠右对齐；不指定 `source` 时不生成来源段落。
 
 首页主标题 `headline` 的“让中文｜更好读”使用固定分隔线，不参与模型切分。主标题和 `lead` 均由 `layouts/_partials/reader-copy.html` 渲染，不显示字面量竖线。每个语意块优先保持完整，分隔线随前一块一起换行，避免单独落在行首；两条 `lead` 之间使用 `<br>`。`title` 和 `seo.title` 保留不带分隔标记的纯文本，供页面元信息使用。
 
-官网与扩展的分隔线均以桌面正文的 18px 字号、3px 线宽为基准：高度 `1em`、宽度 `calc(1em / 6)`，间距和垂直偏移也使用 `em`。标题和小字按同一比例缩放；使用实色伪元素绘制，避免边框宽度取整改变细线比例。
+官网与扩展的分隔线均以桌面正文的 18px 字号、默认 3px 线宽为基准：高度 `1em`，粗细为档位 × `1em / 12`，默认第二档即 `1em / 6`，间距和垂直偏移也使用 `em`。主标题及品牌固定使用默认比例；使用实色伪元素绘制，避免边框宽度取整改变细线比例。
 
-站点布局和样式优先使用 Bootstrap 预定义类，包括栅格、间距、排版、背景和按钮；标题语意块使用 `d-inline-block mw-100`，正文使用 `lh-lg text-break`。自定义 CSS 保留阅读分隔线、卡片边框与阴影，以及悬浮开关的底色、图标、层级和安全间距，位于 `assets/scss/common/_custom.scss`。卡片跟随页面配色，深色模式调整边框颜色。`bootstrapJavascript = false` 关闭完整 Bootstrap 脚本，`assets/js/custom.js` 按需导入移动端菜单所需的 Offcanvas 和语言菜单所需的 Dropdown 组件。
+站点布局和样式优先使用 Bootstrap 预定义类，包括栅格、间距、排版、背景和按钮；标题语意块使用 `d-inline-block mw-100`，正文使用 `lh-lg text-break`。自定义 SCSS 保留阅读分隔线、卡片边框与阴影，以及悬浮面板的定位和外框，位于 `assets/scss/common/_custom.scss`。控件本身直接挂载扩展的 `../src/reader-controls.css`，颜色和粗细规则挂载 `../src/divider-color.js`、`../src/divider-width.js`，不维护第二份组件样式。卡片跟随页面配色，深色模式调整边框颜色。`bootstrapJavascript = false` 关闭完整 Bootstrap 脚本，`assets/js/custom.js` 按需导入移动端菜单所需的 Offcanvas 和语言菜单所需的 Dropdown 组件。
 
 全站通过 `layouts/_partials/head/custom-head.html` 在 HTML 的 `<head>` 中输出 `<meta name="haodu" content="off">`。即使扩展全局开启，也会跳过这些页面，不运行切分推理，避免影响静态演示开关；其他网站仍按全局设置处理。此标记不依赖域名或页面 JavaScript，部署后同样生效。已安装旧版开发扩展时，重新加载扩展及页面后该规则生效。
 
@@ -119,7 +121,9 @@ npm --prefix site run build -- --baseURL https://example.org/haodu/
 | `content/privacy.md`、`layouts/legal.html` | 隐私政策和简单的正文布局 |
 | `layouts/home.html` | 使用 Doks 基础模板和 Bootstrap 栅格的产品首页 |
 | `layouts/_partials/` | 项目扩展入口、站点图标、404 的 noindex |
-| `assets/scss/common/` | 阅读分隔线、卡片边框与阴影、悬浮开关，其余使用 Bootstrap 预定义类 |
+| `assets/scss/common/` | 阅读分隔线、卡片边框与阴影、悬浮面板外框，其余使用 Bootstrap 预定义类 |
+| `assets/js/reader-preview.js` | 静态示例开关、颜色及粗细交互，不加载模型、不改变切点 |
+| `../src/reader-controls.css`、`../src/divider-color.js`、`../src/divider-width.js` | 通过 Hugo 挂载，与扩展共用的控件样式和取值规则 |
 | `package.json`、`package-lock.json` | 固定版本的主题依赖和构建命令 |
 
 没有复制官方示例的 docs、blog 等页面。隐私政策按本项目实际的数据流编写。文档搜索、侧栏、版本切换等功能在 `params.toml` 中关闭；页脚包含隐私政策入口。

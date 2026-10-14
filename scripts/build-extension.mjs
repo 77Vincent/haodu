@@ -22,7 +22,7 @@ const files = [
   'src/frontend/processed-text.js', 'src/frontend/read.js',
   'src/frontend/viewport.js', 'src/frontend/visibility.js', 'src/frontend/write.js',
   'src/inference.html', 'src/inference-service.js', 'src/inference-worker.js',
-  'src/popup.html', 'src/popup.css',
+  'src/popup.html', 'src/popup.css', 'src/reader-controls.css',
   'src/platform/chrome/background.js', 'src/platform/chrome/content.js',
   'src/platform/chrome/inference.js', 'src/platform/chrome/popup.js',
   'src/start-inference.js', 'src/start-reader.js',

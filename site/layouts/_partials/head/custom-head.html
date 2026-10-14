@@ -2,6 +2,11 @@
   <meta name="robots" content="noindex">
 {{ end }}
 <meta name="haodu" content="off">
+{{- if .IsHome }}
+  {{- with resources.Get "css/reader-controls.css" | minify | fingerprint }}
+    <link rel="stylesheet" href="{{ .RelPermalink }}" integrity="{{ .Data.Integrity }}" crossorigin="anonymous">
+  {{- end }}
+{{- end }}
 {{- /* Thulite emits the image URLs; add dimensions and localized alternatives. */}}
 {{- with resources.Get (index site.Params.images 0) }}
   <meta property="og:image:type" content="{{ .MediaType.Type }}">

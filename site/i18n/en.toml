@@ -1,11 +1,29 @@
 [installNow]
 other = 'Install now'
 
-[hidePreview]
-other = 'Hide preview'
+[readerPreview]
+other = 'Reading preview'
 
-[showPreview]
-other = 'Show preview'
+[previewOn]
+other = 'On'
+
+[previewOff]
+other = 'Off'
+
+[dividerColor]
+other = 'Divider color'
+
+[dividerColorHint]
+other = 'Drag to adjust divider color'
+
+[dividerWidth]
+other = 'Divider thickness'
+
+[dividerWidthHint]
+other = 'Drag to adjust divider thickness'
+
+[dividerWidthValue]
+other = 'Step {value} of 5'
 
 [openMenu]
 other = 'Open navigation menu'

@@ -1,11 +1,29 @@
 [installNow]
 other = '现在安装'
 
-[hidePreview]
-other = '关闭辅助预览'
+[readerPreview]
+other = '阅读辅助预览'
 
-[showPreview]
-other = '开启辅助预览'
+[previewOn]
+other = '开启'
+
+[previewOff]
+other = '关闭'
+
+[dividerColor]
+other = '分隔线颜色'
+
+[dividerColorHint]
+other = '拖动调整分隔线颜色'
+
+[dividerWidth]
+other = '分隔线粗细'
+
+[dividerWidthHint]
+other = '拖动调整分隔线粗细'
+
+[dividerWidthValue]
+other = '第 {value} 档，共 5 档'
 
 [openMenu]
 other = '打开导航菜单'

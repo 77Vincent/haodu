@@ -1,0 +1,292 @@
+.haodu-controls {
+  /* Match the site's Doks palette and reading indicator without loading its CSS. */
+  --surface: #fff;
+  --text: #1d2d35;
+  --muted: #818b93;
+  --focus: hsl(234, 100%, 60%);
+  --disabled: #a8adb4;
+  --control-outline: rgb(0 0 0 / 8%);
+  color-scheme: light;
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: normal;
+}
+
+.haodu-controls #reader-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin: 6px 0px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.haodu-controls #reader-toggle-label {
+  white-space: nowrap;
+}
+
+.haodu-controls #reader-toggle[aria-checked="true"] #reader-toggle-state::before {
+  content: "";
+  display: inline-block;
+  width: calc(1em * var(--selected-divider-width, 2) / 12);
+  height: 1em;
+  margin: 0 0.08em;
+  vertical-align: -0.15em;
+  background: var(--selected-divider-color, #ff1744);
+}
+
+.haodu-controls #reader-toggle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.haodu-controls #reader-toggle:disabled {
+  cursor: default;
+}
+
+.haodu-controls #reader-toggle:disabled .switch-track {
+  opacity: 0.5;
+}
+
+.haodu-controls .switch-controls {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 10px;
+}
+
+.haodu-controls .shortcut-hint {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.haodu-controls .shortcut-hint kbd {
+  font: inherit;
+}
+
+.haodu-controls .switch-track {
+  flex: 0 0 40px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--disabled);
+  outline: 1px solid var(--control-outline);
+  outline-offset: -1px;
+  transition: background-color 150ms ease;
+}
+
+.haodu-controls #divider-hue,
+.haodu-controls #divider-width {
+  --divider-thumb-width: 14px;
+  appearance: none;
+  display: block;
+  box-sizing: border-box;
+  width: calc(100% - 12px);
+  height: 28px;
+  margin: 8px 6px 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.haodu-controls #divider-hue::-webkit-slider-runnable-track {
+  height: 12px;
+  border-radius: 2px;
+  background: var(--divider-spectrum, #ff1744);
+  /* Match the gradient to the thumb's center travel; both endpoints are red. */
+  background-color: #ff1744;
+  background-size: calc(100% - var(--divider-thumb-width)) 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  outline: 1px solid var(--control-outline);
+  outline-offset: -1px;
+}
+
+.haodu-controls #divider-hue::-webkit-slider-thumb,
+.haodu-controls #divider-width::-webkit-slider-thumb {
+  appearance: none;
+  /* Paint the thumb above the track's outline without changing its travel. */
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  width: var(--divider-thumb-width);
+  height: 20px;
+  margin-top: -5px;
+  border: 2px solid #fff;
+  border-radius: 2px;
+  background: var(--selected-divider-color, #ff1744);
+  box-shadow: 0 1px 1.5px #0003, 0 2px 3px #0002;
+}
+
+.haodu-controls #divider-width {
+  position: relative;
+}
+
+.haodu-controls #divider-width::before {
+  content: "";
+  position: absolute;
+  inset: 11.5px calc(var(--divider-thumb-width) / 10);
+  background: var(--muted);
+  /* Clip only the decoration, leaving the thumb and its shadow intact. */
+  clip-path: polygon(0 40%, 100% 0, 100% 100%, 0 70%);
+  pointer-events: none;
+}
+
+.haodu-controls #divider-width::-webkit-slider-runnable-track {
+  height: 4px;
+  background: transparent;
+}
+
+.haodu-controls #divider-width::-webkit-slider-thumb {
+  margin-top: -8px;
+}
+
+/* Firefox uses separate range pseudo-elements; the site shares these controls. */
+.haodu-controls #divider-hue::-moz-range-track {
+  height: 12px;
+  border-radius: 2px;
+  background: var(--divider-spectrum, #ff1744);
+  background-color: #ff1744;
+  background-size: calc(100% - var(--divider-thumb-width)) 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  outline: 1px solid var(--control-outline);
+  outline-offset: -1px;
+}
+
+.haodu-controls #divider-width::-moz-range-track {
+  height: 5px;
+  background: var(--muted);
+  clip-path: polygon(0 40%, 100% 0, 100% 100%, 0 70%);
+}
+
+.haodu-controls #divider-hue::-moz-range-thumb,
+.haodu-controls #divider-width::-moz-range-thumb {
+  box-sizing: border-box;
+  width: var(--divider-thumb-width);
+  height: 20px;
+  border: 2px solid #fff;
+  border-radius: 2px;
+  background: var(--selected-divider-color, #ff1744);
+  box-shadow: 0 1px 1.5px #0003, 0 2px 3px #0002;
+}
+
+.haodu-controls #divider-hue:focus-visible,
+.haodu-controls #divider-width:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.haodu-controls #divider-hue:disabled,
+.haodu-controls #divider-width:disabled {
+  filter: grayscale(0.4);
+  opacity: 0.5;
+  cursor: default;
+}
+
+.haodu-controls .switch-track::before {
+  content: "";
+  display: block;
+  /* A vertical bar echoes the divider in the logo. */
+  width: 10px;
+  border-radius: 1px;
+  height: 14px;
+  margin: 3px;
+  background: #fff;
+  box-shadow: 0 1px 1.5px #0002, 0 2px 3px #0001;
+  transition: transform 150ms ease;
+}
+
+.haodu-controls #reader-toggle[aria-checked="true"] .switch-track {
+  background: var(--selected-divider-color, #ff1744);
+}
+
+.haodu-controls #reader-toggle[aria-checked="true"] .switch-track::before {
+  transform: translateX(23px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-bs-theme="light"]) .haodu-controls {
+    --surface: hsl(224, 10%, 10%);
+    --text: hsl(224, 6%, 77%);
+    --muted: #a3a7b0;
+    --focus: hsl(224, 100%, 85%);
+    color-scheme: dark;
+  }
+}
+
+:root[data-bs-theme="dark"] .haodu-controls {
+  --surface: hsl(224, 10%, 10%);
+  --text: hsl(224, 6%, 77%);
+  --muted: #a3a7b0;
+  --focus: hsl(224, 100%, 85%);
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .haodu-controls .switch-track,
+  .haodu-controls .switch-track::before {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .haodu-controls #reader-toggle[aria-checked="true"] #reader-toggle-state::before {
+    background: CanvasText;
+  }
+
+  /* Dividers use the system palette in this mode; keep the saved hue intact. */
+  .haodu-controls #divider-hue {
+    display: none;
+  }
+
+  .haodu-controls #divider-width::before {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
+
+  .haodu-controls #divider-width::-webkit-slider-thumb {
+    background: Highlight;
+    border-color: Canvas;
+    outline: 1px solid CanvasText;
+    box-shadow: none;
+  }
+
+  .haodu-controls #divider-width::-moz-range-track {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
+
+  .haodu-controls #divider-width::-moz-range-thumb {
+    background: Highlight;
+    border-color: Canvas;
+    outline: 1px solid CanvasText;
+    box-shadow: none;
+  }
+
+  .haodu-controls .switch-track {
+    forced-color-adjust: none;
+    background: ButtonText;
+    outline-color: ButtonText;
+  }
+
+  .haodu-controls #reader-toggle[aria-checked="true"] .switch-track {
+    background: Highlight;
+  }
+
+  .haodu-controls .switch-track::before {
+    background: Canvas;
+    box-shadow: none;
+  }
+}
