@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const { readFileSync } = require("node:fs");
 const { join } = require("node:path");
 const vm = require("node:vm");
+const { preview } = require("./helpers/site-preview.js");
 
 const runScript = (path, context) => vm.runInContext(
   readFileSync(join(__dirname, "..", path), "utf8"), context, { filename: path },
@@ -34,6 +35,8 @@ function createBackground(saved = {}) {
   const injectionDelays = new Map();
   const statusDelays = new Map();
   const settingDelays = new Map();
+  const previewDocuments = new Map();
+  const previewSyncs = [];
 
   function publish(request, tabId = 1) {
     return new Promise((resolve) => message(request,
@@ -145,7 +148,18 @@ function createBackground(saved = {}) {
         const failure = injectionErrors.get(target.tabId);
         if (failure?.method === "insertCSS") throw new Error(failure.message);
       },
-      async executeScript({ target, files }) {
+      async executeScript({ target, files, func, args }) {
+        if (func) {
+          previewSyncs.push({ tabId: target.tabId, args });
+          const failure = injectionErrors.get(target.tabId);
+          if (failure?.method === "executeScript") throw new Error(failure.message);
+          const document = previewDocuments.get(target.tabId) || {
+            URL: tabs.get(target.tabId).url,
+            querySelector: (selector) => selector === 'meta[name="haodu"][content="off"]'
+              && optedOutTabs.has(target.tabId) ? {} : null,
+          };
+          return [{ result: vm.runInNewContext(`(${func.toString()})(...args)`, { document, Event, args }) }];
+        }
         injected.push(target.tabId);
         injectedFiles.push(Array.from(files));
         const failure = injectionErrors.get(target.tabId);
@@ -190,7 +204,7 @@ function createBackground(saved = {}) {
 
   return {
     pages, badges, icons, titles, disabled, commands, queries, writes, saved, tabs, injected, injectedFiles, requests,
-    addTab, optedOutTabs, cssInjections, injectionErrors,
+    addTab, optedOutTabs, cssInjections, injectionErrors, previewDocuments, previewSyncs,
     setShortcut(value) { shortcut = value; },
     setFileAccess(allowed) { fileAccess = allowed; },
     pauseInjection(id) {
@@ -233,6 +247,151 @@ function createBackground(saved = {}) {
     message: publish,
   };
 }
+
+test("homepage commands toggle the real site preview without changing global settings or loading a reader", async () => {
+  for (const enabled of [false, true]) {
+    const background = createBackground({ enabled });
+    const site = await preview();
+    background.addTab(1, site.document.URL);
+    background.previewDocuments.set(1, site.document);
+    await background.focus(1);
+    assert.equal(site.shortcutText.textContent, "Alt+Shift+U");
+    assert.equal(site.toggle.getAttribute("aria-checked"), "true");
+    await background.shortcut(1);
+    assert.equal(site.toggle.getAttribute("aria-checked"), "false");
+    assert.equal(site.hue.disabled, true);
+    // Even if a browser also delivers a key event, the page must not toggle again.
+    site.document.fire("keydown", { code: "KeyU", altKey: true, shiftKey: true });
+    assert.equal(site.toggle.getAttribute("aria-checked"), "false");
+    await background.shortcut(1);
+    assert.equal(site.toggle.getAttribute("aria-checked"), "true");
+    assert.equal(background.saved.enabled, enabled);
+    assert.equal(background.writes.length, 0);
+    assert.equal(background.injected.length, 0);
+    assert.equal(background.cssInjections.length, 0);
+    assert.equal(background.creations(), 0);
+    assert.equal((await background.popup({ type: "HAODU_GET_ENABLED" })).enabled, enabled);
+  }
+});
+
+test("preview hints follow remapped and cleared extension commands on focus", async () => {
+  const background = createBackground();
+  const site = await preview();
+  background.addTab(1, site.document.URL);
+  background.previewDocuments.set(1, site.document);
+  background.setShortcut("Ctrl+Shift+K");
+  await background.focus(1);
+  assert.equal(site.shortcutText.textContent, "Ctrl+Shift+K");
+  await background.shortcut(1);
+  assert.equal(site.toggle.getAttribute("aria-checked"), "false");
+  background.setShortcut("");
+  await background.focus(1);
+  assert.equal(site.shortcutText.textContent, "未设置");
+  site.document.fire("keydown", { code: "KeyU", altKey: true, shiftKey: true });
+  assert.equal(site.toggle.getAttribute("aria-checked"), "false");
+  site.toggle.fire("click");
+  assert.equal(site.toggle.getAttribute("aria-checked"), "true");
+});
+
+test("preview commands leave global state alone when the page cannot safely toggle", async () => {
+  const background = createBackground({ enabled: true });
+  const site = await preview();
+  background.addTab(1, site.document.URL);
+  background.previewDocuments.set(1, site.document);
+  for (const prepare of [
+    () => { background.tabs.get(1).status = "loading"; },
+    () => { background.tabs.get(1).status = "complete"; site.document.focused = false; },
+    () => { site.document.focused = true; site.controls.hidden = true; },
+    () => { site.controls.hidden = false; site.document.activeElement = { isContentEditable: true }; },
+    () => { site.document.activeElement = null; site.document.fire("compositionstart"); },
+    () => { site.document.fire("compositionend"); site.document.URL = "https://haodu.site/en/"; },
+  ]) {
+    prepare();
+    await background.shortcut(1);
+    assert.equal(site.toggle.getAttribute("aria-checked"), "true");
+    assert.equal(background.saved.enabled, true);
+    assert.equal(background.writes.length, 0);
+  }
+  background.previewDocuments.set(1, {
+    URL: "https://haodu.site/", querySelector: (selector) => selector.startsWith("meta") ? {} : null,
+  });
+  await background.shortcut(1);
+  assert.equal(background.saved.enabled, true, "opted-out pages without a preview have no shortcut action");
+});
+
+test("the opt-out marker enables preview commands independently of the URL", async () => {
+  for (const url of [
+    "https://haodu.site/en/",
+    "https://www.haodu.site/",
+    "http://localhost:1313/en/",
+    "http://127.0.0.1:1313/",
+    "http://[::1]:1313/",
+    "https://preview.example.com/build/42/en/",
+    "http://192.168.1.2:1313/",
+    "file:///tmp/haodu-preview/index.html",
+  ]) {
+    const background = createBackground({ enabled: false });
+    background.setFileAccess(true);
+    const site = await preview();
+    site.document.URL = url;
+    background.addTab(1, url);
+    background.previewDocuments.set(1, site.document);
+    await background.focus(1);
+    assert.equal(site.shortcutText.textContent, "Alt+Shift+U", url);
+    await background.shortcut(1);
+    assert.equal(site.toggle.getAttribute("aria-checked"), "false", url);
+    assert.equal(background.saved.enabled, false, url);
+    assert.equal(background.writes.length, 0, url);
+    assert.equal(background.injected.length, 0, url);
+  }
+});
+
+test("pages without the opt-out marker retain global commands even with preview controls", async () => {
+  for (const url of ["https://example.com/", "https://haodu.site/", "http://localhost:1313/"]) {
+    const background = createBackground({ enabled: false });
+    const site = await preview();
+    site.document.URL = url;
+    const querySelector = site.document.querySelector.bind(site.document);
+    site.document.querySelector = (selector) => selector === 'meta[name="haodu"][content="off"]'
+      ? null : querySelector(selector);
+    background.addTab(1, url);
+    background.previewDocuments.set(1, site.document);
+    await background.focus(1);
+    await background.shortcut(1);
+    assert.equal(background.saved.enabled, true, url);
+    assert.equal(site.toggle.getAttribute("aria-checked"), "true", url);
+    assert.equal(site.toggle.dataset.haoduExtensionShortcut, undefined, url);
+    assert.equal(background.pages.get(1).reader.status().enabled, true, url);
+    await background.shortcut(1);
+    assert.equal(background.saved.enabled, false, url);
+    assert.equal(background.pages.get(1).reader.status().enabled, false, url);
+  }
+});
+
+test("unrelated localhost pages retain normal global commands", async () => {
+  const background = createBackground({ enabled: false });
+  background.addTab(1, "http://localhost:3000/");
+  await background.shortcut(1);
+  assert.equal(background.saved.enabled, true);
+  assert.equal(background.pages.get(1).reader.status().enabled, true);
+  await background.shortcut(1);
+  assert.equal(background.saved.enabled, false);
+  assert.equal(background.pages.get(1).reader.status().enabled, false);
+});
+
+test("a denied marker check does not disable global shortcuts on inaccessible pages", async () => {
+  const background = createBackground({ enabled: false });
+  background.addTab(1, "https://example.com/");
+  background.injectionErrors.set(1, { method: "executeScript", message: "Cannot access contents of the page" });
+  await background.shortcut(1);
+  assert.equal(background.saved.enabled, true);
+  assert.equal(background.pages.has(1), false);
+  assert.equal(background.injected.length, 0);
+  assert.equal(background.cssInjections.length, 0);
+  assert.equal(background.badges.get(1), "");
+  await background.shortcut(1);
+  assert.equal(background.saved.enabled, false);
+});
 
 test("opening the popup only reads state; its switch and shortcut share the saved setting", async () => {
   const background = createBackground();
@@ -454,10 +613,10 @@ test("page opt-out survives focus, navigation and global toggles without disabli
   const background = createBackground({ enabled: true });
   background.optedOutTabs.add(1);
   await background.focus(1);
-  const portal = background.pages.get(1);
-  assert.equal(portal.reader.status().enabled, false);
-  assert.equal(portal.reads, 0);
-  assert.equal(portal.marker, null);
+  assert.equal(background.pages.has(1), false);
+  assert.equal(background.injected.length, 0);
+  assert.equal(background.cssInjections.length, 0);
+  assert.equal(background.creations(), 0);
   assert.equal(background.saved.enabled, true);
   assert.equal(background.writes.length, 0);
 
@@ -465,20 +624,19 @@ test("page opt-out survives focus, navigation and global toggles without disabli
   assert.equal(background.pages.get(2).reader.status().enabled, true);
   assert.equal(background.pages.get(2).reads, 1);
   await background.focus(1);
-  assert.equal(portal.reads, 0);
+  assert.equal(background.pages.has(1), false);
 
   await background.navigate(1);
-  const reloaded = background.pages.get(1);
-  assert.notEqual(reloaded, portal);
-  assert.equal(reloaded.reader.status().enabled, false);
-  assert.equal(reloaded.reads, 0);
+  assert.equal(background.pages.has(1), false);
   await background.shortcut(1);
+  assert.equal(background.saved.enabled, true, "a marked page without controls consumes the shortcut");
+  await background.popup({ type: "HAODU_SET_ENABLED", enabled: false });
   assert.equal(background.saved.enabled, false);
-  await background.shortcut(1);
+  await background.popup({ type: "HAODU_SET_ENABLED", enabled: true });
   assert.equal(background.saved.enabled, true);
-  assert.equal(reloaded.reader.status().enabled, false);
-  assert.equal(reloaded.reads, 0);
-  assert.equal(reloaded.marker, null);
+  assert.equal(background.pages.has(1), false);
+  assert.ok(background.injected.every((id) => id !== 1));
+  assert.ok(background.cssInjections.every((id) => id !== 1));
 
   await background.focus(2);
   assert.equal(background.pages.get(2).reader.status().enabled, true);

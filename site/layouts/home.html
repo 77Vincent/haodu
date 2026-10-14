@@ -30,10 +30,13 @@
 </main>
 <div class="haodu-controls reader-preview-controls" data-reader-controls
   data-label-on="{{ i18n "previewOn" }}" data-label-off="{{ i18n "previewOff" }}"
-  data-width-label="{{ i18n "dividerWidthValue" }}" hidden>
-  <button id="reader-toggle" type="button" role="switch" aria-label="{{ i18n "readerPreview" }}" aria-checked="true" aria-controls="main-content">
+  data-width-label="{{ i18n "dividerWidthValue" }}" data-shortcut-unset="{{ i18n "shortcutUnset" }}" hidden>
+  <button id="reader-toggle" type="button" role="switch" aria-label="{{ i18n "readerPreview" }}" aria-checked="true" aria-controls="main-content" aria-describedby="shortcut-hint">
     <span id="reader-toggle-label">{{ site.Title }}{{ if eq site.Language.Lang "en" }} {{ end }}<span id="reader-toggle-state">{{ i18n "previewOn" }}</span></span>
-    <span class="switch-controls"><span class="switch-track" aria-hidden="true"></span></span>
+    <span class="switch-controls">
+      <span id="shortcut-hint" class="shortcut-hint" title="{{ i18n "previewShortcutHint" }}" hidden><kbd id="reader-shortcut"></kbd></span>
+      <span class="switch-track" aria-hidden="true"></span>
+    </span>
   </button>
   <input id="divider-hue" type="range" min="0" max="360" step="1" value="0"
     aria-label="{{ i18n "dividerColor" }}" title="{{ i18n "dividerColorHint" }}" aria-controls="main-content">

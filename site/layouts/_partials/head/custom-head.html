@@ -1,6 +1,7 @@
 {{ if or (eq .Kind "404") (ne hugo.Environment "production") }}
   <meta name="robots" content="noindex">
 {{ end }}
+{{/* The extension skips processing and hands shortcuts to our preview, on any host. */}}
 <meta name="haodu" content="off">
 {{- if .IsHome }}
   {{- with resources.Get "css/reader-controls.css" | minify | fingerprint }}

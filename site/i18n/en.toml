@@ -4,6 +4,12 @@ other = 'Install now'
 [readerPreview]
 other = 'Reading preview'
 
+[previewShortcutHint]
+other = 'Toggle this preview without changing the extension’s global setting'
+
+[shortcutUnset]
+other = 'Not set'
+
 [previewOn]
 other = 'On'
 

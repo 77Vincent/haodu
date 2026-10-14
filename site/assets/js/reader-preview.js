@@ -6,6 +6,8 @@ export function initReaderPreview(document = globalThis.document) {
   const label = controls.querySelector('#reader-toggle-state');
   const hue = controls.querySelector('#divider-hue');
   const width = controls.querySelector('#divider-width');
+  const shortcutHint = controls.querySelector('#shortcut-hint');
+  const shortcutText = controls.querySelector('#reader-shortcut');
   const markers = document.querySelectorAll('.reader-divider');
   const { colorForHue, normalizeHue, gradient } = globalThis.Haodu.dividerColor;
   const { normalizeWidth } = globalThis.Haodu.dividerWidth;
@@ -30,12 +32,46 @@ export function initReaderPreview(document = globalThis.document) {
     width.disabled = !enabled;
   }
 
-  toggle.addEventListener('click', () => {
+  function togglePreview() {
     renderEnabled(toggle.getAttribute('aria-checked') !== 'true');
+  }
+
+  function renderShortcut() {
+    const binding = toggle.dataset.haoduExtensionShortcut;
+    const platform = document.defaultView?.navigator?.platform || '';
+    shortcutText.textContent = binding === undefined
+      ? (/Mac/u.test(platform) ? '⌥⇧U' : 'Alt+Shift+U')
+      : (binding || controls.dataset.shortcutUnset);
+    shortcutHint.hidden = false;
+  }
+
+  function isEditing(target) {
+    return target?.isContentEditable || target?.closest?.(
+      'textarea, select, input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"])',
+    );
+  }
+
+  let composing = false;
+  document.addEventListener('compositionstart', () => { composing = true; });
+  document.addEventListener('compositionend', () => { composing = false; });
+  document.addEventListener('keydown', (event) => {
+    // Once connected, Chrome owns the binding and forwards only its command.
+    // This also respects a custom or explicitly unassigned extension shortcut.
+    if (toggle.dataset.haoduExtensionShortcut !== undefined || event.defaultPrevented
+      || composing || event.isComposing || isEditing(event.composedPath?.()[0] || event.target)
+      || !event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey || event.code !== 'KeyU') return;
+    event.preventDefault();
+    if (!event.repeat) togglePreview();
   });
+  toggle.addEventListener('haodu:preview-shortcut', renderShortcut);
+  toggle.addEventListener('haodu:preview-toggle', () => {
+    if (!controls.hidden && !composing && !isEditing(document.activeElement)) togglePreview();
+  });
+  toggle.addEventListener('click', togglePreview);
   hue.addEventListener('input', renderAppearance);
   width.addEventListener('input', renderAppearance);
   renderAppearance();
   renderEnabled(true);
+  renderShortcut();
   controls.hidden = false;
 }

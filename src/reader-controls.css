@@ -72,6 +72,9 @@
 
 .haodu-controls .shortcut-hint kbd {
   font: inherit;
+  color: inherit;
+  padding: 0;
+  background: transparent;
 }
 
 .haodu-controls .switch-track {

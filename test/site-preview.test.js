@@ -1,53 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-require("../src/divider-color.js");
-require("../src/divider-width.js");
-
-function element(value = "") {
-  const attributes = new Map();
-  const listeners = {};
-  return {
-    value, hidden: false, disabled: false, textContent: "",
-    style: { setProperty(name, value) { this[name] = value; } },
-    setAttribute(name, value) { attributes.set(name, value); },
-    getAttribute(name) { return attributes.get(name); },
-    addEventListener(name, callback) { listeners[name] = callback; },
-    fire(name) { listeners[name](); },
-  };
-}
-
-async function preview(english = false) {
-  const toggle = element();
-  const label = element();
-  const hue = element("0");
-  const width = element("2");
-  const controls = element();
-  controls.hidden = true;
-  controls.dataset = english
-    ? { labelOn: "On", labelOff: "Off", widthLabel: "Step {value} of 5" }
-    : { labelOn: "开启", labelOff: "关闭", widthLabel: "第 {value} 档，共 5 档" };
-  const nodes = {
-    "#reader-toggle": toggle, "#reader-toggle-state": label,
-    "#divider-hue": hue, "#divider-width": width,
-  };
-  controls.querySelector = (selector) => nodes[selector];
-  const markers = [element(), element()];
-  const root = element();
-  const document = {
-    documentElement: root,
-    querySelector(selector) {
-      assert.equal(selector, "[data-reader-controls]");
-      return controls;
-    },
-    querySelectorAll(selector) {
-      assert.equal(selector, ".reader-divider", "only authored preview markers participate");
-      return markers;
-    },
-  };
-  const { initReaderPreview } = await import("../site/assets/js/reader-preview.js");
-  initReaderPreview(document);
-  return { toggle, label, hue, width, controls, markers, root };
-}
+const { preview } = require("./helpers/site-preview.js");
 
 test("site preview starts enabled with the extension's red and second thickness step", async () => {
   const p = await preview();
@@ -111,4 +64,52 @@ test("English preview localizes state and thickness announcements", async () => 
 test("pages without preview controls need no appearance initialization", async () => {
   const { initReaderPreview } = await import("../site/assets/js/reader-preview.js");
   assert.doesNotThrow(() => initReaderPreview({ querySelector: () => null }));
+});
+
+const shortcutKey = { code: "KeyU", key: "¨", altKey: true, shiftKey: true };
+
+test("the site shortcut uses the physical U key and ignores held, composing and editable input", async () => {
+  const p = await preview();
+  assert.equal(p.shortcutText.textContent, "⌥⇧U");
+  assert.equal((await preview(false, "Win32")).shortcutText.textContent, "Alt+Shift+U");
+  assert.equal(p.document.fire("keydown", shortcutKey).defaultPrevented, true);
+  assert.equal(p.toggle.getAttribute("aria-checked"), "false");
+  p.document.fire("keydown", { ...shortcutKey, repeat: true });
+  assert.equal(p.toggle.getAttribute("aria-checked"), "false");
+  p.document.fire("keydown", shortcutKey);
+  assert.equal(p.toggle.getAttribute("aria-checked"), "true");
+  for (const override of [
+    { altKey: false }, { shiftKey: false }, { ctrlKey: true }, { metaKey: true },
+    { code: "KeyI" }, { defaultPrevented: true }, { isComposing: true },
+    { target: { isContentEditable: true } },
+    { target: { closest: () => ({ tagName: "INPUT" }) } },
+    { composedPath: () => [{ isContentEditable: true }] },
+  ]) {
+    p.document.fire("keydown", { ...shortcutKey, ...override });
+    assert.equal(p.toggle.getAttribute("aria-checked"), "true");
+  }
+  p.document.fire("compositionstart");
+  p.document.fire("keydown", shortcutKey);
+  assert.equal(p.toggle.getAttribute("aria-checked"), "true");
+  p.document.fire("compositionend");
+  p.document.fire("keydown", shortcutKey);
+  assert.equal(p.toggle.getAttribute("aria-checked"), "false");
+});
+
+test("an extension-owned shortcut disables the local fallback, including an unassigned binding", async () => {
+  const p = await preview();
+  p.toggle.dataset.haoduExtensionShortcut = "Ctrl+Shift+K";
+  p.toggle.fire("haodu:preview-shortcut");
+  assert.equal(p.shortcutText.textContent, "Ctrl+Shift+K");
+  p.document.fire("keydown", shortcutKey);
+  assert.equal(p.toggle.getAttribute("aria-checked"), "true");
+  p.toggle.fire("haodu:preview-toggle");
+  assert.equal(p.toggle.getAttribute("aria-checked"), "false", "one forwarded command toggles exactly once");
+  p.toggle.dataset.haoduExtensionShortcut = "";
+  p.toggle.fire("haodu:preview-shortcut");
+  assert.equal(p.shortcutText.textContent, "未设置");
+  p.document.fire("keydown", shortcutKey);
+  assert.equal(p.toggle.getAttribute("aria-checked"), "false");
+  p.toggle.fire("click");
+  assert.equal(p.toggle.getAttribute("aria-checked"), "true", "the mouse switch remains usable");
 });

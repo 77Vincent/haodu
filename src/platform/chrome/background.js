@@ -130,9 +130,43 @@ async function activeTab() {
   return tab;
 }
 
+async function syncSitePreview(tab, activate = false) {
+  try {
+    const [result] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      // Isolated-world code shares only DOM events/attributes with the site.
+      // No site-to-extension messages or access to saved preferences are added.
+      func: (shortcut, activate, expectedUrl) => {
+        // Navigation must not turn a preview command into a global toggle.
+        if (document.URL !== expectedUrl) return true;
+        if (!document.querySelector('meta[name="haodu"][content="off"]')) return false;
+        const controls = document.querySelector('[data-reader-controls]');
+        const toggle = controls?.querySelector('#reader-toggle');
+        // Opted-out pages without a preview (privacy, 404) consume the command.
+        if (toggle) {
+          toggle.dataset.haoduExtensionShortcut = shortcut;
+          toggle.dispatchEvent(new Event('haodu:preview-shortcut'));
+          if (activate && !controls.hidden && document.hasFocus()) {
+            toggle.dispatchEvent(new Event('haodu:preview-toggle'));
+          }
+        }
+        return true;
+      },
+      args: [actionShortcut, activate, tab.url],
+    });
+    return result?.result === true;
+  } catch (error) {
+    // Unknown is not an opt-out: keep global commands available when Chrome
+    // denies page access, but do not attempt to inject a reader into that page.
+    if (isPageAccessDenied(error)) return null;
+    throw error;
+  }
+}
+
 async function applyToTab(tab) {
   try {
     if (!await supportsReader(tab)) return;
+    if (await syncSitePreview(tab) !== false) return;
     const ready = await readerStatus(tab.id);
     if (!ready) {
       if (!enabled) return;
@@ -178,9 +212,17 @@ async function toggleGlobal(tab, requestedEnabled) {
   try {
     await settingsReady;
     tab ??= await activeTab();
+    // Wait for the new document's marker before routing a shortcut. A command
+    // during navigation must not accidentally change the global preference.
+    if (requestedEnabled === undefined && tab?.status === "loading") return;
+    const supported = await supportsReader(tab);
+    if (requestedEnabled === undefined && supported) {
+      await refreshShortcut();
+      if (await syncSitePreview(tab, true) === true) return;
+    }
     // Only the active page's task locks this change. Other tabs apply the new
     // setting when visited, without interrupting their current operation.
-    if (await supportsReader(tab) && (await readerStatus(tab.id))?.busy) return;
+    if (supported && (await readerStatus(tab.id))?.busy) return;
     const next = requestedEnabled ?? !enabled;
     if (next === enabled) return;
     await chrome.storage.local.set({ enabled: next });

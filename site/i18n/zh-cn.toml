@@ -4,6 +4,12 @@ other = '现在安装'
 [readerPreview]
 other = '阅读辅助预览'
 
+[previewShortcutHint]
+other = '切换本页预览，不改变插件全局开关'
+
+[shortcutUnset]
+other = '未设置'
+
 [previewOn]
 other = '开启'
 
