@@ -60,6 +60,8 @@ npm --prefix site run dev
 
 开发预览通过 `--renderToMemory` 在内存中提供页面和资源，与生产构建的 `public/` 分开。`config/development/hugo.toml` 同时将开发资源的编译缓存放到已忽略的 `resources/development/`，避免生产构建的 `--cleanDestinationDir` 或 `--gc` 删除预览正在使用的文件。可以在预览运行时执行构建。
 
+共享控件资源通过目录挂载并用 `files` 筛选所需的 CSS 和 JS，使 `src/reader-controls.css` 等文件的修改也能触发热刷新，不会挂载模型或其他扩展代码。修改挂载来源后需重启一次开发服务，使新的监听目录生效；普通样式修改无需重启。配置方式见 [Hugo 模块挂载文档](https://gohugo.io/configuration/module/#mounts)。
+
 打开终端输出的本地地址（默认 `http://localhost:1313/`）。如果端口已占用：
 
 ```sh

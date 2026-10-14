@@ -95,18 +95,17 @@
   source = "../release/assets/haodu-cover-1280x640.jpg"
   target = "assets/images/haodu-cover-1280x640.jpg"
 
-# Share the extension's controls and appearance rules without loading its model.
+# Mount the directory so Hugo watches edits to the shared files during preview.
+# Only these assets are included; the extension's model stays outside the site.
 [[mounts]]
-  source = "../src/reader-controls.css"
-  target = "assets/css/reader-controls.css"
+  source = "../src"
+  target = "assets/css"
+  files = ["reader-controls.css"]
 
 [[mounts]]
-  source = "../src/divider-color.js"
-  target = "assets/js/haodu/divider-color.js"
-
-[[mounts]]
-  source = "../src/divider-width.js"
-  target = "assets/js/haodu/divider-width.js"
+  source = "../src"
+  target = "assets/js/haodu"
+  files = ["divider-color.js", "divider-width.js"]
 
 ## static
 [[mounts]]

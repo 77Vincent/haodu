@@ -221,7 +221,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-bs-theme="light"]) .haodu-controls {
-    --surface: hsl(224, 10%, 10%);
+    --surface: hsl(224, 10%, 14%);
     --text: hsl(224, 6%, 77%);
     --muted: #a3a7b0;
     --focus: hsl(224, 100%, 85%);
@@ -230,7 +230,7 @@
 }
 
 :root[data-bs-theme="dark"] .haodu-controls {
-  --surface: hsl(224, 10%, 10%);
+  --surface: hsl(224, 10%, 14%);
   --text: hsl(224, 6%, 77%);
   --muted: #a3a7b0;
   --focus: hsl(224, 100%, 85%);
