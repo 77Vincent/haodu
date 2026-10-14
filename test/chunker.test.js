@@ -106,6 +106,49 @@ test("context pre-splitting preserves non-proxies, whitespace, and normalized nu
   assert.equal(chunker.visualLength("甲乙丙丁戊己庚辛壬癸子丑 English"), 13);
 });
 
+test("spaces between Han passages pre-split without losing whitespace or supplementary characters", () => {
+  for (const space of [" ", "   ", "\u00a0", "\u3000", " \u00a0\u3000 "]) {
+    const text = `不同的意見${space}但是他們${space}𠮷${space}加油`;
+    const clauses = splitClauses(text);
+    assert.deepEqual(clauses, [`不同的意見${space}`, `但是他們${space}`, `𠮷${space}`, "加油"]);
+    assert.equal(clauses.join(""), text);
+  }
+});
+
+test("spaces touching Latin, numbers or punctuation remain model context", () => {
+  for (const text of ["使用 AI 模型", "New York", "9 1/4", "版本 2.0 更新", "中文 A", "A 中文", "  中文  ", "引文》 下一段", "好的.. 加油"]) {
+    assert.deepEqual(splitClauses(text), [text]);
+  }
+  assert.deepEqual(splitClauses("前段 \r\n 後段"), ["前段 \r\n", " 後段"]);
+});
+
+test("Han spaces apply the length gate to each passage without adding visible dividers", () => {
+  const chunker = withModel(() => { throw new Error("each passage is shorter than 13 units"); });
+  const text = "甲乙丙丁戊己庚辛壬癸子丑   寅卯辰巳午未申酉戌亥天地";
+  assert.ok(chunker.visualLength(text) >= 13);
+  assert.deepEqual(Array.from(chunker.process([text])[0]), []);
+  const chunks = Array.from(chunker.buildVisualChunks(text));
+  assert.equal(chunks.map((chunk) => chunk.text).join(""), text);
+  assert.ok(chunks.every((chunk) => !chunk.separated));
+});
+
+test("Han space boundaries isolate inference and preserve original UTF-16 divider offsets", () => {
+  const left = "𠮷甲乙丙丁戊己庚辛壬癸子丑";
+  const right = "甲乙丙丁戊己庚辛壬癸子丑寅";
+  for (const space of [" ", "   ", "\u00a0\u3000"]) {
+    const inputs = [];
+    const chunker = withModel((tokens) => {
+      inputs.push(tokens.join(""));
+      return tokens.slice(1).map((token) => token === "庚" ? 100 : 0);
+    });
+    const text = left + space + right;
+    assert.deepEqual(Array.from(chunker.process([text])[0]),
+      [left.indexOf("庚"), left.length + space.length + right.indexOf("庚")]);
+    assert.deepEqual(inputs, [left, right]);
+    assert.equal(chunker.buildVisualChunks(text).map((chunk) => chunk.text).join(""), text);
+  }
+});
+
 test("model cuts cannot touch either side of opening or closing marks", () => {
   for (const [opening, closing] of [['"', '"'], ['“', '”'], ['（', '）'], ['《', '》']]) {
     const text = `前面的文字${opening} 甲乙丙丁戊己庚辛壬癸子丑${closing}后面继续阅读`;

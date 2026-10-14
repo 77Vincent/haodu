@@ -26,6 +26,7 @@
   // Match the text policy in the private training repository. Classify ORIGINAL
   // glyphs before NFKC: ASCII/compatibility punctuation is retained context.
   const CONTEXT_PROXY = /[，。！？；…]/u;
+  const HAN_SEPARATING_SPACES = /(?<=\p{Script=Han})\p{Zs}+(?=\p{Script=Han})/gu;
   const LINE_BOUNDARY = /[\n\r\v\f\u001c-\u001e\u0085\u2028\u2029]/u;
   const PHYSICAL_LINE = /[^\n\r\v\f\u001c-\u001e\u0085\u2028\u2029]+/gu;
   const NUMBER_SIGN = String.raw`[+\-−﹢﹣＋－]`;
@@ -111,6 +112,11 @@
     const clauses = [];
     let buffer = "";
     const boundaryOffsets = contextBoundaryOffsets(text);
+    // Spaces between Han passages are reading boundaries, not training proxies.
+    // Keep the whole run in the preceding clause; tokenization trims its tail.
+    for (const match of text.matchAll(HAN_SEPARATING_SPACES)) {
+      boundaryOffsets.add(match.index + match[0].length - 1);
+    }
     let sourceOffset = 0;
     const sourceOffsets = characters.map((character) => {
       const start = sourceOffset;

@@ -204,7 +204,9 @@ test("model cuts require adjacent Han in the source, before normalization or whi
   const snippets = [
     "｜8:30", "8｜:30", "8:｜30", "8:30｜", "3｜.14", "3.｜14", "1/｜4",
     "｜AI", "AI｜", "｜（切勿模仿）", "（｜切勿模仿）", "（切勿模仿｜）", "（切勿模仿）｜",
-    "｜ 切勿模仿", " ｜切勿模仿", "｜㍿", "㍿｜", "｜ﬃ", "ﬃ｜", "🌈｜", "𠮷\u{E0100}｜",
+    // Keep spaces beside non-Han text so the new Han-space pre-split does not apply.
+    "｜ English", " ｜English", "：｜ 切勿模仿", "： ｜切勿模仿",
+    "｜㍿", "㍿｜", "｜ﬃ", "ﬃ｜", "🌈｜", "𠮷\u{E0100}｜",
   ];
   for (const snippet of snippets) {
     const marked = text.slice(0, 8) + snippet + text.slice(8);
