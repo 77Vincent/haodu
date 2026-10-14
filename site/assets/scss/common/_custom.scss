@@ -20,13 +20,13 @@
   display: none;
   position: fixed;
   inset: auto 0 0;
-  height: 200px;
+  height: 240px;
   z-index: $zindex-fixed - 1;
   background: linear-gradient(
     to bottom,
     rgba(var(--bs-body-bg-rgb), 0),
     rgba(var(--bs-body-bg-rgb), 0.85) 35%,
-    var(--bs-body-bg) 65%
+    var(--bs-body-bg) 80%
   );
   pointer-events: none;
 }
