@@ -92,7 +92,7 @@ npm run release:site -- --base-url https://haodu.site/
 - `config/_default/params.toml` 的 `chromeWebStoreURL`：首页安装按钮的固定地址。目前使用含 `REPLACE_WITH_EXTENSION_ID` 的 Chrome 商店占位链接；发布后替换为好读的完整商店详情页链接，再重新构建、部署网站。
 - `content/_index.md`：维护中文首页标题、SEO 标题、描述和两种语言共用的中文 demo；`content/_index.en.md` 维护对应英文介绍。
 
-首页安装入口中文显示“现在安装”，英文显示“Install now”；所有浏览器都直接打开配置的商店详情页，不检测浏览器，也不依赖 JavaScript。
+首页安装入口中文显示“现在安装”，英文显示“Install now”；所有浏览器都在新标签页打开配置的商店详情页，保留当前官网页面，不检测浏览器，也不依赖 JavaScript。
 
 也可以在构建时指定地址：
 
