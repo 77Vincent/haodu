@@ -97,22 +97,43 @@
 
   function convolve(input, output, sequenceLength, weight, bias, activate) {
     for (let position = 0; position < sequenceLength; position += 1) {
-      for (let outputChannel = 0; outputChannel < CHANNELS; outputChannel += 1) {
-        let value = bias[outputChannel];
-        const outputWeightOffset = outputChannel * CHANNELS * 3;
+      const current = position * CHANNELS;
+      const previous = current - CHANNELS;
+      const next = current + CHANNELS;
+      // Only the two ends need missing-neighbor checks. Keep the interior
+      // channel loops branch-free, preserving the original accumulation order.
+      if (position === 0 || position === sequenceLength - 1) {
+        for (let outputChannel = 0; outputChannel < CHANNELS; outputChannel += 1) {
+          let value = bias[outputChannel];
+          const outputWeightOffset = outputChannel * CHANNELS * 3;
 
-        for (let inputChannel = 0; inputChannel < CHANNELS; inputChannel += 1) {
-          const weightOffset = outputWeightOffset + inputChannel * 3;
-          if (position > 0) {
-            value += input[(position - 1) * CHANNELS + inputChannel] * weight[weightOffset];
+          for (let inputChannel = 0; inputChannel < CHANNELS; inputChannel += 1) {
+            const weightOffset = outputWeightOffset + inputChannel * 3;
+            if (position > 0) {
+              value += input[previous + inputChannel] * weight[weightOffset];
+            }
+            value += input[current + inputChannel] * weight[weightOffset + 1];
+            if (position + 1 < sequenceLength) {
+              value += input[next + inputChannel] * weight[weightOffset + 2];
+            }
           }
-          value += input[position * CHANNELS + inputChannel] * weight[weightOffset + 1];
-          if (position + 1 < sequenceLength) {
-            value += input[(position + 1) * CHANNELS + inputChannel] * weight[weightOffset + 2];
-          }
+
+          output[current + outputChannel] = activate ? gelu(value) : value;
         }
+      } else {
+        for (let outputChannel = 0; outputChannel < CHANNELS; outputChannel += 1) {
+          let value = bias[outputChannel];
+          const outputWeightOffset = outputChannel * CHANNELS * 3;
 
-        output[position * CHANNELS + outputChannel] = activate ? gelu(value) : value;
+          for (let inputChannel = 0; inputChannel < CHANNELS; inputChannel += 1) {
+            const weightOffset = outputWeightOffset + inputChannel * 3;
+            value += input[previous + inputChannel] * weight[weightOffset];
+            value += input[current + inputChannel] * weight[weightOffset + 1];
+            value += input[next + inputChannel] * weight[weightOffset + 2];
+          }
+
+          output[current + outputChannel] = activate ? gelu(value) : value;
+        }
       }
     }
 
