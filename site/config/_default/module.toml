@@ -21,6 +21,11 @@
   source = "data"
   target = "data"
 
+# Read the extension version directly from its manifest at build time.
+[[mounts]]
+  source = "../manifest.json"
+  target = "data/extension.json"
+
 ## layouts
 [[mounts]]
   source = "layouts"

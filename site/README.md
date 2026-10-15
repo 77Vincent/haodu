@@ -6,6 +6,8 @@
 
 配置参考官方 Doks starter，其 MIT 许可保留在 `LICENSE-Doks.txt`。
 
+页脚通过 `layouts/_partials/footer/footer.html` 沿用 Doks 1.9.3 的布局，在右侧品牌名旁显示插件版本。`module.toml` 将根目录 `manifest.json` 挂载为 Hugo 数据，构建时直接读取其中的 `version`；中英文共用，无需在站点另外维护版本号。
+
 中文品牌文字标志为「好｜读」，英文为「hao｜du」，由 `layouts/_partials/brand-wordmark.html` 统一生成。导航栏和移动端菜单通过本地 `header/header.html` 覆盖使用它；该文件基于 Doks 1.9.3 的导航模板，调整品牌、界面译文及语言选择菜单，升级主题时需同步检查。中英文品牌分隔线固定为品牌红色并随字号缩放，始终显示，不受预览开关、颜色及粗细调节影响。正文和页面元数据中的品牌名仍为「好读」和小写 `haodu`。
 
 网站 favicon 与插件图标统一为透明底的红色粗竖线，颜色为 `#ff1744`；在仓库根目录运行 `npm run icons:generate` 可同时重新生成 SVG、插件各尺寸 PNG 和 `static/favicon.png`。
