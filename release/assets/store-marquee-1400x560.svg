@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="560" viewBox="0 0 1400 560">
   <rect width="1400" height="560" fill="#fff"/>
-  <rect width="1400" height="12" fill="#ff1744"/>
   <g font-family="PingFang SC, Noto Sans CJK SC, sans-serif" fill="#192b33">
     <!-- Match the site wordmark: 18px type, 3x18 divider, .08em gaps,
          divider bottom .15em below the baseline. Scale the whole group. -->
