@@ -8,7 +8,6 @@
     "icons:generate": "node scripts/generate-icons.mjs",
     "release:extension": "node scripts/build-extension.mjs",
     "release:site": "node scripts/build-site.mjs",
-    "release:site:preview": "node scripts/build-site.mjs --preview",
-    "deploy:site": "node scripts/deploy-site.mjs"
+    "release:site:preview": "node scripts/build-site.mjs --preview"
   }
 }

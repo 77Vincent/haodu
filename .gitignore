@@ -6,3 +6,16 @@ __pycache__/
 /dist/
 .DS_Store
 /.claude/worktrees/
+
+# Deployment credentials and private certificate material stay outside Git.
+.env
+.env.*
+!.env.example
+.ossutilconfig
+*.key
+*.pem
+*.p12
+*.pfx
+*.keystore
+/credentials/
+/secrets/

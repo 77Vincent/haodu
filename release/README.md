@@ -2,7 +2,7 @@
 
 网站与插件独立发布。网站只上传静态页面；插件只上传运行文件。不要把仓库根目录或整个 `dist/` 上传到任意一方。
 
-发布目标为 Chrome Web Store；`haodu.site` 的域名注册与站点托管使用阿里云。网站部署配置和带日期的操作记录见 [阿里云 OSS 部署说明](aliyun-oss.md)。云端访问状态以实际访问与控制台为准，旧部署记录不代表当前线上状态。
+插件发布目标为 Chrome Web Store。本仓库维护插件打包、站点构建和商店材料；官网的生产发布脚本、云资源配置及运维记录维护在私有仓库 [77Vincent/haodu-release](https://github.com/77Vincent/haodu-release)。公开仓库可独立开发、测试和构建，不需要该私有仓库或云端凭证。
 
 ## 1. 构建插件
 
@@ -50,31 +50,15 @@ CI 也可以通过 `SITE_BASE_URL` 传入地址。正式地址必须包含 HTTPS
 
 HTML 建议 `Cache-Control: no-cache`；带内容指纹的 CSS/JS 可以长缓存；favicon 等无指纹资源使用短缓存。此站点所有构建资源均由本站提供，部署不依赖浏览器访问 npm、GitHub 或外部字体 CDN。
 
-## 3. 发布到阿里云 OSS
+## 3. 上架顺序
 
-站点部署到阿里云 OSS 上海地域（`cn-shanghai`）的 `haodu-site` Bucket，正式地址为 `https://haodu.site/`。使用官方 ossutil 调用 API，专用 RAM 用户只负责上传和校验网站文件。
-
-```sh
-# 构建并检查发布清单，不调用云 API。
-npm run deploy:site -- --dry-run
-
-# 使用本机已配置的专用凭证上传并校验。
-npm run deploy:site -- --profile haodu-site
-```
-
-发布命令会重新构建生产站点，先上传资源、后上传 HTML，首页最后上传；每个文件上传后通过 ETag 校验。凭证配置、权限范围与完整上线步骤见 [API 发布](aliyun-oss.md#api-发布)。
-
-文件上传与网站公开上线是两个步骤。完成 ICP 备案后，再配置 Bucket 的域名绑定、DNS、HTTPS 和公共读权限；发布脚本不修改这些设置。依据：[阿里云自定义域名与备案要求](https://help.aliyun.com/zh/oss/user-guide/access-buckets-via-custom-domain-names)。
-
-## 4. 上架顺序
-
-1. 确认公开隐私政策与支持链接可访问。官网备案期间，可使用公开仓库的 [隐私政策](https://github.com/77Vincent/haodu/blob/main/site/content/privacy.md) 和项目首页提交商店，无需等待正式域名上线。官网上线后，再验证首页、`/en/`、语言切换、`/privacy/`、404、CSS/JS、明暗切换与演示按钮。
+1. 确认[官网](https://haodu.site/)与[隐私政策](https://haodu.site/privacy/)可访问。网站更新后验证首页、`/en/`、语言切换、`/privacy/`、404、CSS/JS、明暗切换与演示控件。
 2. 用 `dist/extension/` 做最终安装验证，避免与旧的开发版同时启用。检查开关、页面刷新、滚动、跨标签页和本地推理；官网应保持静态演示。
 3. 在 Chrome Web Store 开发者后台使用已有的“好读”项目上传 ZIP；后续版本继续使用同一项目。参考 [商店材料](chrome-web-store.md) 核对文案、权限、隐私页、支持链接、真实截图与宣传图。
 4. 获得商店项目 ID 后，保留它作为后续升级的同一项目；不要把本地开发扩展的 ID 当成商店 ID。
 5. 商店详情页可公开访问后，替换 `site/config/_default/params.toml` 中 `chromeWebStoreURL` 的占位链接并重新部署站点。安装按钮中文显示“现在安装”，英文显示“Install now”，所有浏览器直接使用该链接。
 
-网站备案与商店审核可分别推进。目前安装按钮按产品约定直接链接到含 `REPLACE_WITH_EXTENSION_ID` 的商店占位地址，不检测浏览器或回退到 GitHub；正式上线前需填入实际商店详情页地址。
+网站已上线，商店发布单独推进。目前安装按钮仍按产品约定直接链接到含 `REPLACE_WITH_EXTENSION_ID` 的商店占位地址，不检测浏览器或回退到 GitHub；商店发布后需填入实际商店详情页地址并重新部署。
 
 ## 每次发布前核对
 

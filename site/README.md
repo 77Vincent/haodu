@@ -82,7 +82,7 @@ npm --prefix site run build
 npm run release:site -- --base-url https://haodu.site/
 ```
 
-该入口必须指定真实 HTTPS 地址，输出到独立的 `dist/site/`，并检查中英文首页、隐私页、扩展跳过标记及下面列出的 SEO 元信息。它不会修改开发配置；部署只上传 `dist/site/` 的内容。详细步骤见 [`../release/README.md`](../release/README.md)。
+该入口必须指定真实 HTTPS 地址，输出到独立的 `dist/site/`，并检查中英文首页、隐私页、扩展跳过标记及下面列出的 SEO 元信息。它不会修改开发配置；部署只上传 `dist/site/` 的内容。构建步骤见 [`../release/README.md`](../release/README.md)；官网生产发布与运维独立维护在私有仓库 `haodu-release`，不影响本站的独立开发和构建。
 
 只需检查本地构建产物时，运行 `npm run release:site:preview`，生成 `dist/site-preview/`，用本地静态服务器预览即可。预览产物禁用抓取并标记 noindex，不能当作正式发布包。
 
@@ -91,6 +91,7 @@ npm run release:site -- --base-url https://haodu.site/
 - `config/production/hugo.toml` 的 `baseURL` 为 `https://haodu.site/`；正式发布命令仍显式传入地址。`config/_default/hugo.toml` 的 `https://example.org/` 仅作默认占位，不用于部署。
 - `config/_default/params.toml` 的 `chromeWebStoreURL`：首页安装按钮的固定地址。目前使用含 `REPLACE_WITH_EXTENSION_ID` 的 Chrome 商店占位链接；发布后替换为好读的完整商店详情页链接，再重新构建、部署网站。
 - `content/_index.md`：维护中文首页标题、SEO 标题、描述和两种语言共用的中文 demo；`content/_index.en.md` 维护对应英文介绍。
+- `config/_default/menus.toml` 和 `menus.en.toml`：中英文页脚的公开备案号与工信部查询链接，沿用主题菜单，无需覆盖页脚模板。
 
 首页安装入口中文显示“现在安装”，英文显示“Install now”；所有浏览器都在新标签页打开配置的商店详情页，保留当前官网页面，不检测浏览器，也不依赖 JavaScript。
 
