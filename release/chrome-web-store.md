@@ -65,7 +65,9 @@
 - 128 × 128 图标：`icons/on-128.png`，已包含在 ZIP。
 - 440 × 280 小宣传图：[store-promo-440x280.jpg](assets/store-promo-440x280.jpg)，对应可编辑源文件 [store-promo-440x280.svg](assets/store-promo-440x280.svg)。
 - 1400 × 560 横幅宣传图（Marquee）：[store-marquee-1400x560.jpg](assets/store-marquee-1400x560.jpg)，RGB JPEG，无透明通道；对应可编辑源文件 [store-marquee-1400x560.svg](assets/store-marquee-1400x560.svg)。
-- 历史参考截图：[store-screenshot-1280x800.jpg](assets/store-screenshot-1280x800.jpg)，摄于 2026-10-01，1280 × 800、RGB JPEG，无透明通道。图中保留旧文案及旧模型效果，仅供参考构图，不作为当前发布材料；提交新版本前，需在更新后的截图用例页运行待发布扩展并重新截图。
+- 官网首页截图：[store-screenshot-1280x800.jpg](assets/store-screenshot-1280x800.jpg)，摄于 2026-10-15。截图专用页面复用首页源码，放大标题、介绍与第一段阅读示例，将 controls 放在右上角；只调整截图构图，不改变正式站点布局。
+- Controls 特写：[store-controls-1280x800.jpg](assets/store-controls-1280x800.jpg)，摄于 2026-10-15，复用官网现有 controls 的 HTML、CSS 和交互代码，等比例放大 4.35 倍并居中，展示开关、快捷键、颜色与粗细调节。
+- 上述两张截图均为 1280 × 800、RGB JPEG，无透明通道，按首页、controls 特写的顺序上传至 Screenshots。官网示例使用固定切分点；图片展示界面与阅读效果，不代表当前模型对示例的实时推理结果。
 - 真实扩展截图用例：[store-reading-preview.html](assets/store-reading-preview.html)。该页没有阅读脚本，也没有人工插入的正文分隔线。通过本地 HTTP 服务打开后，开启待发布扩展，确认分隔线实际出现，再按 1280 × 800 截图。不能将未处理页面或人工标记页面描述为扩展运行结果。
 
 ```sh
