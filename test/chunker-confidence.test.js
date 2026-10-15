@@ -299,7 +299,7 @@ test("bundled model uses the 45% default and honors a stricter explicit threshol
   const tokens = realChunker.tokenizeContext(moderate);
   const probabilities = realChunker.gapProbabilities(backend.scoreTokens(tokens.map((t) => t.segment)));
   assert.equal(probabilities.indexOf(Math.max(...probabilities)), 5);
-  assert.ok(probabilities[5] > .75 && probabilities[5] < .9);
+  assert.ok(probabilities[5] > realChunker.MIN_SPLIT_CONFIDENCE && probabilities[5] < .9);
 });
 
 test("default recursion runs fresh inference and can accept a different second boundary", () => {

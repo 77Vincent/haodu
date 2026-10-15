@@ -10,7 +10,7 @@ const projectRoot = join(__dirname, "..");
 test("browser backend loads the exported best checkpoint", () => {
   const info = backend.getModelInfo();
 
-  assert.equal(info.bestEpoch, 3);
+  assert.equal(info.bestEpoch, 4);
   assert.equal(info.bestEpoch, reference.bestEpoch);
   // This validation-selected checkpoint has no full test-set evaluation.
   assert.equal(info.testAccuracy, null);
