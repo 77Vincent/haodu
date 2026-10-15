@@ -90,10 +90,10 @@
   source = "assets"
   target = "assets"
 
-# Source image for the GitHub preview and website share cards.
+# Reuse the README/store screenshot for website share cards.
 [[mounts]]
-  source = "../release/assets/haodu-cover-1280x640.jpg"
-  target = "assets/images/haodu-cover-1280x640.jpg"
+  source = "../release/assets/store-screenshot-1280x800.jpg"
+  target = "assets/images/store-screenshot-1280x800.jpg"
 
 # Mount the directory so Hugo watches edits to the shared files during preview.
 # Only these assets are included; the extension's model stays outside the site.
