@@ -68,11 +68,20 @@
 - 官网首页截图：[store-screenshot-1280x800.jpg](assets/store-screenshot-1280x800.jpg)，摄于 2026-10-15。截图专用页面复用首页源码，放大标题、介绍与第一段阅读示例，将 controls 放在右上角；只调整截图构图，不改变正式站点布局。
 - Controls 特写：[store-controls-1280x800.jpg](assets/store-controls-1280x800.jpg)，摄于 2026-10-15，复用官网现有 controls 的 HTML、CSS 和交互代码，等比例放大 4.35 倍并居中，展示开关、快捷键、颜色与粗细调节。
 - 上述两张截图均为 1280 × 800、RGB JPEG，无透明通道，按首页、controls 特写的顺序上传至 Screenshots。官网示例使用固定切分点；图片展示界面与阅读效果，不代表当前模型对示例的实时推理结果。
+- 纯文字模型切分：[store-model-reading-1280x800.jpg](assets/store-model-reading-1280x800.jpg)，摄于 2026-10-15，1280 × 800、RGB JPEG，无透明通道。选取现有模型对比例句中的 6 条阅读长句，保持原文拼成 198 字段落；0.2.0 内置的 epoch 4 模型在默认严格大于 45% 的置信度门槛下生成 13 个分隔点，使用默认红色与第二档粗细。画面只有正文和分隔线，可作为第三张 Screenshots 上传。[截图用页面](assets/store-model-reading-preview.html) 直接复用扩展的 Worker、模型、标记写入代码及 CSS，没有手工指定切点；页面通过 `haodu=off` 标记避免已安装扩展重复处理。
 - 真实扩展截图用例：[store-reading-preview.html](assets/store-reading-preview.html)。该页没有阅读脚本，也没有人工插入的正文分隔线。通过本地 HTTP 服务打开后，开启待发布扩展，确认分隔线实际出现，再按 1280 × 800 截图。不能将未处理页面或人工标记页面描述为扩展运行结果。
 
 ```sh
 python3 -m http.server 8096 --bind 127.0.0.1 --directory release/assets
 # 打开 http://127.0.0.1:8096/store-reading-preview.html
+```
+
+重新截取纯文字模型效果时，从仓库根目录启动服务，以便页面加载 `src/` 中的实际运行文件：
+
+```sh
+python3 -m http.server 8098 --bind 127.0.0.1
+# 打开 http://127.0.0.1:8098/release/assets/store-model-reading-preview.html
+# 视口设为 1280 × 800，等待 body 的 data-model-state 变为 ready 后截图。
 ```
 
 ## 官方要求
