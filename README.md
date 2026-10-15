@@ -12,7 +12,7 @@
 
 [安装使用](#安装使用) · [开发文档](docs/development.md) · [问题反馈](https://github.com/77Vincent/haodu/issues)
 
-![好读首页预览](release/assets/haodu-cover-1280x640.jpg)
+![好读首页与控制面板预览](release/assets/store-screenshot-1280x800.jpg)
 
 ## 安装使用
 
