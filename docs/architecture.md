@@ -6,7 +6,7 @@
 
 ## 开关与页面状态
 
-中文阅读辅助扩展，包含 Chrome 发布包和 macOS Safari 开发测试包。点击工具栏图标只打开弹出面板，面板内有「阅读辅助」开关、分隔线颜色色带和五档粗细滑块。全局开关、颜色和粗细偏好保存在本地，刷新页面或重启浏览器后仍保留。页面在获得焦点时应用设置，后台标签页不会因设置变化而收到消息或开始处理。运行代码无需编译；发布时通过白名单复制和打包，只包含扩展运行所需文件。
+中文阅读辅助扩展，包含 Chrome、Firefox 发布包和 macOS Safari 开发测试包。点击工具栏图标只打开弹出面板，面板内有「阅读辅助」开关、分隔线颜色色带和五档粗细滑块。全局开关、颜色和粗细偏好保存在本地，刷新页面或重启浏览器后仍保留。页面在获得焦点时应用设置，后台标签页不会因设置变化而收到消息或开始处理。运行代码无需编译；发布时通过白名单复制和打包，只包含扩展运行所需文件。
 
 默认在 Chrome 中按 **Option + Shift + U**（macOS：⌥⇧U；其他平台为 **Alt + Shift + U**）可直接切换开关。快捷键使用独立的 `haodu-toggle` 命令，由后台的 `commands.onCommand` 处理，不打开面板。修改 manifest 后需重新加载扩展；实际绑定以 `chrome://extensions/shortcuts` 为准，也可在该页面修改。从旧版 `_execute_action` 命令升级时，应检查新命令的实际绑定。声明方式见 [Chrome 快捷键文档](https://developer.chrome.com/docs/extensions/reference/api/commands)。
 
@@ -59,6 +59,8 @@
 | `src/platform/webextension/background.js` | 共用后台：保存全局设置、聚焦及加载完成时检查当前页面、按需注入脚本和路由消息 |
 | `src/platform/chrome/background.js` | Chrome 宿主：创建 offscreen 页面并转发推理，处理 Chrome 专属访问限制，再加载共用后台 |
 | `src/platform/safari/background.js` | Safari 宿主：在非持久后台页面中创建推理服务，处理 Safari 网站访问限制 |
+| `src/platform/firefox/background.js` | Firefox 宿主：在 MV3 事件页中创建推理服务，处理网站访问拒绝 |
+| `src/platform/firefox/inference-worker.js` | 从包内加载模型元数据和二进制权重后调用共享后端 |
 | `src/popup.html`、`src/popup.css`、`src/platform/webextension/popup.js` | 工具栏弹出面板、开关与分隔线外观偏好的状态同步 |
 | `src/reader-controls.css` | 扩展面板与站点预览共用的开关、色带、粗细滑块样式 |
 | `src/divider-color.js` | 面板、后台和站点预览共用的色相校验、颜色换算和连续色带 |
@@ -86,7 +88,7 @@
 
 英文品牌统一为 `haodu`；代码命名空间使用 `Haodu`，扩展消息使用 `HAODU_` 前缀，DOM 标识使用 `haodu-` 前缀。网站跳过标记为 `<meta name="haodu" content="off">`，与扩展读取规则同时维护。
 
-核心只使用标准 DOM、Worker 和 JavaScript，不调用扩展 API。通用扩展 API 调用集中在 `src/platform/webextension/`，Chrome 和 Safari 的宿主差异分别位于 `src/platform/chrome/`、`src/platform/safari/`。Safari 支持共用代码使用的 `chrome.*` 命名空间。普通脚本通过 `globalThis.Haodu` 暴露接口，后台按以下顺序加载页面代码：
+核心只使用标准 DOM、Worker 和 JavaScript，不调用扩展 API。通用扩展 API 调用集中在 `src/platform/webextension/`，各浏览器宿主差异分别位于 `src/platform/chrome/`、`src/platform/safari/`、`src/platform/firefox/`。Safari 和 Firefox 支持共用代码使用的 `chrome.*` 命名空间。普通脚本通过 `globalThis.Haodu` 暴露接口，后台按以下顺序加载页面代码：
 
 ```text
 frontend/dom-tree.js → frontend/viewport.js → frontend/visibility.js → frontend/processed-text.js
@@ -126,7 +128,7 @@ adapter.connect(reader);
 
 应用在 `app/reader.js` 中定义 `Reader` 和 `ReaderState` 接口，只提供 `status()` 和 `toggle(flag)`。`toggle(true)` 请求开启，`toggle(false)` 请求关闭。相同状态不重启；忙碌时直接忽略所有开关请求，不保存待应用设置。失败后重复 ON 不重试，收到 OFF 再 ON 或刷新页面才重试。按钮调用方负责计算目标状态，并在忙碌时忽略点击。
 
-适配器只翻译接口：将设置消息传给 `reader.toggle(flag)`，将 `PING` 转成 `status()`，转发整个 `texts` 数组并提供分隔线样式地址。`publishState()` 仅发送通知，不再触发任何 reader 控制操作。DOM 引用始终留在页面里。Chrome 和 Safari 加载同一份 WebExtension 页面适配器。
+适配器只翻译接口：将设置消息传给 `reader.toggle(flag)`，将 `PING` 转成 `status()`，转发整个 `texts` 数组并提供分隔线样式地址。`publishState()` 仅发送通知，不再触发任何 reader 控制操作。DOM 引用始终留在页面里。Chrome、Safari 和 Firefox 加载同一份 WebExtension 页面适配器。
 
 后台使用 `chrome.storage.local` 只保存 `{ enabled, dividerHue, dividerWidth }`，按钮以全局开关为准，页面错误单独显示。标签页切换、浏览器窗口聚焦及当前标签页加载完成时，只查询当前窗口的活动标签页；`PING` 检查页面是否已有 reader，随后通过 `APPLY_SETTING` 传递目标布尔值、颜色和粗细。reader 负责忽略相同状态和忙碌时的开关请求。若聚焦时 reader 仍在处理，开关同步请求会被忽略，颜色和粗细仍会更新；任务完成后不会补做开关同步，下次空闲时的聚焦检查再应用全局状态。当前页面忙碌时，开关操作不响应；其他后台页面不会被查询。
 
@@ -153,6 +155,8 @@ Chrome 的推理消息路径：
 隐藏页面和 Worker 按需创建，多个页面共享模型；服务使用请求 ID 匹配各页的结果。全局关闭立即清理当前页面，后台页面保留原样，直到下次聚焦再清理。已经开始的任务仍会完成，原有滚动和缩放处理逻辑不变。Worker 超时或崩溃会拒绝共享 Worker 上尚未完成的请求，后续请求可创建新 Worker。
 
 Safari 的推理路径为「页面适配器 → Safari 后台页面 → inference-service → Worker → backend」。Safari manifest 由构建入口生成，移除 `offscreen`、Chrome 最低版本和文件访问声明，按顺序加载共用设置工具、推理服务、Safari 宿主及共用后台。后台文档非持久；每次重建都重新读取已保存设置，模型仅在下一次推理时加载，不依赖永久驻留。具体安装与验收见 [Safari 开发与安装](safari.md)。
+
+Firefox 同样通过后台事件页运行推理 Worker。为满足 AMO 对可解析文件的大小限制，构建将模型分成 JSON 元数据和原始 Float32 二进制权重；Worker 仅从扩展包内读取，随后调用同一套 backend。权重字节和评分不变，Chrome、Safari 继续使用原 base64 导出文件。固定扩展 ID、最低版本及不对外传输数据的声明只写入 Firefox manifest。安装与验收见 [Firefox 开发与安装](firefox.md)。
 
 普通网页测试页提供另一套适配器，复用相同的 reader、DOM、启动入口和推理实现。`jsconfig.json` 与 JSDoc 用于编辑器提示，无需编译；各浏览器的打包白名单与 manifest 变体统一维护在 `scripts/extension-targets.mjs`。
 

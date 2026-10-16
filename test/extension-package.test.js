@@ -28,7 +28,7 @@ test("Safari packaging selects a nonpersistent background document without chang
   assert.throws(() => extensionTarget(manifest, "unknown"), /Unsupported browser/);
 });
 
-for (const browser of ["chrome", "safari"]) {
+for (const browser of ["chrome", "safari", "firefox"]) {
   test(`${browser} package contains its manifest, HTML and worker dependencies`, () => {
     const target = extensionTarget(manifest, browser);
     const required = [target.manifest.action.default_popup,
@@ -37,7 +37,9 @@ for (const browser of ["chrome", "safari"]) {
       ...target.manifest.web_accessible_resources.flatMap(entry => entry.resources),
     ];
     for (const file of target.files) {
-      assert.ok(statSync(join(root, file)).isFile(), file);
+      if (!["src/boundary-model-data.json", "src/boundary-model-weights.bin"].includes(file)) {
+        assert.ok(statSync(join(root, file)).isFile(), file);
+      }
       assert.doesNotMatch(file, /^(?:site|test|training|node_modules|dist)\//);
       if (file.endsWith(".html")) {
         const html = readFileSync(join(root, file), "utf8");
@@ -46,8 +48,31 @@ for (const browser of ["chrome", "safari"]) {
         }
       }
     }
-    required.push("src/inference-worker.js", "src/boundary-model-data.js",
+    required.push(...(browser === "firefox" ? ["src/platform/firefox/inference-worker.js", "src/boundary-model-data.json", "src/boundary-model-weights.bin"] : ["src/inference-worker.js", "src/boundary-model-data.js"]),
       "src/backend/inference.js", "src/backend/chunker.js");
     for (const file of required) assert.ok(target.files.includes(file), `Missing ${file}`);
   });
 }
+
+
+test("Firefox packaging isolates its host, local model data and distribution metadata", () => {
+  const firefox = extensionTarget(manifest, "firefox");
+  assert.equal(firefox.manifest.background.service_worker, undefined);
+  assert.equal(firefox.manifest.background.persistent, undefined);
+  assert.deepEqual(firefox.manifest.permissions, ["scripting", "storage"]);
+  assert.deepEqual(firefox.manifest.host_permissions, manifest.host_permissions);
+  assert.equal(firefox.manifest.browser_specific_settings.gecko.id, "haodu@haodu.site");
+  // Declaring gecko_android forces AMO to enable Android distribution.
+  assert.equal(firefox.manifest.browser_specific_settings.gecko_android, undefined);
+  assert.deepEqual(firefox.manifest.browser_specific_settings.gecko.data_collection_permissions, { required: ["none"] });
+  assert.ok(firefox.files.includes("src/boundary-model-data.json"));
+  assert.ok(!firefox.files.includes("src/boundary-model-data.js"));
+  assert.ok(firefox.files.every(file => !/^src\/platform\/(chrome|safari)\//u.test(file)));
+  for (const browser of ["chrome", "safari"]) {
+    const other = extensionTarget(manifest, browser);
+    assert.equal(other.manifest.browser_specific_settings, undefined);
+    assert.ok(other.files.includes("src/boundary-model-data.js"));
+    assert.notEqual(firefox.archive, other.archive);
+    assert.notEqual(firefox.directory, other.directory);
+  }
+});

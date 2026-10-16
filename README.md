@@ -34,6 +34,8 @@ npm run release:extension
 
 macOS Safari 开发版：运行 `npm run release:safari`，在支持临时扩展的 Safari 中加载 `dist/safari-extension/`。与 Chrome 共用模型和控件，需授予网站访问权限，不支持本地文件；尚未在 App Store 发布。安装、验证和正式打包步骤见 [Safari 开发与安装](docs/safari.md)。
 
+桌面 Firefox 140+：运行 `npm run release:firefox`，在 `about:debugging#/runtime/this-firefox` 临时载入 `dist/firefox-extension/manifest.json`。正式安装包需要 Mozilla 签名，构建、验证与发布步骤见 [Firefox 开发与安装](docs/firefox.md)。
+
 ## 开发与贡献
 
 欢迎通过 [Issues](https://github.com/77Vincent/haodu/issues) 反馈问题或提出建议，也欢迎提交 Pull Request。报告切分或页面兼容问题时，请附上复现步骤、相关例句和浏览器版本。

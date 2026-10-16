@@ -42,7 +42,8 @@
       throw new Error("haodu boundary model data is unavailable or incompatible");
     }
 
-    const bytes = decodeBase64(modelData.weightsBase64);
+    const bytes = modelData.weightsBytes instanceof Uint8Array
+      ? modelData.weightsBytes : decodeBase64(modelData.weightsBase64);
     if (bytes.byteLength % Float32Array.BYTES_PER_ELEMENT !== 0) {
       throw new Error("haodu boundary model has an invalid byte length");
     }

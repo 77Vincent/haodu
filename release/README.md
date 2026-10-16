@@ -25,6 +25,8 @@ npm run release:extension
 
 Safari 使用 `npm run release:safari`，独立输出 `dist/safari-extension/`、`dist/haodu-0.2.0-safari.zip` 及对应校验清单，保留 Chrome 产物。该 ZIP 可用于 Safari 临时加载和 Apple 打包流程，不是已签名安装应用。Safari 尚未上架；完整步骤见 [Safari 开发与安装](../docs/safari.md)。
 
+Firefox 使用 `npm run release:firefox`，独立输出 `dist/firefox-extension/`、`dist/haodu-0.2.0-firefox.zip` 及校验清单。构建会将相同模型权重无损拆成 JSON 元数据和二进制数据，以满足 AMO 校验要求。正式安装需要 Mozilla 签名；见 [Firefox 发布材料](firefox-addons.md)。
+
 ## 2. 构建站点
 
 已验证工具：Hugo Extended 0.164.0、Node.js 25.9.0；主题依赖由 `site/package-lock.json` 锁定。Node.js 24.13+ 也在项目声明的支持范围内。

@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Script } from 'node:vm';
 import { parseArgs } from 'node:util';
+import { createRequire } from 'node:module';
 import { extensionTarget } from './extension-targets.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -14,6 +15,19 @@ const { values } = parseArgs({ options: { browser: { type: 'string', default: 'c
 const sourceManifest = JSON.parse(await readFile(join(root, 'manifest.json'), 'utf8'));
 const target = extensionTarget(sourceManifest, values.browser);
 const { files, manifest } = target;
+const generated = new Map();
+if (values.browser === 'firefox') {
+  if (!(await lstat(join(root, 'src/boundary-model-data.js'))).isFile()) {
+    throw new Error('Not a regular release file: src/boundary-model-data.js');
+  }
+  const require = createRequire(import.meta.url);
+  // Preserve every f32 weight byte; AMO limits parseable text files to 5 MB.
+  const { weightsBase64, ...modelMetadata } = require('../src/boundary-model-data.js');
+  generated.set('src/boundary-model-data.json', Buffer.from(
+    JSON.stringify(modelMetadata) + '\n',
+  ));
+  generated.set('src/boundary-model-weights.bin', Buffer.from(weightsBase64, 'base64'));
+}
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 if (manifest.manifest_version !== 3 || !/^\d+(?:\.\d+){0,3}$/.test(manifest.version)) {
   throw new Error('Expected a Manifest V3 extension with a numeric version.');
@@ -39,9 +53,9 @@ try {
   for (const path of files) {
     const source = join(root, path);
     // Reject symlinks as well as special files instead of following them.
-    if (!(await lstat(source)).isFile()) throw new Error(`Not a regular release file: ${path}`);
+    if (!generated.has(path) && !(await lstat(source)).isFile()) throw new Error(`Not a regular release file: ${path}`);
     const bytes = path === 'manifest.json' && values.browser !== 'chrome'
-      ? Buffer.from(JSON.stringify(manifest, null, 2) + '\n') : await readFile(source);
+      ? Buffer.from(JSON.stringify(manifest, null, 2) + '\n') : generated.get(path) ?? await readFile(source);
     if (path.endsWith('.js')) new Script(bytes.toString('utf8'), { filename: path });
     const target = join(unpacked, path);
     await mkdir(dirname(target), { recursive: true });
