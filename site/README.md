@@ -91,7 +91,7 @@ npm run release:site -- --base-url https://haodu.site/
 ## 发布前配置
 
 - `config/production/hugo.toml` 的 `baseURL` 为 `https://haodu.site/`；正式发布命令仍显式传入地址。`config/_default/hugo.toml` 的 `https://example.org/` 仅作默认占位，不用于部署。
-- `config/_default/params.toml` 的 `chromeWebStoreURL`：首页安装按钮的固定地址。目前使用含 `REPLACE_WITH_EXTENSION_ID` 的 Chrome 商店占位链接；发布后替换为好读的完整商店详情页链接，再重新构建、部署网站。
+- `config/_default/params.toml` 的 `chromeWebStoreURL`：中英文首页安装按钮共用的已发布 Chrome 商店详情页地址；修改后重新构建、部署网站。
 - `content/_index.md`：维护中文首页标题、SEO 标题、描述和两种语言共用的中文 demo；`content/_index.en.md` 维护对应英文介绍。
 - `config/_default/menus.toml` 和 `menus.en.toml`：中英文页脚的公开备案号与工信部查询链接，沿用主题菜单，无需覆盖页脚模板。
 
@@ -116,7 +116,7 @@ npm --prefix site run build -- --baseURL https://example.org/haodu/
 
 主题的描述长度提醒使用统一的 110–160 长度区间，不能当作中英文 SEO 的硬性标准。保持当前准确简洁的描述，不为消除提醒填充文字；Google 会根据设备宽度截断摘要，见[官方说明](https://developers.google.com/search/docs/appearance/snippet)。
 
-**部署后仍需核验：** 域名 HTTPS 可访问；首页、英文页、隐私页、robots 和 sitemap 返回正确内容；无效路径返回真实 HTTP 404；HTTP 与备用域名跳转到正式 HTTPS 域名。然后在 Google Search Console 验证域名、提交 `/sitemap.xml` 并查看 URL 检查和实际 Core Web Vitals；这些线上状态不能由本地构建确认。安装入口的商店占位地址仍需在扩展发布后替换。
+**部署后仍需核验：** 域名 HTTPS 可访问；首页、英文页、隐私页、robots 和 sitemap 返回正确内容；无效路径返回真实 HTTP 404；HTTP 与备用域名跳转到正式 HTTPS 域名。然后在 Google Search Console 验证域名、提交 `/sitemap.xml` 并查看 URL 检查和实际 Core Web Vitals；这些线上状态不能由本地构建确认。
 
 2026-10-12 本地审查时，`https://haodu.site/` 的外部访问未成功，本机请求报 TLS 握手失败，因此未确认线上收录、跳转和性能状态；以上修补尚需重新部署。
 
