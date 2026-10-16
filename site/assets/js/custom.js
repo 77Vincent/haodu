@@ -4,6 +4,9 @@ import 'bootstrap/js/dist/dropdown.js';
 import './haodu/divider-color.js';
 import './haodu/divider-width.js';
 import { initReaderPreview } from './reader-preview.js';
+import { initInstallButton } from './install-button.js';
+
+initInstallButton();
 
 // Doks binds theme selection to the SVGs. Forward button/keyboard activation
 // to the appropriate SVG so the entire button uses Doks' existing theme logic.

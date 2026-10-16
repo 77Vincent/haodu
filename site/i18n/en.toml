@@ -1,6 +1,18 @@
 [installNow]
 other = 'Install now'
 
+[viewChromeVersion]
+other = 'View Chrome version'
+
+[firefoxUnavailable]
+other = 'Firefox is coming soon. You can install in Chrome now.'
+
+[safariUnavailable]
+other = 'Not yet available for Safari. You can install in Chrome.'
+
+[installDesktopOnly]
+other = 'View the store listing now and install in Chrome on your computer.'
+
 [readerPreview]
 other = 'Reading preview'
 

@@ -1,6 +1,18 @@
 [installNow]
 other = '现在安装'
 
+[viewChromeVersion]
+other = '查看 Chrome 版'
+
+[firefoxUnavailable]
+other = 'Firefox 版待上架，可先在 Chrome 中安装'
+
+[safariUnavailable]
+other = 'Safari 版尚未上架，可在 Chrome 中安装'
+
+[installDesktopOnly]
+other = '可先查看商店介绍，再在电脑上的 Chrome 中安装'
+
 [readerPreview]
 other = '阅读辅助预览'
 

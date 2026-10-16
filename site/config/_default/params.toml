@@ -2,6 +2,8 @@ title = '好读'
 description = '中文阅读辅助，按人类习惯，将长句划分为短句，让阅读更轻松。'
 repositoryURL = 'https://github.com/77Vincent/haodu'
 chromeWebStoreURL = 'https://chromewebstore.google.com/detail/%E5%A5%BD%E8%AF%BB/fdkefmimhojbfbiekkkmeliifmclfhdk'
+# Set the public AMO listing URL after approval; empty means not yet available.
+firefoxAddonsURL = ''
 footer = '好读'
 mainSections = []
 math = false
