@@ -26,3 +26,13 @@
  * @property {string} workerUrl A URL loadable by the standard Worker constructor.
  * @property {(service: InferenceService) => void} connect Routes host requests and responses.
  */
+
+/**
+ * Services supplied before loading platform/webextension/background.js.
+ * Chrome routes inference through an offscreen page; Safari hosts a Worker in
+ * its nonpersistent background document. Both return the same message payload.
+ * @typedef {Object} BackgroundHost
+ * @property {(texts: string[]) => Promise<{offsetsByText: number[][], error?: string}>} runInference
+ * @property {(url: URL) => boolean | Promise<boolean>} supportsUrl
+ * @property {(error: Error) => boolean} isPageAccessDenied Only for scripting API errors.
+ */

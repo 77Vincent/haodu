@@ -6,7 +6,7 @@
 
 ## 环境
 
-- Chrome 113 或更新版本，满足后台推理使用的 `offscreen` 的 `WORKERS` 原因类型要求。
+- Chrome 113 或更新版本，满足后台推理使用的 `offscreen` 的 `WORKERS` 原因类型要求。macOS Safari 使用独立后台宿主和发布包，见 [Safari 开发与安装](safari.md)。
 - Node.js 24.13 或更新版本。
 - 打包扩展需要 `zip`，macOS 自带；Ubuntu 可安装 `zip`。
 - 扩展源码无需编译，也无需安装 npm 依赖。网站的 Hugo 和 npm 环境见 [网站开发](../site/README.md)。

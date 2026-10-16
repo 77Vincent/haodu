@@ -40,8 +40,10 @@
   </button>
   <input id="divider-hue" type="range" min="0" max="360" step="1" value="0"
     aria-label="{{ i18n "dividerColor" }}" title="{{ i18n "dividerColorHint" }}" aria-controls="main-content">
-  <input id="divider-width" type="range" min="1" max="5" step="1" value="2"
-    aria-label="{{ i18n "dividerWidth" }}" title="{{ i18n "dividerWidthHint" }}" aria-controls="main-content">
+  <div class="divider-width-control">
+    <input id="divider-width" type="range" min="1" max="5" step="1" value="2"
+      aria-label="{{ i18n "dividerWidth" }}" title="{{ i18n "dividerWidthHint" }}" aria-controls="main-content">
+  </div>
 </div>
 <div class="reader-preview-backdrop" aria-hidden="true"></div>
 {{ end }}

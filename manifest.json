@@ -23,7 +23,7 @@
   },
   "commands": {
     "haodu-toggle": {
-      "suggested_key": "Alt+Shift+U",
+      "suggested_key": { "default": "Alt+Shift+U" },
       "description": "开启或关闭阅读辅助"
     }
   },

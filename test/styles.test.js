@@ -9,7 +9,8 @@ test("the toolbar opens a popup while the keyboard shortcut toggles directly", (
   const manifest = JSON.parse(read("manifest.json"));
   assert.equal(manifest.action.default_popup, "src/popup.html");
   assert.deepEqual(manifest.commands, {
-    "haodu-toggle": { suggested_key: "Alt+Shift+U", description: "开启或关闭阅读辅助" },
+    // Safari only reads the object form; Chrome also accepts this form.
+    "haodu-toggle": { suggested_key: { default: "Alt+Shift+U" }, description: "开启或关闭阅读辅助" },
   });
   assert.equal(manifest.content_scripts, undefined);
   assert.equal(manifest.permissions.includes("storage"), true);

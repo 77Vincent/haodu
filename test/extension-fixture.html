@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>好读扩展安装测试</title>
+    <style>
+      body { max-width: 760px; margin: 32px auto; padding: 0 20px; font: 20px/1.8 system-ui; }
+      button { font: inherit; }
+    </style>
+  </head>
+  <body>
+    <h1>扩展安装测试</h1>
+    <p>请通过浏览器工具栏里的好读开关控制本页。</p>
+    <p id="sample">我一直在思考明天早上的早餐吃什么</p>
+    <p id="long-sample">即便是完全符合语法的通顺的但没有任何标点断句的句子模型依然能够找到恰当的切分点。</p>
+    <p id="mixed-sample">留言區裡都是nana這個nana那個 極速的不同之處就是他們知道會有很多不同的意見 但是他們不會管你的想法說法</p>
+    <div id="shadow-sample"></div>
+    <button id="replace" type="button">替换测试文本</button>
+    <p id="dynamic-sample">将长句切分成短句加速阅读理解</p>
+    <pre><code>代码区域的中文内容应该保持原样。</code></pre>
+    <script>
+      // Test content only: no extension adapters, reader or model run in this page.
+      const shadow = document.getElementById("shadow-sample").attachShadow({ mode: "open" });
+      const paragraph = document.createElement("p");
+      paragraph.textContent = "在长句中找到符合人类习惯的断句点让阅读更轻松";
+      shadow.append(paragraph);
+      document.getElementById("replace").addEventListener("click", () => {
+        document.getElementById("dynamic-sample").textContent = "我一直在思考明天早上的早餐吃什么";
+      });
+    </script>
+  </body>
+</html>

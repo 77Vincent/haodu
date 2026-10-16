@@ -3,7 +3,7 @@
 globalThis.Haodu ??= {};
 
 /** @returns {ReaderAdapter} */
-globalThis.Haodu.createReaderAdapter = function createChromeReaderAdapter() {
+globalThis.Haodu.createReaderAdapter = function createWebExtensionReaderAdapter() {
   return {
     markerStyleUrl: chrome.runtime.getURL("src/content.css"),
     async process(texts) {

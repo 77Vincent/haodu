@@ -2,7 +2,7 @@
 
 网站与插件独立发布。网站只上传静态页面；插件只上传运行文件。不要把仓库根目录或整个 `dist/` 上传到任意一方。
 
-插件发布目标为 Chrome Web Store。本仓库维护插件打包、站点构建和商店材料；官网的生产发布脚本、云资源配置及运维记录维护在私有仓库 [77Vincent/haodu-release](https://github.com/77Vincent/haodu-release)。公开仓库可独立开发、测试和构建，不需要该私有仓库或云端凭证。
+插件目前发布于 Chrome Web Store，另提供 macOS Safari 开发测试包。本仓库维护插件打包、站点构建和商店材料；官网的生产发布脚本、云资源配置及运维记录维护在私有仓库 [77Vincent/haodu-release](https://github.com/77Vincent/haodu-release)。公开仓库可独立开发、测试和构建，不需要该私有仓库或云端凭证。
 
 ## 1. 构建插件
 
@@ -19,9 +19,11 @@ npm run release:extension
 - `dist/haodu-0.2.0.zip.sha256`：ZIP 校验值。
 - `dist/extension-release.json`：版本、体积、每个文件的 SHA-256 清单，不放入 ZIP。
 
-`scripts/build-extension.mjs` 明确列出发布文件，拒绝符号链接，检查 JS 语法及 manifest 引用，并固定文件时间和权限。ZIP 不含顶层 `extension/` 目录，也不含 training、site、测试或开发配置。新增运行文件时，需要同时更新打包清单。
+`scripts/build-extension.mjs` 使用 `scripts/extension-targets.mjs` 的明确文件清单，拒绝符号链接，检查 JS 语法及 manifest 引用，并固定文件时间和权限。ZIP 不含顶层 `extension/` 目录，也不含 training、site、测试或开发配置。新增运行文件时，需要同时更新打包清单。
 
 构建直接复制当前 `src/boundary-model-data.js`，不会重新导出或替换正在使用的模型。后续升级时同步修改根 `package.json` 和 `manifest.json` 的版本，再构建新的 ZIP。
+
+Safari 使用 `npm run release:safari`，独立输出 `dist/safari-extension/`、`dist/haodu-0.2.0-safari.zip` 及对应校验清单，保留 Chrome 产物。该 ZIP 可用于 Safari 临时加载和 Apple 打包流程，不是已签名安装应用。Safari 尚未上架；完整步骤见 [Safari 开发与安装](../docs/safari.md)。
 
 ## 2. 构建站点
 

@@ -32,6 +32,8 @@ npm run release:extension
 
 开启好读后，拖动面板中的色带可调整分隔线颜色，默认使用好读红；下方滑块可调整粗细，共五档，默认第二档。关闭时两项调节器禁用，已选设置保留。开关、颜色和粗细设置会在切换网页、刷新页面及重启浏览器后保留。使用本地 HTML 文件时，需要在扩展设置中开启“允许访问文件网址”。
 
+macOS Safari 开发版：运行 `npm run release:safari`，在支持临时扩展的 Safari 中加载 `dist/safari-extension/`。与 Chrome 共用模型和控件，需授予网站访问权限，不支持本地文件；尚未在 App Store 发布。安装、验证和正式打包步骤见 [Safari 开发与安装](docs/safari.md)。
+
 ## 开发与贡献
 
 欢迎通过 [Issues](https://github.com/77Vincent/haodu/issues) 反馈问题或提出建议，也欢迎提交 Pull Request。报告切分或页面兼容问题时，请附上复现步骤、相关例句和浏览器版本。

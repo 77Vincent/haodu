@@ -53,7 +53,7 @@ function createPopup({ shortcut = "Alt+Shift+U", shortcutError = false } = {}) {
   });
   vm.runInContext(readFileSync(join(__dirname, "../src/divider-color.js"), "utf8"), context);
   vm.runInContext(readFileSync(join(__dirname, "../src/divider-width.js"), "utf8"), context);
-  vm.runInContext(readFileSync(join(__dirname, "../src/platform/chrome/popup.js"), "utf8"), context);
+  vm.runInContext(readFileSync(join(__dirname, "../src/platform/webextension/popup.js"), "utf8"), context);
   return { toggle, label, hue, width, body, shortcutText, shortcutHint, requests, warnings, click: () => click(),
     inputWidth(value) { width.value = String(value); widthInput(); },
     changeWidth(value) { storageChanged({ dividerWidth: { newValue: value } }, "local"); },

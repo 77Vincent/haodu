@@ -10,7 +10,7 @@ const runScript = (path, context) => vm.runInContext(
 );
 const drain = () => new Promise((resolve) => setImmediate(resolve));
 
-function createBackground(saved = {}) {
+function createBackground(saved = {}, browser = "chrome") {
   let command, message, navigate, activate, focusWindow, startup, install;
   let shortcut = "Alt+Shift+U";
   let activeId = null;
@@ -37,6 +37,25 @@ function createBackground(saved = {}) {
   const settingDelays = new Map();
   const previewDocuments = new Map();
   const previewSyncs = [];
+  const workers = [];
+  const timers = new Map();
+  let timerId = 0;
+  let holdInference = false;
+  class FakeWorker {
+    constructor(url) {
+      assert.equal(url, chrome.runtime.getURL("src/inference-worker.js"));
+      this.messages = [];
+      workers.push(this);
+    }
+    postMessage(request) {
+      this.messages.push(request);
+      requests.push(request);
+      if (!holdInference) queueMicrotask(() => this.onmessage({ data: {
+        id: request.id, offsetsByText: request.texts.map(() => [4]),
+      } }));
+    }
+    terminate() { this.terminated = true; }
+  }
 
   function publish(request, tabId = 1) {
     return new Promise((resolve) => message(request,
@@ -58,7 +77,7 @@ function createBackground(saved = {}) {
       sendMessage: (request) => publish(request, id),
     } } });
     runScript("src/app/reader.js", context);
-    runScript("src/platform/chrome/content.js", context);
+    runScript("src/platform/webextension/content.js", context);
     context.Haodu.setMarkerColor = (color) => { page.color = color; };
     context.Haodu.setMarkerWidth = (width) => { page.width = width; };
     const adapter = context.Haodu.createReaderAdapter();
@@ -92,7 +111,7 @@ function createBackground(saved = {}) {
         // Chrome's service-worker binding fetches paths relative to the worker URL.
         for (const [size, imagePath] of Object.entries(path)) {
           const url = new URL(imagePath, chrome.runtime.getURL(manifest.background.service_worker));
-          assert.equal(url.protocol, "chrome-extension:");
+          assert.equal(url.protocol, browser === "safari" ? "safari-web-extension:" : "chrome-extension:");
           assert.equal(url.hostname, chrome.runtime.id);
           const png = readFileSync(join(__dirname, "..", url.pathname.slice(1)));
           assert.equal(png.subarray(1, 4).toString(), "PNG");
@@ -171,7 +190,7 @@ function createBackground(saved = {}) {
     offscreen: { async createDocument() { creations += 1; offscreen = true; } },
     runtime: {
       id: "test-extension",
-      getURL: (path) => `chrome-extension://test-extension/${path}`,
+      getURL: (path) => `${browser === "safari" ? "safari-web-extension" : "chrome-extension"}://test-extension/${path}`,
       async getContexts() { return offscreen ? [{}] : []; },
       async sendMessage(request) {
         requests.push(request);
@@ -182,13 +201,28 @@ function createBackground(saved = {}) {
       onInstalled: { addListener: (callback) => { install = callback; } },
     },
   };
+  if (browser === "safari") {
+    // The Safari host must work without any Chrome-only offscreen APIs.
+    delete chrome.offscreen;
+    delete chrome.runtime.getContexts;
+    delete chrome.extension;
+  }
   const manifest = JSON.parse(readFileSync(join(__dirname, "../manifest.json"), "utf8"));
   const boot = () => {
-    const context = vm.createContext({ console, chrome, URL });
-    context.importScripts = (...paths) => {
-      for (const path of paths) runScript(join("src/platform/chrome", path), context);
-    };
-    runScript(manifest.background.service_worker, context);
+    const context = vm.createContext({ console, chrome, URL, Worker: FakeWorker,
+      setTimeout(callback) { const id = ++timerId; timers.set(id, callback); return id; },
+      clearTimeout(id) { timers.delete(id); },
+    });
+    if (browser === "safari") {
+      // Use exactly the script order emitted in the production Safari manifest.
+      const { extensionTarget } = require("../scripts/extension-targets.mjs");
+      for (const script of extensionTarget(manifest, "safari").manifest.background.scripts) runScript(script, context);
+    } else {
+      context.importScripts = (...paths) => {
+        for (const path of paths) runScript(join("src/platform/chrome", path), context);
+      };
+      runScript(manifest.background.service_worker, context);
+    }
   };
   boot();
 
@@ -204,6 +238,8 @@ function createBackground(saved = {}) {
 
   return {
     pages, badges, icons, titles, disabled, commands, queries, writes, saved, tabs, injected, injectedFiles, requests,
+    workers, timers,
+    holdInference(value) { holdInference = value; },
     addTab, optedOutTabs, cssInjections, injectionErrors, previewDocuments, previewSyncs,
     setShortcut(value) { shortcut = value; },
     setFileAccess(allowed) { fileAccess = allowed; },
@@ -551,7 +587,7 @@ test("the saved switch is global but toggles and focus leave every inactive tab 
     "src/divider-width.js",
     "src/frontend/dom-tree.js", "src/frontend/viewport.js", "src/frontend/visibility.js", "src/frontend/processed-text.js",
     "src/frontend/read.js", "src/frontend/write.js", "src/frontend/content-changes.js", "src/app/reader.js",
-    "src/platform/chrome/content.js", "src/start-reader.js",
+    "src/platform/webextension/content.js", "src/start-reader.js",
   ]);
   assert.equal(background.saved.enabled, true);
   assert.equal(background.pages.get(1).reader.status().enabled, true);
@@ -975,6 +1011,100 @@ test("whole viewports are forwarded intact and concurrent pages share one lazy o
   results.forEach((result) => assert.deepEqual(result.offsetsByText, [[4], [4]]));
   assert.equal(background.requests.length, 2);
   assert.ok(background.requests.every(({ texts }) => texts === request.texts));
+});
+
+test("Safari shares one lazy Worker across pages and recreates it after a background restart", async () => {
+  const background = createBackground({ enabled: true, dividerHue: 120, dividerWidth: 4 }, "safari");
+  await drain();
+  assert.equal(background.workers.length, 0);
+  background.holdInference(true);
+  const request = { type: "HAODU_PROCESS", texts: [sampleText()] };
+  const first = background.message(request, 1);
+  const second = background.message(request, 2);
+  assert.equal(background.workers.length, 1);
+  const worker = background.workers[0];
+  const [one, two] = worker.messages;
+  worker.onmessage({ data: { id: two.id, offsetsByText: [[8]] } });
+  worker.onmessage({ data: { id: one.id, offsetsByText: [[4]] } });
+  assert.deepEqual((await first).offsetsByText, [[4]]);
+  assert.deepEqual((await second).offsetsByText, [[8]]);
+  assert.equal(background.timers.size, 0);
+  assert.equal(background.creations(), 0);
+  await background.restartWorker();
+  const saved = await background.popup({ type: "HAODU_GET_ENABLED" });
+  assert.equal(saved.enabled, true);
+  assert.equal(saved.dividerHue, 120);
+  assert.equal(saved.dividerWidth, 4);
+  assert.equal(background.workers.length, 1, "reopening alone must not load a model");
+  background.holdInference(false);
+  assert.deepEqual((await background.message(request)).offsetsByText, [[4]]);
+  assert.equal(background.workers.length, 2);
+});
+
+test("Safari timeouts reject all waiting pages and the next request starts a fresh Worker", async () => {
+  const background = createBackground({}, "safari");
+  background.holdInference(true);
+  const first = background.message({ type: "HAODU_PROCESS", texts: [sampleText()] });
+  const second = background.message({ type: "HAODU_PROCESS", texts: [sampleText()] }, 2);
+  background.timers.values().next().value();
+  assert.match((await first).error, /timed out/u);
+  assert.match((await second).error, /timed out/u);
+  assert.equal(background.workers[0].terminated, true);
+  assert.equal(background.timers.size, 0);
+  background.holdInference(false);
+  assert.deepEqual((await background.message({ type: "HAODU_PROCESS", texts: [sampleText()] })).offsetsByText, [[4]]);
+  assert.equal(background.workers.length, 2);
+});
+
+test("Safari uses the shared popup, appearance controls, shortcut and preview opt-out", async () => {
+  const background = createBackground({}, "safari");
+  await background.focus(1);
+  assert.equal((await background.popup({ type: "HAODU_GET_ENABLED" })).enabled, false);
+  assert.equal(background.injected.length, 0);
+  await background.popup({ type: "HAODU_SET_ENABLED", enabled: true });
+  const page = background.pages.get(1);
+  assert.equal(page.reader.status().enabled, true);
+  await background.popup({ type: "HAODU_SET_DIVIDER_HUE", dividerHue: 90 });
+  await background.popup({ type: "HAODU_SET_DIVIDER_WIDTH", dividerWidth: 5 });
+  assert.equal(background.saved.dividerHue, 90);
+  assert.equal(page.width, 5);
+  assert.equal(page.reads, 1);
+  await background.shortcut(1);
+  assert.equal(page.marker, null);
+  const site = await preview();
+  background.addTab(2, site.document.URL);
+  background.previewDocuments.set(2, site.document);
+  await background.focus(2);
+  await background.shortcut(2);
+  assert.equal(site.toggle.getAttribute("aria-checked"), "false");
+  assert.equal(background.saved.enabled, false);
+  assert.equal(background.pages.has(2), false);
+  assert.equal(background.workers.length, 0);
+  const sender = { id: "untrusted", tab: { id: 2 }, frameId: 0 };
+  assert.equal(await background.popup({ type: "HAODU_PROCESS", texts: [sampleText()] }, sender), undefined);
+  assert.equal(background.workers.length, 0);
+});
+
+test("Safari file pages are skipped and denied website access does not become a model error", async () => {
+  for (const method of ["insertCSS", "executeScript"]) {
+    const background = createBackground({ enabled: true }, "safari");
+    background.addTab(1, "file:///tmp/example.html");
+    await background.focus(1);
+    assert.equal(background.injected.length, 0);
+    assert.equal(background.previewSyncs.length, 0);
+    background.addTab(2);
+    background.injectionErrors.set(2, { method, message: `scripting.${method}(): this extension does not have access to this tab.` });
+    await background.focus(2);
+    assert.equal(background.badges.get(2), "");
+    assert.equal(background.saved.enabled, true);
+    background.injectionErrors.delete(2);
+    await background.focus(2);
+    assert.equal(background.pages.get(2).reader.status().enabled, true);
+    background.addTab(3);
+    background.injectionErrors.set(3, { method, message: "Failed to load script resource" });
+    await background.focus(3);
+    assert.equal(background.badges.get(3), "ERR");
+  }
 });
 
 test("offscreen requests match their results; timeouts terminate the worker and allow retry", async () => {

@@ -200,7 +200,7 @@ function createPage(text = sampleText, tag = "p", useChromeAdapter = false, opte
         return page.infer(message.texts);
       },
     } };
-    run("src/platform/chrome/content.js");
+    run("src/platform/webextension/content.js");
     run("src/start-reader.js");
     // Reinjecting must not register a second reader or message handler.
     run("src/frontend/dom-tree.js");
@@ -210,7 +210,7 @@ function createPage(text = sampleText, tag = "p", useChromeAdapter = false, opte
     run("src/frontend/read.js");
     run("src/frontend/write.js");
     run("src/app/reader.js");
-    run("src/platform/chrome/content.js");
+    run("src/platform/webextension/content.js");
     run("src/start-reader.js");
     assert.equal(listeners.length, 1);
     let globalEnabled = false;
@@ -548,7 +548,7 @@ test("Chrome translates state commands and publishing only delivers the supplied
     onMessage: { addListener(callback) { listener = callback; } },
     async sendMessage(message) { messages.push(message); return {}; },
   } } });
-  vm.runInContext(readFileSync(join(__dirname, "../src/platform/chrome/content.js"), "utf8"), context);
+  vm.runInContext(readFileSync(join(__dirname, "../src/platform/webextension/content.js"), "utf8"), context);
   const colors = [];
   context.Haodu.setMarkerColor = (color) => colors.push(color);
   const widths = [];

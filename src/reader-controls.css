@@ -6,6 +6,7 @@
   --focus: hsl(234, 100%, 60%);
   --disabled: #a8adb4;
   --control-outline: rgb(0 0 0 / 8%);
+  --divider-thumb-width: 14px;
   color-scheme: light;
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -13,12 +14,14 @@
 }
 
 .haodu-controls #reader-toggle {
+  appearance: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   width: 100%;
   margin: 6px 0px;
+  padding: 1px 6px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -78,7 +81,9 @@
 }
 
 .haodu-controls .switch-track {
-  flex: 0 0 40px;
+  /* An explicit width also contributes to Safari's intrinsic flex sizing. */
+  flex: none;
+  width: 40px;
   height: 20px;
   border-radius: 2px;
   background: var(--disabled);
@@ -89,7 +94,6 @@
 
 .haodu-controls #divider-hue,
 .haodu-controls #divider-width {
-  --divider-thumb-width: 14px;
   appearance: none;
   display: block;
   box-sizing: border-box;
@@ -132,11 +136,16 @@
   box-shadow: 0 1px 1.5px #0003, 0 2px 3px #0002;
 }
 
-.haodu-controls #divider-width {
+.haodu-controls .divider-width-control {
   position: relative;
+  width: calc(100% - 12px);
+  height: 28px;
+  margin: 8px 6px 4px;
 }
 
-.haodu-controls #divider-width::before {
+.haodu-controls .divider-width-control::before {
+  /* Safari does not paint ::before on range inputs. Use a normal container
+     so the decoration stays below, and cannot clip, the native thumb. */
   content: "";
   position: absolute;
   inset: 11.5px calc(var(--divider-thumb-width) / 10);
@@ -144,6 +153,13 @@
   /* Clip only the decoration, leaving the thumb and its shadow intact. */
   clip-path: polygon(0 40%, 100% 0, 100% 100%, 0 70%);
   pointer-events: none;
+}
+
+.haodu-controls #divider-width {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: 0;
 }
 
 .haodu-controls #divider-width::-webkit-slider-runnable-track {
@@ -169,9 +185,8 @@
 }
 
 .haodu-controls #divider-width::-moz-range-track {
-  height: 5px;
-  background: var(--muted);
-  clip-path: polygon(0 40%, 100% 0, 100% 100%, 0 70%);
+  height: 4px;
+  background: transparent;
 }
 
 .haodu-controls #divider-hue::-moz-range-thumb,
@@ -192,9 +207,13 @@
 }
 
 .haodu-controls #divider-hue:disabled,
-.haodu-controls #divider-width:disabled {
+.haodu-controls .divider-width-control:has(:disabled) {
   filter: grayscale(0.4);
   opacity: 0.5;
+  cursor: default;
+}
+
+.haodu-controls #divider-width:disabled {
   cursor: default;
 }
 
@@ -254,7 +273,7 @@
     display: none;
   }
 
-  .haodu-controls #divider-width::before {
+  .haodu-controls .divider-width-control::before {
     forced-color-adjust: none;
     background: CanvasText;
   }
@@ -264,11 +283,6 @@
     border-color: Canvas;
     outline: 1px solid CanvasText;
     box-shadow: none;
-  }
-
-  .haodu-controls #divider-width::-moz-range-track {
-    forced-color-adjust: none;
-    background: CanvasText;
   }
 
   .haodu-controls #divider-width::-moz-range-thumb {

@@ -6,7 +6,7 @@
 
 ## 开关与页面状态
 
-Chrome 中文阅读辅助扩展。点击工具栏图标只打开弹出面板，面板内有「阅读辅助」开关、分隔线颜色色带和五档粗细滑块。全局开关、颜色和粗细偏好保存在本地，刷新页面或重启浏览器后仍保留。页面在获得焦点时应用设置，后台标签页不会因设置变化而收到消息或开始处理。运行代码无需编译；发布时通过白名单复制和打包，只包含扩展运行所需文件。
+中文阅读辅助扩展，包含 Chrome 发布包和 macOS Safari 开发测试包。点击工具栏图标只打开弹出面板，面板内有「阅读辅助」开关、分隔线颜色色带和五档粗细滑块。全局开关、颜色和粗细偏好保存在本地，刷新页面或重启浏览器后仍保留。页面在获得焦点时应用设置，后台标签页不会因设置变化而收到消息或开始处理。运行代码无需编译；发布时通过白名单复制和打包，只包含扩展运行所需文件。
 
 默认在 Chrome 中按 **Option + Shift + U**（macOS：⌥⇧U；其他平台为 **Alt + Shift + U**）可直接切换开关。快捷键使用独立的 `haodu-toggle` 命令，由后台的 `commands.onCommand` 处理，不打开面板。修改 manifest 后需重新加载扩展；实际绑定以 `chrome://extensions/shortcuts` 为准，也可在该页面修改。从旧版 `_execute_action` 命令升级时，应检查新命令的实际绑定。声明方式见 [Chrome 快捷键文档](https://developer.chrome.com/docs/extensions/reference/api/commands)。
 
@@ -56,12 +56,14 @@ Chrome 中文阅读辅助扩展。点击工具栏图标只打开弹出面板，�
 | `src/inference-service.js` | 管理标准 Worker 生命周期、请求与响应对应、超时及错误 |
 | `src/start-reader.js` | 每页的通用装配入口：将 DOM 工具和适配器注入 reader，再连接控件 |
 | `src/start-inference.js` | 推理宿主的通用装配入口：创建服务、连接宿主消息 |
-| `src/platform/chrome/background.js` | Chrome 入口：保存全局开关、颜色和粗细，聚焦及当前页面加载完成时检查状态，按需注入脚本，转发推理消息并创建隐藏页面 |
-| `src/popup.html`、`src/popup.css`、`src/platform/chrome/popup.js` | 工具栏弹出面板、开关与分隔线外观偏好的状态同步 |
+| `src/platform/webextension/background.js` | 共用后台：保存全局设置、聚焦及加载完成时检查当前页面、按需注入脚本和路由消息 |
+| `src/platform/chrome/background.js` | Chrome 宿主：创建 offscreen 页面并转发推理，处理 Chrome 专属访问限制，再加载共用后台 |
+| `src/platform/safari/background.js` | Safari 宿主：在非持久后台页面中创建推理服务，处理 Safari 网站访问限制 |
+| `src/popup.html`、`src/popup.css`、`src/platform/webextension/popup.js` | 工具栏弹出面板、开关与分隔线外观偏好的状态同步 |
 | `src/reader-controls.css` | 扩展面板与站点预览共用的开关、色带、粗细滑块样式 |
 | `src/divider-color.js` | 面板、后台和站点预览共用的色相校验、颜色换算和连续色带 |
 | `src/divider-width.js` | 共用的五档粗细校验和默认值 |
-| `src/platform/chrome/content.js` | 将 Chrome 消息转换成 `reader.toggle(flag)` / `status()`，转发推理请求与状态通知 |
+| `src/platform/webextension/content.js` | 将 WebExtension 消息转换成 `reader.toggle(flag)` / `status()`，转发推理请求与状态通知 |
 | `src/platform/chrome/inference.js` | 提供 Worker 地址，将 Chrome 消息连接到推理服务 |
 | `src/platform/interfaces.js` | 适配器的 JSDoc 接口说明，无运行时代码 |
 | `src/inference.html` | Chrome 隐藏页面，承载推理服务 |
@@ -84,12 +86,12 @@ Chrome 中文阅读辅助扩展。点击工具栏图标只打开弹出面板，�
 
 英文品牌统一为 `haodu`；代码命名空间使用 `Haodu`，扩展消息使用 `HAODU_` 前缀，DOM 标识使用 `haodu-` 前缀。网站跳过标记为 `<meta name="haodu" content="off">`，与扩展读取规则同时维护。
 
-核心只使用标准 DOM、Worker 和 JavaScript，不调用扩展 API。Chrome 调用集中在 `src/platform/chrome/`。普通脚本通过 `globalThis.Haodu` 暴露接口，后台按以下顺序加载页面代码：
+核心只使用标准 DOM、Worker 和 JavaScript，不调用扩展 API。通用扩展 API 调用集中在 `src/platform/webextension/`，Chrome 和 Safari 的宿主差异分别位于 `src/platform/chrome/`、`src/platform/safari/`。Safari 支持共用代码使用的 `chrome.*` 命名空间。普通脚本通过 `globalThis.Haodu` 暴露接口，后台按以下顺序加载页面代码：
 
 ```text
 frontend/dom-tree.js → frontend/viewport.js → frontend/visibility.js → frontend/processed-text.js
   → frontend/read.js → frontend/write.js → frontend/content-changes.js → app/reader.js
-  → platform/chrome/content.js → start-reader.js
+  → platform/webextension/content.js → start-reader.js
 ```
 
 `start-reader.js` 注入依赖：
@@ -124,7 +126,7 @@ adapter.connect(reader);
 
 应用在 `app/reader.js` 中定义 `Reader` 和 `ReaderState` 接口，只提供 `status()` 和 `toggle(flag)`。`toggle(true)` 请求开启，`toggle(false)` 请求关闭。相同状态不重启；忙碌时直接忽略所有开关请求，不保存待应用设置。失败后重复 ON 不重试，收到 OFF 再 ON 或刷新页面才重试。按钮调用方负责计算目标状态，并在忙碌时忽略点击。
 
-适配器只翻译接口：将设置消息传给 `reader.toggle(flag)`，将 `PING` 转成 `status()`，转发整个 `texts` 数组并提供分隔线样式地址。`publishState()` 仅发送通知，不再触发任何 reader 控制操作。DOM 引用始终留在页面里。当前启动代码明确加载 Chrome 适配器；其他浏览器可提供同一个应用接口的实现。
+适配器只翻译接口：将设置消息传给 `reader.toggle(flag)`，将 `PING` 转成 `status()`，转发整个 `texts` 数组并提供分隔线样式地址。`publishState()` 仅发送通知，不再触发任何 reader 控制操作。DOM 引用始终留在页面里。Chrome 和 Safari 加载同一份 WebExtension 页面适配器。
 
 后台使用 `chrome.storage.local` 只保存 `{ enabled, dividerHue, dividerWidth }`，按钮以全局开关为准，页面错误单独显示。标签页切换、浏览器窗口聚焦及当前标签页加载完成时，只查询当前窗口的活动标签页；`PING` 检查页面是否已有 reader，随后通过 `APPLY_SETTING` 传递目标布尔值、颜色和粗细。reader 负责忽略相同状态和忙碌时的开关请求。若聚焦时 reader 仍在处理，开关同步请求会被忽略，颜色和粗细仍会更新；任务完成后不会补做开关同步，下次空闲时的聚焦检查再应用全局状态。当前页面忙碌时，开关操作不响应；其他后台页面不会被查询。
 
@@ -150,7 +152,9 @@ Chrome 的推理消息路径：
 
 隐藏页面和 Worker 按需创建，多个页面共享模型；服务使用请求 ID 匹配各页的结果。全局关闭立即清理当前页面，后台页面保留原样，直到下次聚焦再清理。已经开始的任务仍会完成，原有滚动和缩放处理逻辑不变。Worker 超时或崩溃会拒绝共享 Worker 上尚未完成的请求，后续请求可创建新 Worker。
 
-普通网页测试页提供另一套适配器，复用相同的 reader、DOM、启动入口和推理实现。以后支持其他浏览器时，可替换适配器和安装配置；当前仅实现 Chrome 适配。`jsconfig.json` 与 JSDoc 用于编辑器提示，无需构建。
+Safari 的推理路径为「页面适配器 → Safari 后台页面 → inference-service → Worker → backend」。Safari manifest 由构建入口生成，移除 `offscreen`、Chrome 最低版本和文件访问声明，按顺序加载共用设置工具、推理服务、Safari 宿主及共用后台。后台文档非持久；每次重建都重新读取已保存设置，模型仅在下一次推理时加载，不依赖永久驻留。具体安装与验收见 [Safari 开发与安装](safari.md)。
+
+普通网页测试页提供另一套适配器，复用相同的 reader、DOM、启动入口和推理实现。`jsconfig.json` 与 JSDoc 用于编辑器提示，无需编译；各浏览器的打包白名单与 manifest 变体统一维护在 `scripts/extension-targets.mjs`。
 
 ## DOM 数据接口
 
