@@ -30,6 +30,7 @@
   const LINE_BOUNDARY = /[\n\r\v\f\u001c-\u001e\u0085\u2028\u2029]/u;
   const PHYSICAL_LINE = /[^\n\r\v\f\u001c-\u001e\u0085\u2028\u2029]+/gu;
   const NUMBER_SIGN = String.raw`[+\-−﹢﹣＋－]`;
+  const NUMERIC_COLONS = new RegExp(`\\p{Number}[\\p{Zs}\\t]*：(?=[\\p{Zs}\\t]*${NUMBER_SIGN}?[\\p{Zs}\\t]*\\p{Number})`, "gu");
   const NUMBER = `${NUMBER_SIGN}? *(?:\\p{Nd}+(?:[.．]\\p{Nd}*)?|[.．]\\p{Nd}+)(?:[eEｅＥ]${NUMBER_SIGN}?\\p{Nd}+)?`;
   const NUMERIC_COMMAS = new RegExp(`(?<![\\p{Nd}.．])${NUMBER} *(，) *(?=${NUMBER})`, "gu");
 
@@ -112,6 +113,9 @@
     const clauses = [];
     let buffer = "";
     const boundaryOffsets = contextBoundaryOffsets(text);
+    const numericColons = new Set(Array.from(text.matchAll(NUMERIC_COLONS), (match) => (
+      match.index + match[0].length - 1
+    )));
     // Spaces between Han passages are reading boundaries, not training proxies.
     // Keep the whole run in the preceding clause; tokenization trims its tail.
     for (const match of text.matchAll(HAN_SEPARATING_SPACES)) {
@@ -123,9 +127,11 @@
       sourceOffset += character.length;
       return start;
     });
-    // The original enumeration comma is an extra reading boundary, not a
-    // training proxy: it stays in the preceding fragment's model tokens.
-    const isEnd = (index) => boundaryOffsets.has(sourceOffsets[index]) || characters[index] === "、";
+    // Original enumeration commas and non-numeric Chinese colons are reading
+    // boundaries, not training proxies. Keep them in the preceding model input.
+    const isEnd = (index) => boundaryOffsets.has(sourceOffsets[index]) ||
+      characters[index] === "、" ||
+      (characters[index] === "：" && !numericColons.has(sourceOffsets[index]));
 
     const flush = () => {
       if (!buffer) return;

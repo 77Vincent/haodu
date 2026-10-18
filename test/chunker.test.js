@@ -46,17 +46,17 @@ test("recursive children with no legal gap skip inference without changing norma
     "an invalid gap still contributes to softmax; never renormalize only legal gaps");
 });
 
-test("context model receives punctuation and numbers without cutting inside times", () => {
+test("colon-separated speech retains numeric punctuation without cutting inside times", () => {
   const calls = [];
   const chunker = withModel((tokens) => {
     calls.push(Array.from(tokens));
     return tokens.slice(1).map(() => 0);
   }, "unicode-context-v1");
   const text = "女：我们计划明天上午8:30出发前往目的地，请记住。";
-  assert.deepEqual(Array.from(chunker.splitClauses(text)), ["女：我们计划明天上午8:30出发前往目的地，", "请记住。"]);
+  assert.deepEqual(Array.from(chunker.splitClauses(text)), ["女：", "我们计划明天上午8:30出发前往目的地，", "请记住。"]);
   const chunks = Array.from(chunker.chunkText(text, { segmenter: null, minConfidence: 0 }));
   assert.equal(chunks.join(""), text);
-  assert.ok(calls.some((tokens) => tokens.join("").includes("女:")));
+  assert.ok(calls.every((tokens) => !tokens.includes("女")), "the short speaker label skips inference");
   assert.ok(calls.some((tokens) => tokens.join("").includes("8:30")));
   assert.ok(chunks.some((part) => part.includes("8:30")));
   assert.deepEqual(Array.from(chunker.splitClauses("价格1,000.50元，稍后结算。")), ["价格1,000.50元，", "稍后结算。"]);
@@ -99,9 +99,9 @@ test("context pre-splitting preserves non-proxies, whitespace, and normalized nu
   }, "unicode-context-v1");
   const text = '女：课程（A）和《阅读》在明天上午８：３０开始\n价格１，０００．５０元﹐请提前准备。';
   const clauses = Array.from(chunker.splitClauses(text));
-  assert.deepEqual(clauses, [text.slice(0, text.indexOf("\n") + 1), text.slice(text.indexOf("\n") + 1)]);
+  assert.deepEqual(clauses, ["女：", text.slice(2, text.indexOf("\n") + 1), text.slice(text.indexOf("\n") + 1)]);
   assert.equal(chunker.chunkText(text, { segmenter: null, minConfidence: 0 }).join(""), text);
-  assert.deepEqual(inputs, ['女:课程(A)和《阅读》在明天上午8:30开始',
+  assert.deepEqual(inputs, ['课程(A)和《阅读》在明天上午8:30开始',
     '程(A)和《阅读》在明天上午8:30开始']);
   assert.equal(chunker.visualLength("甲乙丙丁戊己庚辛壬癸子丑 English"), 13);
 });
@@ -188,7 +188,7 @@ test("compatibility enumeration marks remain context without adding normalized b
 test("short list items skip inference and receive no model dividers", () => {
   const chunker = withModel(() => { throw new Error("all fragments are below 13 units"); }, "unicode-context-v1");
   const text = "𠮷🌈选项：字体、颜色、布局。";
-  assert.deepEqual(Array.from(chunker.splitClauses(text)), ["𠮷🌈选项：字体、", "颜色、", "布局。"]);
+  assert.deepEqual(Array.from(chunker.splitClauses(text)), ["𠮷🌈选项：", "字体、", "颜色、", "布局。"]);
   assert.equal(chunker.chunkText(text).join(""), text);
   assert.deepEqual(Array.from(chunker.process([text])[0]), []);
   for (const part of chunker.buildVisualChunks(text)) assert.equal(part.separated, false);
@@ -210,22 +210,53 @@ test("enumeration boundaries keep punctuation and scope inference to individual 
   }
 });
 
-test("Chinese colons remain context in both ordinary prose and numbers", () => {
-  for (const text of ["他说：下面详细说明。", "提醒：八点出发。", "时间８：３０：００。", "比例1 ： 2。", "比例𝟙：𝟚。", "英文:保留﹕兼容冒号﹑兼容顿号。"]) {
+test("Chinese prose colons pre-split while numeric, ASCII and compatibility colons stay context", () => {
+  assert.deepEqual(splitClauses("他说：下面详细说明。"), ["他说：", "下面详细说明。"]);
+  assert.deepEqual(splitClauses("提醒：八点出发。"), ["提醒：", "八点出发。"]);
+  assert.deepEqual(splitClauses("比例：1：2：3。"), ["比例：", "1：2：3。"]);
+  for (const text of ["时间８：３０：００。", "比例1 ： 2。", "比例𝟙：𝟚。", "比分１\u3000：\t２。",
+    "比例−1 ： −2。", "比例1 ： ＋ 2。", "英文:保留﹕兼容冒号︓兼容顿号﹑。", "网址https://example.com/path"]) {
     assert.deepEqual(splitClauses(text), [text]);
   }
+  assert.deepEqual(splitClauses("序号1：\n2。"), ["序号1：\n", "2。"], "a numeric exception cannot cross a line break");
 });
 
-test("enumeration boundaries preserve UTF-16 cut offsets without adding punctuation dividers", () => {
+test("Chinese colons retain their model context and scope inference to each long side", () => {
+  const item = "𠮷🌈ﬃ甲乙丙丁戊己庚辛壬癸子丑";
+  const inputs = [];
+  const chunker = withModel((tokens) => {
+    inputs.push(tokens.join(""));
+    return tokens.slice(1).map(() => 0);
+  });
+  const text = `${item}：${item}`;
+  assert.deepEqual(Array.from(chunker.splitClauses(text)), [`${item}：`, item]);
+  assert.deepEqual(Array.from(chunker.process([text])[0]), []);
+  assert.deepEqual(inputs, [`${item}：`.normalize("NFKC"), item.normalize("NFKC")]);
+});
+
+test("reading boundaries preserve UTF-16 cut offsets without adding punctuation dividers", () => {
   const left = "𠮷🌈甲乙丙丁戊己庚辛壬癸子丑";
   const right = "ﬃ甲乙丙丁戊己庚辛壬癸子丑寅";
   const chunker = withModel((tokens) => tokens.slice(1).map((token) => token === "庚" ? 100 : 0), "unicode-context-v1");
-  for (const separator of ["、", "、、", "、\n"]) {
+  for (const separator of ["、", "、、", "、\n", "：", "：：", "：、", "：\n"]) {
     const text = `${left}${separator}${right}`;
     assert.deepEqual(Array.from(chunker.process([text])[0]),
       [text.indexOf("庚"), text.indexOf("庚", text.indexOf(separator))]);
     assert.equal(chunker.buildVisualChunks(text).map((c) => c.text).join(""), text);
   }
+});
+
+test("the reported review skips inference after separating its short introduction from the list", () => {
+  const text = "整部电影讲的其实就一件事：一群摔过很多次、输过很多次、被生活按在地上摩擦过的人，凑在一起，互相托着，把不可能变成了可能。";
+  const chunker = withModel(() => { throw new Error("all fragments are shorter than 13 units"); });
+  assert.deepEqual(Array.from(chunker.splitClauses(text)), [
+    "整部电影讲的其实就一件事：", "一群摔过很多次、", "输过很多次、",
+    "被生活按在地上摩擦过的人，", "凑在一起，", "互相托着，", "把不可能变成了可能。",
+  ]);
+  assert.deepEqual(Array.from(chunker.process([text])[0]), []);
+  const chunks = buildVisualChunks(text);
+  assert.equal(chunks.map((chunk) => chunk.text).join(""), text);
+  assert.ok(chunks.every((chunk) => !chunk.separated));
 });
 
 test("reported wheel enumeration avoids recursive cuts within short listed phrases", () => {
@@ -298,7 +329,8 @@ test("a model chunk never crosses a punctuation boundary", () => {
 
 test("does not move closing quotes across a training proxy boundary", () => {
   assert.deepEqual(splitClauses("他说：“明天见。”然后离开。"), [
-    "他说：“明天见。",
+    "他说：",
+    "“明天见。",
     "”然后离开。",
   ]);
 });
@@ -326,7 +358,8 @@ test("Chinese proxies, reading separators and line breaks create backend clause 
     "清晰、",
     "效率，",
     "稳定；",
-    "自然：继续\n",
+    "自然：",
+    "继续\n",
     "结束。",
   ]);
 });

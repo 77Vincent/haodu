@@ -204,8 +204,9 @@ test("model cuts require adjacent Han in the source, before normalization or whi
   const snippets = [
     "｜8:30", "8｜:30", "8:｜30", "8:30｜", "3｜.14", "3.｜14", "1/｜4",
     "｜AI", "AI｜", "｜（切勿模仿）", "（｜切勿模仿）", "（切勿模仿｜）", "（切勿模仿）｜",
-    // Keep spaces beside non-Han text so the new Han-space pre-split does not apply.
-    "｜ English", " ｜English", "：｜ 切勿模仿", "： ｜切勿模仿",
+    // Use retained ASCII colons and spaces beside non-Han text; reading
+    // boundaries (Han spaces and Chinese colons) are tested separately.
+    "｜ English", " ｜English", ":｜ 切勿模仿", ": ｜切勿模仿",
     "｜㍿", "㍿｜", "｜ﬃ", "ﬃ｜", "🌈｜", "𠮷\u{E0100}｜",
   ];
   for (const snippet of snippets) {
