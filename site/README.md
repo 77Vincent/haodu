@@ -107,6 +107,7 @@ npm --prefix site run build -- --baseURL https://example.org/haodu/
 
 ## SEO
 
+- `static/baidu_verify_codeva-D5zGDCgJlL.html` 是百度站点所有权验证文件，构建时原样复制到站点根目录；保持文件名和内容不变，验证通过后也需保留。
 - 标题与描述来自各页面 front matter；中英文首页分别使用自己的 canonical。语言互链与 sitemap 直接使用主题默认模板：HTML 使用 `zh-cn` / `en` 并提供 `x-default`，sitemap 使用 `zh-CN` / `en-US`。两者都链接到中英文首页并包含自身，无需为统一写法覆盖模板。
 - 分享卡片与项目 README、商店首页截图共用 [`store-screenshot-1280x800.jpg`](../release/assets/store-screenshot-1280x800.jpg)，展示首页与 controls。`module.toml` 将这一个文件挂载为站点资源，Thulite 输出 Open Graph / Twitter 大图，项目补充实际尺寸和中英文替代文字。更新截图后重新构建即可，不需维护第二份图片。
 - `WebSite` 结构化数据使用主题默认模板，名称按语言配置输出「好读」或 `haodu`，URL 均指向站点根地址。无需维护本地覆盖模板来额外添加别名。
