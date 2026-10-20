@@ -11,12 +11,12 @@ npm test
 npm run release:extension
 ```
 
-- 上传：`dist/haodu-0.3.0.zip`（版本以当前 manifest 为准）。
+- 包路径：`dist/haodu-0.2.0.zip`（版本以当前 manifest 为准）。
 - 本地加载：`edge://extensions` → 开发人员模式 → 加载解压缩的扩展 → `dist/extension/`。
 - 校验清单：`dist/extension-release.json` 和对应 `.zip.sha256`。
 - manifest 没有 `update_url`，名称和摘要不含 Chrome 品牌；所用 `offscreen`、`scripting`、`storage` 等 API 在桌面 Edge 的支持列表内。
 
-2026-10-20 待发布版本已升为 **0.3.0**，内置 **E6 best**；Chrome 和 Edge 使用同一 ZIP，SHA-256 以 `dist/extension-release.json` 为准。已发布到 GitHub 的 Chrome 0.2.0 / E4 包保留原发布记录。
+2026-10-20 暂缓新版本打包，等待新数据训练完成后再确定发布版本。源码保留 **E6 best**，版本号恢复为 0.2.0；Chrome 和 Edge 使用同一 ZIP，SHA-256 以 `dist/extension-release.json` 为准。现有本地 0.2.0 / E6 包与已发布到 GitHub 的 Chrome 0.2.0 / E4 包不同，原发布记录保留。
 
 该次准备已通过 273 项自动化测试、包完整性检查和官网/隐私页可访问性检查。已进入指定账号的 Edge 开发者注册流程，账号尚未开通此计划。尚未完成 Edge 原生安装验收，也尚未提交或上架；不要将这些检查写成审核通过。
 

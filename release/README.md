@@ -2,7 +2,7 @@
 
 网站与插件独立发布。网站只上传静态页面；插件只上传运行文件。不要把仓库根目录或整个 `dist/` 上传到任意一方。
 
-当前待发布版本为 **0.3.0**，包含 E6 best 模型与当前后端。线上 0.2.0 的发布记录保持不变；本地打包不代表已提交商店或部署网站。
+当前源码保留 E6 best 模型与最新后端，版本号暂维持 **0.2.0**。等待新数据训练完成后，再确定下一次发布版本并打包；现有本地包不代表线上同版本的已发布内容。
 
 插件目前发布于 Chrome Web Store，另提供 macOS Safari 开发测试包。本仓库维护插件打包、站点构建和商店材料；官网的生产发布脚本、云资源配置及运维记录维护在私有仓库 [77Vincent/haodu-release](https://github.com/77Vincent/haodu-release)。公开仓库可独立开发、测试和构建，不需要该私有仓库或云端凭证。
 
@@ -17,17 +17,17 @@ npm run release:extension
 产物：
 
 - `dist/extension/`：加载已解压的扩展程序时选择这个目录。
-- `dist/haodu-0.3.0.zip`：提交商店的 ZIP，名称取自 manifest 版本。
-- `dist/haodu-0.3.0.zip.sha256`：ZIP 校验值。
+- `dist/haodu-0.2.0.zip`：插件 ZIP，名称取自 manifest 版本。
+- `dist/haodu-0.2.0.zip.sha256`：ZIP 校验值。
 - `dist/extension-release.json`：版本、体积、每个文件的 SHA-256 清单，不放入 ZIP。
 
 `scripts/build-extension.mjs` 使用 `scripts/extension-targets.mjs` 的明确文件清单，拒绝符号链接，检查 JS 语法及 manifest 引用，并固定文件时间和权限。ZIP 不含顶层 `extension/` 目录，也不含 training、site、测试或开发配置。新增运行文件时，需要同时更新打包清单。
 
 构建直接复制当前 `src/boundary-model-data.js`，不会重新导出或替换正在使用的模型。后续升级时同步修改根 `package.json` 和 `manifest.json` 的版本，再构建新的 ZIP。
 
-Safari 使用 `npm run release:safari`，独立输出 `dist/safari-extension/`、`dist/haodu-0.3.0-safari.zip` 及对应校验清单，保留 Chrome 产物。该 ZIP 可用于 Safari 临时加载和 Apple 打包流程，不是已签名安装应用。Safari 尚未上架；完整步骤见 [Safari 开发与安装](../docs/safari.md)。
+Safari 使用 `npm run release:safari`，独立输出 `dist/safari-extension/`、`dist/haodu-0.2.0-safari.zip` 及对应校验清单，保留 Chrome 产物。该 ZIP 可用于 Safari 临时加载和 Apple 打包流程，不是已签名安装应用。Safari 尚未上架；完整步骤见 [Safari 开发与安装](../docs/safari.md)。
 
-Firefox 使用 `npm run release:firefox`，独立输出 `dist/firefox-extension/`、`dist/haodu-0.3.0-firefox.zip` 及校验清单。构建会将相同模型权重无损拆成 JSON 元数据和二进制数据，以满足 AMO 校验要求。正式安装需要 Mozilla 签名；见 [Firefox 发布材料](firefox-addons.md)。
+Firefox 使用 `npm run release:firefox`，独立输出 `dist/firefox-extension/`、`dist/haodu-0.2.0-firefox.zip` 及校验清单。构建会将相同模型权重无损拆成 JSON 元数据和二进制数据，以满足 AMO 校验要求。正式安装需要 Mozilla 签名；见 [Firefox 发布材料](firefox-addons.md)。
 
 Microsoft Edge 复用 `npm run release:extension` 的 Chromium 包，通过微软 Partner Center 单独提交；账号注册、商店文案和验收步骤见 [Edge 发布材料](edge-addons.md)。
 
