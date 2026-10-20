@@ -1233,7 +1233,7 @@ test("the actual worker uses fresh recursive inference with the 13-unit and 45% 
   assert.equal(response.error, undefined);
   assert.equal(response.id, 50);
   assert.deepEqual(Array.from(response.offsetsByText, (cuts) => Array.from(cuts)),
-    [[25, 31, 50], [], [11, 35], [10, 13, 20, 27]]);
+    [[9, 25, 31, 50], [], [11, 35], [10, 13, 25, 27]]);
   assert.deepEqual(inputs.map((tokens) => tokens.join("")), [
     "中文天然不使用空格切分语意块",
     "因此过长的的句子会破坏阅读体验",

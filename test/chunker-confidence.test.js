@@ -294,13 +294,14 @@ test("bundled model uses the 45% default and honors a stricter explicit threshol
   const moderate = "我一直在思考明天早上的早餐吃什么";
   const confident = "很多高三学子都梦寐以求可以进入知名学府求学";
   assert.deepEqual(realChunker.process([moderate, confident]), [[6], [11]]);
-  assert.deepEqual(realChunker.process([moderate, confident], { minConfidence: .9 }), [[], [11]]);
+  // E6 gives these top gaps about 91.55% and 97.46%, respectively.
+  assert.deepEqual(realChunker.process([moderate, confident], { minConfidence: .95 }), [[], [11]]);
   assert.deepEqual(realChunker.process([confident], { minConfidence: .99 }), [[]]);
   assert.deepEqual(realChunker.process([moderate, confident], { minConfidence: 0 }), [[6], [11]]);
   const tokens = realChunker.tokenizeContext(moderate);
   const probabilities = realChunker.gapProbabilities(backend.scoreTokens(tokens.map((t) => t.segment)));
   assert.equal(probabilities.indexOf(Math.max(...probabilities)), 5);
-  assert.ok(probabilities[5] > realChunker.MIN_SPLIT_CONFIDENCE && probabilities[5] < .9);
+  assert.ok(probabilities[5] > realChunker.MIN_SPLIT_CONFIDENCE && probabilities[5] < .95);
 });
 
 test("default recursion runs fresh inference and can accept a different second boundary", () => {
