@@ -91,11 +91,11 @@ npm run release:site -- --base-url https://haodu.site/
 ## 发布前配置
 
 - `config/production/hugo.toml` 的 `baseURL` 为 `https://haodu.site/`；正式发布命令仍显式传入地址。`config/_default/hugo.toml` 的 `https://example.org/` 仅作默认占位，不用于部署。
-- `config/_default/params.toml` 的 `chromeWebStoreURL`：默认 Chrome 商店详情页地址，所有浏览器都可访问。`firefoxAddonsURL`：桌面 Firefox 的 AMO 详情页地址；审核通过且确认公开可安装后再填写，留空时仍可查看 Chrome 版。修改后重新构建、部署网站。
+- `config/_default/params.toml` 的 `chromeWebStoreURL`：默认 Chrome 商店详情页地址，所有浏览器都可访问。`firefoxAddonsURL`：桌面 Firefox 的 AMO 详情页地址，已于 2026-10-20 核实公开上架并配置；留空时仍可查看 Chrome 版。修改后重新构建、部署网站。
 - `content/_index.md`：维护中文首页标题、SEO 标题、描述和两种语言共用的中文 demo；`content/_index.en.md` 维护对应英文介绍。
 - `config/_default/menus.toml` 和 `menus.en.toml`：中英文页脚的公开备案号与工信部查询链接，沿用主题菜单，无需覆盖页脚模板。
 
-首页安装入口中文显示“现在安装”，英文显示“Install now”。`assets/js/install-button.js` 根据浏览器标识为桌面 Firefox 选择已配置的 AMO 地址，Chrome / Edge 等保留 Chrome 商店入口。Firefox 尚未上架、Safari、手机及平板（含使用桌面标识的 iPadOS）显示可点击的“查看 Chrome 版” / “View Chrome version”，按钮悬停提示说明可换到电脑上的 Chrome 安装。所有入口都保留链接、键盘焦点与新标签页打开行为，不因当前浏览器无法安装而阻止访问商店。浏览器识别只用于引导，不代替商店的兼容性检查；没有 JavaScript 或无法识别浏览器时，保留静态 Chrome 商店链接。页面不向商店请求审核状态，Firefox 上架后需填写配置并重新部署。
+首页安装入口中文显示“现在安装”，英文显示“Install now”。`assets/js/install-button.js` 根据浏览器标识为桌面 Firefox 选择已配置的 AMO 地址，Chrome / Edge 等保留 Chrome 商店入口。Safari、手机及平板（含使用桌面标识的 iPadOS）显示可点击的“查看 Chrome 版” / “View Chrome version”，按钮悬停提示说明可换到电脑上的 Chrome 安装；若清空 Firefox 地址，Firefox 也使用此回退。所有入口都保留链接、键盘焦点与新标签页打开行为，不因当前浏览器无法安装而阻止访问商店。浏览器识别只用于引导，不代替商店的兼容性检查；没有 JavaScript 或无法识别浏览器时，保留静态 Chrome 商店链接。页面不向商店请求审核状态，配置变更需重新部署。
 
 也可以在构建时指定地址：
 

@@ -11,7 +11,7 @@ npm test
 npm run release:firefox
 ```
 
-生成 `dist/firefox-extension/`、`dist/haodu-0.2.0-firefox.zip`、对应 `.sha256` 和 `dist/firefox-extension-release.json`；版本来自根 manifest。不会覆盖 Chrome 或 Safari 的产物。
+生成 `dist/firefox-extension/`、`dist/haodu-0.3.0-firefox.zip`、对应 `.sha256` 和 `dist/firefox-extension-release.json`；版本来自根 manifest。不会覆盖 Chrome 或 Safari 的产物。
 
 打开 Firefox 的 `about:debugging#/runtime/this-firefox`，点击“临时载入附加组件”，选择生成目录中的 `manifest.json`，授予测试网站访问权限。在工具栏打开好读并开启，默认快捷键为 macOS 的 Option + Shift + U / 其他平台的 Alt + Shift + U，可在附加组件管理器的“管理扩展快捷键”中修改。面板显示浏览器返回的实际绑定。
 
