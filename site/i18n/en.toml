@@ -1,6 +1,9 @@
 [installNow]
 other = 'Install now'
 
+[supportedBrowsers]
+other = 'Supports Chrome, Edge and Firefox'
+
 [viewChromeVersion]
 other = 'View Chrome version'
 

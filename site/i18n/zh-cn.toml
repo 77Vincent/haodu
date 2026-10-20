@@ -1,6 +1,9 @@
 [installNow]
 other = '现在安装'
 
+[supportedBrowsers]
+other = '支持 Chrome、Edge 和 Firefox'
+
 [viewChromeVersion]
 other = '查看 Chrome 版'
 
