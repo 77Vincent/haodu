@@ -18,7 +18,7 @@ npm run release:extension
 
 2026-10-20 暂缓新版本打包，等待新数据训练完成后再确定发布版本。源码保留 **E6 best**，版本号恢复为 0.2.0；Chrome 和 Edge 使用同一 ZIP，SHA-256 以 `dist/extension-release.json` 为准。现有本地 0.2.0 / E6 包与已发布到 GitHub 的 Chrome 0.2.0 / E4 包不同，原发布记录保留。
 
-该次准备已通过 273 项自动化测试、包完整性检查和官网/隐私页可访问性检查。已进入指定账号的 Edge 开发者注册流程，账号尚未开通此计划。尚未完成 Edge 原生安装验收，也尚未提交或上架；不要将这些检查写成审核通过。
+该次准备已通过 273 项自动化测试、包完整性检查和官网/隐私页可访问性检查。2026-10-20 已完成开发者注册并创建扩展，后台显示上传的 `haodu-0.2.0.zip` 校验完成，概览状态为 **In draft**；发行范围和属性已保存，隐私与商店资料仍显示未完成，后续由用户手动操作。仅凭后台文件名不能确认上传包与本地 E6 包的哈希一致。尚未完成 Edge 原生安装验收，也尚未提交或上架；不要将包校验写成审核通过。
 
 ## 账号与提交
 
@@ -41,13 +41,16 @@ npm run release:extension
 - 支持：<https://github.com/77Vincent/haodu/issues>
 - 隐私政策：<https://haodu.site/privacy/>
 - 搜索词：好读、中文阅读、阅读辅助、长句切分、离线、分隔线
-- 图标：`icons/on-128.png`
-- 截图：`release/assets/store-screenshot-1280x800.jpg`、`release/assets/store-controls-1280x800.jpg`
-- 小宣传图（可选）：`release/assets/store-promo-440x280.jpg`
+- 图标：`release/assets/store-logo-300x300.png`（300 × 300，透明背景，从 `icons/divider.svg` 按原比例导出）。
+- 截图（均为 1280 × 800）：`release/assets/store-screenshot-1280x800.png`、`release/assets/store-controls-1280x800.png`、`release/assets/store-model-reading-1280x800.png`
+- 小宣传图（可选）：`release/assets/store-promo-440x280.png`（440 × 280）
+- 大宣传图（可选）：`release/assets/store-marquee-1400x560.png`（1400 × 560）
 
-上述两张截图展示官网固定示例及 controls，均为 1280 × 800，不宣称是 E6 实时推理结果。旧的 `store-model-reading-1280x800.jpg` 来自 E4，本次不使用。大宣传图是可选项，现有 JPEG 不直接作为要求 PNG 的大宣传图上传。
+Edge 上传使用 PNG；上述截图和宣传图由同名 JPG 转换，保持原尺寸和画面，原 JPG 保留供其他引用使用。前两张截图展示官网固定示例及 controls；第三张纯文字切分截图来自 E4 模型。仅转换图片格式，不宣称是 E6 实时推理结果。
 
 ### 详细介绍
+
+Edge 要求此字段至少 250 字符；下方完整介绍满足长度要求。中文文案应填写在简体中文商店资料中。
 
 好读是一款中文阅读辅助扩展。阅读网页时，它在较长的中文句子中添加视觉分隔线，将连续的文字划分成更容易阅读的语意块，帮助你把握句子结构。
 
