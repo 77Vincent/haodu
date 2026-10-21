@@ -52,6 +52,20 @@ for (const browser of ["chrome", "safari", "firefox"]) {
       "src/backend/inference.js", "src/backend/chunker.js");
     for (const file of required) assert.ok(target.files.includes(file), `Missing ${file}`);
   });
+
+  test(`${browser} declares Simplified Chinese with resolvable store metadata`, () => {
+    const target = extensionTarget(manifest, browser);
+    assert.equal(target.manifest.default_locale, "zh_CN");
+    const locale = `_locales/${target.manifest.default_locale}/messages.json`;
+    assert.ok(target.files.includes(locale), "the locale must be in the release allowlist");
+    const messages = JSON.parse(readFileSync(join(root, locale), "utf8"));
+    const name = /^__MSG_(\w+)__$/.exec(target.manifest.name);
+    const description = /^__MSG_(\w+)__$/.exec(target.manifest.description);
+    assert.ok(name && description, "Edge detects locales through message references");
+    assert.equal(messages[name[1]].message, "好读");
+    assert.equal(messages[description[1]].message,
+      JSON.parse(readFileSync(join(root, "package.json"), "utf8")).description);
+  });
 }
 
 

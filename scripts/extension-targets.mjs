@@ -4,6 +4,7 @@ export function extensionTarget(sourceManifest, browser = 'chrome') {
   const manifest = structuredClone(sourceManifest);
   const common = [
     'manifest.json',
+    '_locales/zh_CN/messages.json',
     'icons/on-16.png', 'icons/on-32.png', 'icons/on-48.png', 'icons/on-128.png',
     'icons/off-16.png', 'icons/off-32.png',
     'src/app/reader.js',

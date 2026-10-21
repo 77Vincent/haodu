@@ -15,6 +15,13 @@ const { values } = parseArgs({ options: { browser: { type: 'string', default: 'c
 const sourceManifest = JSON.parse(await readFile(join(root, 'manifest.json'), 'utf8'));
 const target = extensionTarget(sourceManifest, values.browser);
 const { files, manifest } = target;
+const defaultMessages = manifest.default_locale
+  ? JSON.parse(await readFile(join(root, `_locales/${manifest.default_locale}/messages.json`), 'utf8'))
+  : {};
+const displayName = manifest.name.replace(/__MSG_(\w+)__/g, (_, key) => {
+  if (typeof defaultMessages[key]?.message !== 'string') throw new Error(`Missing locale message: ${key}`);
+  return defaultMessages[key].message;
+});
 const generated = new Map();
 if (values.browser === 'firefox') {
   if (!(await lstat(join(root, 'src/boundary-model-data.js'))).isFile()) {
@@ -72,7 +79,8 @@ try {
   execFileSync('zip', ['-X', '-q', '-9', archive, ...files], { cwd: unpacked });
   const archiveBytes = await readFile(archive);
   const report = {
-    name: manifest.name, version: manifest.version, browser: values.browser,
+    name: displayName, version: manifest.version, browser: values.browser,
+    defaultLocale: manifest.default_locale,
     unpackedBytes: entries.reduce((sum, entry) => sum + entry.bytes, 0),
     archive: archiveName, archiveBytes: archiveBytes.length,
     archiveSha256: sha256(archiveBytes), files: entries,
