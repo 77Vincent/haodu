@@ -65,10 +65,11 @@
 - 128 × 128 图标：`icons/on-128.png`，已包含在 ZIP。
 - 440 × 280 小宣传图：[store-promo-440x280.jpg](assets/store-promo-440x280.jpg)，对应可编辑源文件 [store-promo-440x280.svg](assets/store-promo-440x280.svg)。
 - 1400 × 560 横幅宣传图（Marquee）：[store-marquee-1400x560.jpg](assets/store-marquee-1400x560.jpg)，RGB JPEG，无透明通道；对应可编辑源文件 [store-marquee-1400x560.svg](assets/store-marquee-1400x560.svg)。
-- 官网首页截图：[store-screenshot-1280x800.jpg](assets/store-screenshot-1280x800.jpg)，摄于 2026-10-15。截图专用页面复用首页源码，放大标题、介绍与第一段阅读示例，将 controls 放在右上角；只调整截图构图，不改变正式站点布局。
-- Controls 特写：[store-controls-1280x800.jpg](assets/store-controls-1280x800.jpg)，摄于 2026-10-15，复用官网现有 controls 的 HTML、CSS 和交互代码，等比例放大 4.35 倍并居中，展示开关、快捷键、颜色与粗细调节。
+- 官网首页截图：[store-screenshot-1280x800.jpg](assets/store-screenshot-1280x800.jpg)，摄于 2026-10-21，来自当前首页，包含浏览器支持提示及底部悬浮 controls。
+- Controls 特写：[store-controls-1280x800.jpg](assets/store-controls-1280x800.jpg)，摄于 2026-10-21。[截图用页面](assets/store-controls-preview.html) 从最新的 `dist/site-preview/index.html` 读取 controls，复用当前官网的样式和交互代码，等比例放大并居中，展示开关、快捷键、颜色与粗细调节；不维护第二份控件模板。
 - 上述两张截图均为 1280 × 800、RGB JPEG，无透明通道，按首页、controls 特写的顺序上传至 Screenshots。官网示例使用固定切分点；图片展示界面与阅读效果，不代表当前模型对示例的实时推理结果。
-- 纯文字模型切分：[store-model-reading-1280x800.jpg](assets/store-model-reading-1280x800.jpg)，摄于 2026-10-15，1280 × 800、RGB JPEG，无透明通道。选取现有模型对比例句中的 6 条阅读长句，保持原文拼成 198 字段落；0.2.0 内置的 epoch 4 模型在默认严格大于 45% 的置信度门槛下生成 13 个分隔点，使用默认红色与第二档粗细。画面只有正文和分隔线，可作为第三张 Screenshots 上传。[截图用页面](assets/store-model-reading-preview.html) 直接复用扩展的 Worker、模型、标记写入代码及 CSS，没有手工指定切点；页面通过 `haodu=off` 标记避免已安装扩展重复处理。
+- 纯文字模型切分：[store-model-reading-1280x800.jpg](assets/store-model-reading-1280x800.jpg)，摄于 2026-10-21，1280 × 800、RGB JPEG，无透明通道。固定的 6 条阅读例句合计 198 字，由当前 E6 best 模型和后端在默认严格大于 45% 的置信度门槛下实际推理，生成 14 个分隔点，使用默认红色与第二档粗细。[截图用页面](assets/store-model-reading-preview.html) 直接复用扩展的 Worker、模型、标记写入代码及 CSS，没有手工指定切点；页面通过 `haodu=off` 标记避免已安装扩展重复处理。`#passage` 的 `data-offsets` 保存本次实际切点，可与同一源码的 `chunker.process()` 结果核对；模型身份以 `getModelInfo()` 的 epoch 和检查点哈希为准。
+- 三张截图同时维护同名 PNG，供 Edge 使用。旧的 2026-10-15 首页与 E4 模型截图保留在 Git 历史中；不要将旧图或旧模型的切点数作为当前版本的运行结果。
 - 真实扩展截图用例：[store-reading-preview.html](assets/store-reading-preview.html)。该页没有阅读脚本，也没有人工插入的正文分隔线。通过本地 HTTP 服务打开后，开启待发布扩展，确认分隔线实际出现，再按 1280 × 800 截图。不能将未处理页面或人工标记页面描述为扩展运行结果。
 
 ```sh
@@ -76,13 +77,19 @@ python3 -m http.server 8096 --bind 127.0.0.1 --directory release/assets
 # 打开 http://127.0.0.1:8096/store-reading-preview.html
 ```
 
-重新截取纯文字模型效果时，从仓库根目录启动服务，以便页面加载 `src/` 中的实际运行文件：
+重新截取首页和控件前，先运行 `npm run release:site:preview`。首页通过 `python3 -m http.server 8097 --bind 127.0.0.1 --directory dist/site-preview` 打开，在 1280 × 800 视口下截图。该首页是静态演示，不加载模型。
+
+控件及纯文字模型截图从仓库根目录启动服务，以便加载当前站点构建和 `src/` 中的实际运行文件：
 
 ```sh
 python3 -m http.server 8098 --bind 127.0.0.1
+# 控件：http://127.0.0.1:8098/release/assets/store-controls-preview.html
+# 等待 body 的 data-preview-state 变为 ready 后截图。
 # 打开 http://127.0.0.1:8098/release/assets/store-model-reading-preview.html
 # 视口设为 1280 × 800，等待 body 的 data-model-state 变为 ready 后截图。
 ```
+
+2026-10-21 的截图使用 E6 检查点 `1e0c14eda9bb170bbc4f3b6ed5f441b4f17151a824d51ac57d430e0eb9d4782a` 及当前源码，包含提交审核之后补充的样式修复；更新素材不表示已上传到商店，也不表示现存 0.3.0 ZIP 包含该修复。后续发布时须重新核对待发布包。
 
 ## 官方要求
 

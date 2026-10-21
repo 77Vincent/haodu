@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN" data-bs-theme="light">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="haodu" content="off">
+<title>好读控件截图</title>
+<style>
+  html, body { margin: 0; min-height: 100vh; background: #fff; }
+  body { display: grid; place-items: center; }
+  .reader-preview-controls {
+    position: static !important;
+    inset: auto !important;
+    margin: 0 !important;
+    transform: scale(3.5);
+    transform-origin: center;
+  }
+</style>
+<body data-preview-state="loading">
+<script src="../../src/divider-color.js"></script>
+<script src="../../src/divider-width.js"></script>
+<script type="module">
+  import { initReaderPreview } from "../../site/assets/js/reader-preview.js";
+
+  try {
+    // Read the current Hugo build instead of keeping a second controls template.
+    const previewRoot = new URL("../../dist/site-preview/", location.href);
+    const response = await fetch(new URL("index.html", previewRoot));
+    if (!response.ok) throw new Error("Run npm run release:site:preview before opening this page.");
+    const page = new DOMParser().parseFromString(await response.text(), "text/html");
+    const controls = page.querySelector("[data-reader-controls]");
+    if (!controls) throw new Error("The site build does not contain reader controls.");
+    const styles = Array.from(page.querySelectorAll('link[rel="stylesheet"]'), (source) => {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = new URL(source.getAttribute("href").replace(/^\//, ""), previewRoot).href;
+      const loaded = new Promise((resolve, reject) => {
+        link.addEventListener("load", resolve, { once: true });
+        link.addEventListener("error", reject, { once: true });
+      });
+      document.head.prepend(link);
+      return loaded;
+    });
+    document.body.append(document.importNode(controls, true));
+    initReaderPreview();
+    await Promise.all(styles);
+    await document.fonts.ready;
+    document.body.dataset.previewState = "ready";
+  } catch (error) {
+    document.body.dataset.previewState = "error";
+    document.body.append(document.createTextNode(error.message));
+    console.error(error);
+  }
+</script>
+</body>
+</html>

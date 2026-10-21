@@ -55,7 +55,7 @@ npm run release:extension
 - 小宣传图（可选）：`release/assets/store-promo-440x280.png`（440 × 280）
 - 大宣传图（可选）：`release/assets/store-marquee-1400x560.png`（1400 × 560）
 
-Edge 上传使用 PNG；上述截图和宣传图由同名 JPG 转换，保持原尺寸和画面，原 JPG 保留供其他引用使用。前两张截图展示官网固定示例及 controls；第三张纯文字切分截图来自 E4 模型。仅转换图片格式，不宣称是 E6 实时推理结果。
+Edge 上传使用 PNG。三张截图于 2026-10-21 重新制作，同名 JPG 供 Chrome 使用，尺寸均为 1280 × 800；首页和 controls 来自当前站点，纯文字截图使用当前 E6 best 模型及后端实际推理，198 字正文包含 14 个分隔点。模型身份、截图入口及与已提交包的区别见 [Chrome 图片材料](chrome-web-store.md#图片材料)。宣传图保留 JPG / PNG 两种格式；旧截图可从 Git 历史恢复。
 
 ### 详细介绍
 
