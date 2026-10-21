@@ -1260,6 +1260,7 @@ test("the actual worker returns ordered model results for a whole viewport inclu
   const texts = [
     sampleText(), `${sampleText()}。`.repeat(12), "", "English only", "𠀀甲乙丙丁戊己庚辛壬癸子丑",
     "我一直在思考明天早上的早餐吃什么".repeat(33),
+    "回溯法关注的是研究报告后面的参考文献列表而引文检索关注的是“有什么文献引用了本篇相关研究”",
     "在没有人被人特别留意的情况下，偷偷少去公司一天，几乎不会被他人发觉（切勿模仿）。",
   ];
   context.onmessage({ data: { id: 1, texts } });
@@ -1270,9 +1271,9 @@ test("the actual worker returns ordered model results for a whole viewport inclu
   assert.deepEqual(Array.from(response.offsetsByText[2]), []);
   assert.deepEqual(Array.from(response.offsetsByText[3]), []);
   const warning = texts.at(-1);
-  const bracketEdges = [warning.indexOf("（"), warning.indexOf("（") + 1,
-    warning.indexOf("）"), warning.indexOf("）") + 1];
-  assert.ok(Array.from(response.offsetsByText.at(-1)).every((offset) => !bracketEdges.includes(offset)));
+  assert.ok(Array.from(response.offsetsByText.at(-1)).every((offset) =>
+    offset <= warning.indexOf("（") || offset > warning.indexOf("）")),
+  "the short warning remains intact; cuts outside parentheses are now eligible");
   // The real confidence gate may abstain on a long repetitive input.
   const expected = require("../src/backend/chunker.js").process(texts);
   assert.deepEqual(Array.from(response.offsetsByText, (offsets) => Array.from(offsets)), expected);

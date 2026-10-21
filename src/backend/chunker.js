@@ -23,10 +23,11 @@
   }
   // Each kernel-3, dilation-1 convolution adds one token of context per side.
   const MODEL_CONTEXT_RADIUS = MODEL_INFO?.convolutionLayers ?? 0;
-  // Match the text policy in the private training repository. Classify ORIGINAL
-  // glyphs before NFKC: ASCII/compatibility punctuation is retained context.
+  // Training proxy punctuation is classified before NFKC. Reading-only
+  // boundaries are added separately; all original glyphs stay in the output.
   const CONTEXT_PROXY = /[，。！？；…]/u;
   const HAN_SEPARATING_SPACES = /(?<=\p{Script=Han})\p{Zs}+(?=\p{Script=Han})/gu;
+  const HAN_SEPARATING_ASCII_PUNCTUATION = /(?<=\p{Script=Han})[,.](?=\p{Script=Han})/gu;
   const LINE_BOUNDARY = /[\n\r\v\f\u001c-\u001e\u0085\u2028\u2029]/u;
   const PHYSICAL_LINE = /[^\n\r\v\f\u001c-\u001e\u0085\u2028\u2029]+/gu;
   const NUMBER_SIGN = String.raw`[+\-−﹢﹣＋－]`;
@@ -120,6 +121,9 @@
     // Keep the whole run in the preceding clause; tokenization trims its tail.
     for (const match of text.matchAll(HAN_SEPARATING_SPACES)) {
       boundaryOffsets.add(match.index + match[0].length - 1);
+    }
+    for (const match of text.matchAll(HAN_SEPARATING_ASCII_PUNCTUATION)) {
+      boundaryOffsets.add(match.index);
     }
     let sourceOffset = 0;
     const sourceOffsets = characters.map((character) => {
@@ -247,10 +251,40 @@
     return scores;
   }
 
+  // Inspect original glyphs: NFKC folds full-width parentheses to ASCII.
+  const CHINESE_PAIRS = new Map([
+    ["“", "”"], ["‘", "’"], ["（", "）"], ["《", "》"],
+    ["〈", "〉"], ["【", "】"], ["「", "」"], ["『", "』"],
+  ]);
+  const CHINESE_CLOSERS = new Set(CHINESE_PAIRS.values());
+
+  function modelInterior(start, end, glyphs) {
+    while (end - start >= 2) {
+      const closing = CHINESE_PAIRS.get(glyphs[start]);
+      if (!closing || glyphs[end - 1] !== closing) break;
+      const stack = [];
+      let valid = true;
+      for (let i = start; i < end; i++) {
+        const glyph = glyphs[i];
+        if (CHINESE_PAIRS.has(glyph)) stack.push(CHINESE_PAIRS.get(glyph));
+        else if (CHINESE_CLOSERS.has(glyph) && stack.pop() !== glyph) {
+          valid = false;
+          break;
+        }
+        if (stack.length === 0 && i < end - 1) {
+          valid = false;
+          break;
+        }
+      }
+      if (!valid || stack.length) break;
+      start++;
+      end--;
+    }
+    return { start, end };
+  }
+
   function chunkByModel(text, segmenter, minConfidence) {
-    // Only adjacent source Han characters can form a divider. Mixed-language
-    // notices and isolated names should not run a CNN with no possible cut.
-    if (visualLength(text) < MIN_SPLIT_VISUAL_LENGTH || !/\p{Script=Han}{2}/u.test(text)) return [text];
+    if (visualLength(text) < MIN_SPLIT_VISUAL_LENGTH) return [text];
     const tokens = tokenizeContext(text);
     if (tokens.length < 2) return [text];
     if (!modelBackend || typeof modelBackend.scoreTokens !== "function") {
@@ -258,17 +292,6 @@
     }
     const visualOffsets = visualOffsetsForTokens(text, tokens);
     const ranges = [];
-    // Check adjacent source code points, including spaces and characters that
-    // normalization changes or expands. Keep supplementary Han UTF-16 offsets.
-    const hanBoundaryOffsets = new Set();
-    let sourceOffset = 0;
-    let previousIsHan = false;
-    for (const character of text) {
-      const isHan = HAN_CHARACTER.test(character);
-      if (previousIsHan && isHan) hanBoundaryOffsets.add(sourceOffset);
-      previousIsHan = isHan;
-      sourceOffset += character.length;
-    }
     const segments = normalizedSegments(text, segmenter);
     const protectedBoundaryRanges = segments
       .filter((item) => item.isWordLike)
@@ -283,7 +306,9 @@
 
     function isAllowedGap(index) {
       const boundary = tokens[index + 1].index;
-      return boundary > tokens[index].index && hanBoundaryOffsets.has(boundary) &&
+      return boundary > tokens[index].index &&
+        !/[《》]/u.test(text[boundary - 1] || "") &&
+        !/[《》]/u.test(text[boundary] || "") &&
         !protectedBoundaryOffsets.has(boundary);
     }
     // Count structurally valid gaps once, including word protection. A child
@@ -299,14 +324,16 @@
       return { scores, confidence: gapProbabilities(scores) };
     }
     // Use a stack so repeated choices near one end cannot overflow the call stack.
+    const glyphs = tokens.map((token) => String.fromCodePoint(text.codePointAt(token.index)));
     const pendingRanges = [{ start: 0, end: tokens.length }];
     while (pendingRanges.length > 0) {
       const { start, end } = pendingRanges.pop();
-      const length = visualOffsets[end] - visualOffsets[start];
+      const interior = modelInterior(start, end, glyphs);
+      const length = visualOffsets[interior.end] - visualOffsets[interior.start];
       if (
-        end - start < 2 ||
+        interior.end - interior.start < 2 ||
         length < MIN_SPLIT_VISUAL_LENGTH ||
-        allowedGapCounts[end - 1] === allowedGapCounts[start]
+        allowedGapCounts[interior.end - 1] === allowedGapCounts[interior.start]
       ) {
         ranges.push({ start, end });
         continue;
@@ -315,16 +342,16 @@
       // Run the CNN again on each over-threshold child, so scores
       // reflect its new context and edges. Token offsets and protection ranges
       // stay fixed in the original clause.
-      const { scores, confidence } = scoreRange(start, end);
+      const { scores, confidence } = scoreRange(interior.start, interior.end);
       // Use the same confidence gate for every eligible fragment.
       // An explicit threshold supports offline comparisons, including zero abstention.
       const requiredConfidence = minConfidence ?? MIN_SPLIT_CONFIDENCE;
       const selected = selectBestBoundary(
         scores,
         (index) => (requiredConfidence === 0 || confidence[index] > requiredConfidence) &&
-          isAllowedGap(start + index),
+          isAllowedGap(interior.start + index),
       );
-      const boundaryAfter = selected === null ? null : selected + start;
+      const boundaryAfter = selected === null ? null : selected + interior.start;
       if (boundaryAfter === null) {
         ranges.push({ start, end });
         continue;

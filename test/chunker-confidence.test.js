@@ -188,26 +188,23 @@ test("a confident edge gap remains eligible regardless of its position", () => {
     [...text.slice(0, 12), text.slice(12)]);
 });
 
-test("confidence cannot create a fragment with no visual content", () => {
-  for (const leading of [true, false]) {
-    const input = leading ? "🌈" + text : text + "🌈";
+test("enclosing Chinese quotes are excluded from the model gap distribution", () => {
+  for (const [opening, closing] of [["“", "”"], ["（", "）"]]) {
+    const inner = text.slice(0, 13);
+    const input = opening + inner + closing;
     const chunker = withScores((tokens) => tokens.slice(1).map((_, i) => (
-      i === (leading ? 0 : tokens.length - 2) ? 100 : 0
+      i === 0 ? 100 : 0
     )));
     for (const scoringStrategy of [undefined, "recursive-model"]) {
-      assert.deepEqual(Array.from(chunker.chunkText(input, { segmenter: null, scoringStrategy })), [input]);
+      assert.deepEqual(Array.from(chunker.chunkText(input, { segmenter: null, scoringStrategy })),
+        [opening + inner[0], inner.slice(1) + closing]);
     }
   }
 });
 
-test("model cuts require adjacent Han in the source, before normalization or whitespace cleanup", () => {
+test("book-title protection uses original glyphs and keeps forbidden probability mass", () => {
   const snippets = [
-    "｜8:30", "8｜:30", "8:｜30", "8:30｜", "3｜.14", "3.｜14", "1/｜4",
-    "｜AI", "AI｜", "｜（切勿模仿）", "（｜切勿模仿）", "（切勿模仿｜）", "（切勿模仿）｜",
-    // Use retained ASCII colons and spaces beside non-Han text; reading
-    // boundaries (Han spaces and Chinese colons) are tested separately.
-    "｜ English", " ｜English", ":｜ 切勿模仿", ": ｜切勿模仿",
-    "｜㍿", "㍿｜", "｜ﬃ", "ﬃ｜", "🌈｜", "𠮷\u{E0100}｜",
+    "｜《阅读》", "《｜阅读》", "《阅读｜》", "《阅读》｜",
   ];
   for (const snippet of snippets) {
     const marked = text.slice(0, 8) + snippet + text.slice(8);
@@ -237,10 +234,10 @@ test("supplementary Han on both sides remains a valid model cut", () => {
   assert.deepEqual(Array.from(chunker.chunkText(left + right, { segmenter: null })), [left, right]);
 });
 
-test("quantity boundaries follow model scores while Han adjacency and word protection still apply", () => {
+test("quantity boundaries follow model scores while original word protection still applies", () => {
   for (const [quantity, allowed] of [
     ["5个｜等级", true], ["〇｜等级", true], ["〡｜等级", true],
-    ["5｜个等级", false], ["5个等｜级", false],
+    ["5｜个等级", true], ["5个等｜级", false],
   ]) {
     const marked = text.slice(0, 8) + quantity + text.slice(8);
     const input = marked.replace("｜", "");
@@ -254,12 +251,11 @@ test("quantity boundaries follow model scores while Han adjacency and word prote
   }
 });
 
-test("reported warning parentheses no longer receive an adjacent model divider", () => {
+test("reported warning parentheses remain in the source output", () => {
   for (const aside of ["（切勿模仿）", "(切勿模仿)"]) {
     const input = "在没有人被人特别留意的情况下，偷偷少去公司一天，几乎不会被他人发觉" + aside + "。";
-    const bracketEdges = [input.indexOf(aside), input.indexOf(aside) + 1,
-      input.indexOf(aside) + aside.length - 1, input.indexOf(aside) + aside.length];
-    assert.ok(realChunker.process([input])[0].every((offset) => !bracketEdges.includes(offset)));
+    const chunks = realChunker.chunkText(input);
+    assert.ok(chunks.some((part) => part.includes(aside)), "the short warning stays intact");
     assert.equal(realChunker.chunkText(input).join(""), input);
   }
 });

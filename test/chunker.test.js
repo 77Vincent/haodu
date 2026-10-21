@@ -21,13 +21,15 @@ function withModel(scoreTokens, inputRepresentation = "unicode-context-v1") {
   return context.HaoduChunker;
 }
 
-test("long notices without legal Han gaps skip inference, including protected names", () => {
-  const chunker = withModel(() => { throw new Error("no legal gap can use these scores"); });
+test("uncertain mixed-language notices stay intact after inference", () => {
+  let calls = 0;
+  const chunker = withModel((tokens) => { calls++; return tokens.slice(1).map(() => 0); });
   const english = "mentioned you in the conversation about the upcoming release meeting and would like you to review the latest document.";
   for (const text of [english, `王 ${english}`, `王 ${english} 明`, `张三 ${english}`]) {
     assert.ok(chunker.visualLength(text) >= 13);
     assert.deepEqual(Array.from(chunker.process([text])[0]), []);
   }
+  assert.equal(calls, 4);
 });
 
 test("recursive children with no legal gap skip inference without changing normalization", () => {
@@ -38,11 +40,12 @@ test("recursive children with no legal gap skip inference without changing norma
     inputs.push(tokens.join(""));
     return tokens.slice(1).map((_, index) => index === 0 ? 100 : -100);
   });
-  assert.deepEqual(Array.from(chunker.chunkText(text, { segmenter: null })), ["甲", `乙${english}`]);
+  const segmenter = { segment: () => [{ segment: text.slice(1), index: 1, isWordLike: true }] };
+  assert.deepEqual(Array.from(chunker.chunkText(text, { segmenter })), ["甲", `乙${english}`]);
   assert.deepEqual(inputs, [text]);
 
   const dominated = withModel((tokens) => tokens.slice(1).map((_, index) => index === 2 ? 100 : 0));
-  assert.deepEqual(Array.from(dominated.chunkText(text, { segmenter: null })), [text],
+  assert.deepEqual(Array.from(dominated.chunkText(text, { segmenter })), [text],
     "an invalid gap still contributes to softmax; never renormalize only legal gaps");
 });
 
@@ -101,9 +104,51 @@ test("context pre-splitting preserves non-proxies, whitespace, and normalized nu
   const clauses = Array.from(chunker.splitClauses(text));
   assert.deepEqual(clauses, ["女：", text.slice(2, text.indexOf("\n") + 1), text.slice(text.indexOf("\n") + 1)]);
   assert.equal(chunker.chunkText(text, { segmenter: null, minConfidence: 0 }).join(""), text);
-  assert.deepEqual(inputs, ['课程(A)和《阅读》在明天上午8:30开始',
-    '程(A)和《阅读》在明天上午8:30开始']);
+  assert.equal(inputs[0], '课程(A)和《阅读》在明天上午8:30开始');
+  assert.ok(inputs.every((input) => input.endsWith('在明天上午8:30开始')));
+  assert.ok(inputs.every((input) => !/[女价格\n，。]/u.test(input)));
   assert.equal(chunker.visualLength("甲乙丙丁戊己庚辛壬癸子丑 English"), 13);
+});
+
+test("ASCII commas and periods pre-split only between immediately adjacent source Han", () => {
+  const text = "我接听电话,发现是彼得的儿子大卫打来的他声音焦急,紧张地告诉我,他急需借100万美元";
+  assert.deepEqual(splitClauses(text), [
+    "我接听电话,", "发现是彼得的儿子大卫打来的他声音焦急,", "紧张地告诉我,", "他急需借100万美元",
+  ]);
+  assert.deepEqual(splitClauses("准备已经完成.接下来开始检查"), ["准备已经完成.", "接下来开始检查"]);
+  assert.deepEqual(splitClauses("𠮷,𠮷.中文"), ["𠮷,", "𠮷.", "中文"]);
+  for (const text of [
+    "价格1,000.50元", "使用v1.2.3版本", "访问https://example.com/path查看详情",
+    "联系wentianqi77@outlook.com了解详情", "Hello, world. Read this.",
+    "中文,English.中文", "中文 ,中文", "中文, 中文", "中文. 中文", "中文,\n中文",
+    "中文,.中文", "中文,", ".中文", "中文﹐中文．中文",
+  ]) {
+    assert.equal(splitClauses(text).join(""), text);
+    if (!text.includes("\n")) assert.deepEqual(splitClauses(text), [text], text);
+  }
+});
+
+test("Han-separated ASCII punctuation preserves model context, short-clause skips and source offsets", () => {
+  const thirteen = "甲乙丙丁戊己庚辛壬癸子丑寅";
+  for (const punctuation of [",", "."]) {
+    const inputs = [];
+    const chunker = withModel((tokens) => {
+      inputs.push(tokens.join(""));
+      return tokens.slice(1).map(() => 0);
+    });
+    const text = `𠮷${punctuation}${thirteen}${punctuation}短句`;
+    assert.deepEqual(Array.from(chunker.process([text])[0]), []);
+    assert.deepEqual(inputs, [`${thirteen}${punctuation}`]);
+    assert.equal(chunker.buildVisualChunks(text).map((chunk) => chunk.text).join(""), text);
+
+    const splitting = withModel((tokens) => tokens.slice(1).map((_, index) => index === 5 ? 100 : -100));
+    const cuts = Array.from(splitting.process([text])[0]);
+    assert.ok(cuts.length > 0);
+    for (const cut of cuts) {
+      assert.ok(cut > `𠮷${punctuation}`.length && cut < text.indexOf(punctuation, 3));
+    }
+    assert.equal(splitting.chunkText(text, { segmenter: null }).join(""), text);
+  }
 });
 
 test("spaces between Han passages pre-split without losing whitespace or supplementary characters", () => {
@@ -149,11 +194,11 @@ test("Han space boundaries isolate inference and preserve original UTF-16 divide
   }
 });
 
-test("model cuts cannot touch either side of opening or closing marks", () => {
-  for (const [opening, closing] of [['"', '"'], ['“', '”'], ['（', '）'], ['《', '》']]) {
+test("model cuts cannot touch either side of Chinese book-title marks", () => {
+  for (const [opening, closing] of [['《', '》']]) {
     const text = `前面的文字${opening} 甲乙丙丁戊己庚辛壬癸子丑${closing}后面继续阅读`;
     const forbidden = [text.indexOf(opening), text.indexOf(opening) + opening.length,
-      text.indexOf(opening) + opening.length + 1, text.lastIndexOf(closing), text.lastIndexOf(closing) + closing.length];
+      text.lastIndexOf(closing), text.lastIndexOf(closing) + closing.length];
     const chunker = withModel((tokens) => tokens.slice(1).map((token) => (
       token === closing.normalize("NFKC") || token === "甲" ? 100 : 0
     )), "unicode-context-v1");
@@ -448,14 +493,20 @@ test("boundary selection searches only inside the requested fragment and returns
 });
 
 test("fragment length limits still count numbers and preserve supplementary Han", () => {
-  const chunker = withModel((tokens) => Array(tokens.length - 1).fill(0));
   for (const [text, expected] of [
-    ["1甲乙丙丁戊己庚辛壬癸子丑", ["1甲", "乙丙丁戊己庚辛壬癸子丑"]],
-    ["甲乙丙丁戊己庚辛壬癸子丑 1 2", ["甲", "乙", "丙丁戊己庚辛壬癸子丑 1 2"]],
+    ["1甲乙丙丁戊己庚辛壬癸子丑", ["1", "甲乙丙丁戊己庚辛壬癸子丑"]],
+    ["甲乙丙丁戊己庚辛壬癸子丑 1 2", ["甲乙", "丙丁戊己庚辛壬癸子丑 1 2"]],
     ["1/4 English 𠀀甲乙丙丁戊己庚辛壬癸子", ["1/4 English 𠀀", "甲乙丙丁戊己庚辛壬癸子"]],
   ]) {
-    const chunks = Array.from(chunker.chunkText(text, { segmenter: null, minConfidence: 0 }));
+    let calls = 0;
+    const chunker = withModel((tokens) => {
+      calls++;
+      const target = Array.from(expected[0]).length - 1;
+      return tokens.slice(1).map((_, index) => index === target ? 100 : 0);
+    });
+    const chunks = Array.from(chunker.chunkText(text, { segmenter: null }));
     assert.deepEqual(chunks, expected);
+    assert.equal(calls, 1, "both children are below thirteen visual units");
     assert.equal(chunks.join(""), text);
   }
 });
@@ -652,11 +703,11 @@ test("renders the reported Euler-method example with model scores", () => {
   assert.deepEqual(chunkText(text, { minConfidence: 0 }), [
     "欧拉法",
     "是在积分无法直接计算时，",
-    '用"无数个小矩形累加"来',
-    '近似积分，',
+    '用"无数个小矩形累加"',
+    '来近似积分，',
     "因此",
-    "它被称为",
-    "一种数值积分方法（numerical integration method）。",
+    "它被称为一种数值积分方法",
+    "（numerical integration method）。",
   ]);
 });
 
