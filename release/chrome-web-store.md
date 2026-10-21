@@ -6,14 +6,14 @@
 
 - `npm run release:extension` 生成 `dist/haodu-<version>.zip`、对应 `.sha256` 和 `dist/extension-release.json`，文件清单和校验值以本次构建产物为准。
 - 模型与运行脚本均随包提供，开关及分隔线颜色、粗细偏好写入 `chrome.storage.local`，网页正文不上传。
-- 最近一次用户提供的后台截图为 **Ready to publish**，表示当时提交的版本已通过审核。之后本地模型或代码的变化不属于该已审核包；当前发布状态须以开发者后台为准。
+- [公开安装页面](https://chromewebstore.google.com/detail/%E5%A5%BD%E8%AF%BB/fdkefmimhojbfbiekkkmeliifmclfhdk) 与本地构建独立。审核状态须对应具体上传版本在开发者后台核对，不能从旧截图推断当前源码已经通过审核。
 - 本地测试、构建与素材准备不代表上传、审核或发布已经完成。
 
 ## 名称与摘要
 
 名称：好读
 
-摘要（与 site 的 `description` 和 manifest 一致，只说明用途和阅读收益）：中文阅读辅助，按人类习惯，将长句划分为短句，让阅读更轻松。
+摘要（与 site 的 `description`、`_locales/zh_CN/messages.json` 的 `extensionDescription` 一致，manifest 通过消息引用读取）：中文阅读辅助，按人类习惯，将长句划分为短句，让阅读更轻松。
 
 语言：简体中文。选择与阅读辅助最接近的商店分类。
 
@@ -52,9 +52,9 @@
 
 填写完成后点击 **Save draft**。保存草稿不等于提交审核。
 
-网站地址：<https://github.com/77Vincent/haodu>。确认正式官网 `https://haodu.site/` 公开可访问后，可改用官网地址。
+网站地址：<https://haodu.site/>
 
-隐私政策地址：<https://github.com/77Vincent/haodu/blob/main/site/content/privacy.md>。该文件已在公开仓库中可访问，与站点使用同一份政策；官网上线后可改为 `https://haodu.site/privacy/`。
+隐私政策地址：<https://haodu.site/privacy/>
 
 支持地址：<https://github.com/77Vincent/haodu/issues>
 

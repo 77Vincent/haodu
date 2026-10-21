@@ -15,13 +15,11 @@ npm run release:extension
 - 本地加载：`edge://extensions` → 开发人员模式 → 加载解压缩的扩展 → `dist/extension/`。
 - 校验清单：`dist/extension-release.json` 和对应 `.zip.sha256`。
 - manifest 没有 `update_url`，名称和摘要不含 Chrome 品牌；所用 `offscreen`、`scripting`、`storage` 等 API 在桌面 Edge 的支持列表内。
-- 默认语言为 `zh_CN`；manifest 的名称、简介引用 `_locales/zh_CN/messages.json`。Edge 通过这些消息引用识别简体中文，直接把中文写进 manifest 不足以识别商店语言。后续构建须保留此语言文件。
+- 源码默认语言声明为 `zh_CN`；manifest 的名称、简介引用 `_locales/zh_CN/messages.json`，各目标构建均须保留此文件。已有商店资料的语言标签仍需按具体版本在后台核对，不能由本地 manifest 推断后台已更改。
 
-2026-10-21 按最新后端准备 **0.3.0 / E6 best**，45% 门槛保持不变，随后完成微软审核提交。Chrome 和 Edge 使用同一 ZIP，SHA-256 以 `dist/extension-release.json` 为准。此前 2026-10-20 曾暂缓 0.3.0；旧本地 0.2.0 / E6 包与当时已发布的 Chrome 0.2.0 / E4 包不同，原发布记录保留。
+2026-10-21 准备 **0.3.0 / E6 best**，置信度门槛保持严格大于 45%，随后完成微软审核提交。Chrome 和 Edge 使用同一 ZIP，SHA-256 以 `dist/extension-release.json` 为准；不维护单独的 CN 变体。
 
-同日修正中文语言声明并重新打包：新 ZIP SHA-256 为 `852ad9fd0fc13b749bcaf493c503aeb686f7e159b45b6a9ddd4f662591c89850`，只变更 `manifest.json` 并新增 `_locales/zh_CN/messages.json`，模型与全部运行代码未变。286 项测试通过。此前英语标签版本的 ZIP SHA-256 为 `7d89c1510b6a1d2372c2cfe4308a90ba63d9e3e5b5b6ace8eb11ed195b6b5c54`；后台同名文件必须以本次上传及语言识别结果核对。
-
-2026-10-20 的准备记录：当时已通过 273 项自动化测试、包完整性检查和官网/隐私页可访问性检查，完成开发者注册并创建扩展，后台显示上传的 `haodu-0.2.0.zip` 校验完成。发行范围、属性和商店资料已保存；Privacy 参考仓库留存的 [Chrome Web Store 填写记录](chrome-web-store.md) 补齐并保存，重新打开确认内容保留。五项均显示 **Step Completed**，**Publish** 已可点击，当时尚未提交审核。仅凭后台文件名不能确认上传包与本地 E6 包的哈希一致；当时也尚未完成 Edge 原生安装验收或公开上架。后续 0.3.0 的提交状态见下节，不将资料填写完成或包校验记为审核通过。
+同日修正中文语言声明的本地 ZIP SHA-256 为 `852ad9fd0fc13b749bcaf493c503aeb686f7e159b45b6a9ddd4f662591c89850`。相对修正前的包，只变更 manifest 并新增语言文件，运行代码和模型未变；此前 ZIP SHA-256 为 `7d89c1510b6a1d2372c2cfe4308a90ba63d9e3e5b5b6ace8eb11ed195b6b5c54`。后台未提供可核对的上传哈希，不能仅凭同名文件认定上传内容。更早的资料准备和临时排查过程保留在 Git 历史中。
 
 ## 当前提交状态
 
@@ -29,7 +27,7 @@ npm run release:extension
 
 本次认证说明已提供：无需账号、付款或外部推理服务；在普通中文网页开启扩展，验证滚动、动态内容、颜色、粗细和快捷键，再关闭检查原文恢复；官网固定演示不作为实时推理验收。说明同时包含 0.3.0 模型及中文成对标点处理更新。
 
-商店语言标签仍为英语（美国），按用户要求暂不继续处理。本地曾为核对上传制作的 `haodu-0.3.0-zh-CN.zip` 仅为标准包的同内容复制件，已连同校验文件移除；不维护单独的 CN 版本。后台没有提供可核对的上传 ZIP 哈希，因此本地构建哈希与此次提交状态分别记录。
+该次提交后后台语言标签显示英语（美国），语言问题暂缓处理。本地构建哈希与提交状态分别记录；后续应按具体版本重新核对后台，不能将该快照视为永久状态。
 
 ## 账号与提交
 

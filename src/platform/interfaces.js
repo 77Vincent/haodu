@@ -29,8 +29,8 @@
 
 /**
  * Services supplied before loading platform/webextension/background.js.
- * Chrome routes inference through an offscreen page; Safari hosts a Worker in
- * its nonpersistent background document. Both return the same message payload.
+ * Chrome routes inference through an offscreen page; Safari and Firefox host
+ * a Worker in a background document. All return the same message payload.
  * @typedef {Object} BackgroundHost
  * @property {(texts: string[]) => Promise<{offsetsByText: number[][], error?: string}>} runInference
  * @property {(url: URL) => boolean | Promise<boolean>} supportsUrl

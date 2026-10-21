@@ -39,7 +39,7 @@ npm run release:safari
 - Safari 包只请求 HTTP/HTTPS 网站访问。Safari 忽略 `file://` 权限，当前不提供本地文件处理。
 - 官网的 `haodu=off` 标记和快捷键预览协作继续生效。
 - 快捷键使用各浏览器共同支持的 `suggested_key: { "default": "Alt+Shift+U" }`；Safari 的解析器不读取 Chrome 支持的简写字符串。修改 manifest 后须重新加载临时扩展，普通网页刷新不会更新快捷键注册。
-- 粗细轨道由普通容器的伪元素绘制，避免依赖 Safari 不绘制的 `input::before`；官网与两种扩展共用这套样式。
+- 粗细轨道由普通容器的伪元素绘制，避免依赖 Safari 不绘制的 `input::before`；官网与 Chrome、Firefox、Safari 扩展共用这套样式。
 - `Intl.Segmenter` 由浏览器提供，相同权重在不同系统分词下可能产生不同的保护边界；需要用相同例句核对实际结果。
 
 ## 验证

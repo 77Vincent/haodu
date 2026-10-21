@@ -19,12 +19,12 @@
 | 内容 | 文案来源 | 同步位置 |
 | --- | --- | --- |
 | 中文名称、标语与介绍 | `config/_default/hugo.toml`、`content/_index.md` 的 `title`、`lead` | [项目 README](../README.md)、商店材料、截图用例；复用正文时仅省略 `｜` 标记 |
-| 中文摘要 | `content/_index.md` 的 `description` | `params.toml`、根 `manifest.json`、两份 `package.json`、商店摘要 |
+| 中文摘要 | `content/_index.md` 的 `description` | `params.toml`、`_locales/zh_CN/messages.json` 的 `extensionDescription`、两份 `package.json`、商店摘要；根 `manifest.json` 通过消息引用读取 |
 | 英文名称与介绍 | `config/_default/languages.toml`、`content/_index.en.md` | 名称统一为小写 `haodu`，英文摘要同时用于语言配置 |
 | 按钮 | `i18n/zh-cn.toml`、`i18n/en.toml` | 可安装的平台显示“现在安装” / “Install now”；其他平台保留“查看 Chrome 版” / “View Chrome version”入口 |
-| 宣传图短语 | 从中文 `lead` 概括为“保留原文 · 长句切分 · 离线运行 · 安全高效” | `release/assets/` 中的两份 SVG、对应 JPEG 和截图用例页脚 |
+| 宣传图短语 | 从中文 `lead` 概括为“保留原文 · 长句切分 · 离线运行 · 安全高效” | `release/assets/` 中的两份 SVG、对应 JPEG / PNG 和截图用例页脚 |
 
-修改时手动同步对应位置，宣传图更新 SVG 后需重新导出 JPEG。商店详细介绍复用第二条 `lead` 并补充显示方式和操作，避免重复摘要的用途介绍。历史截图与测试输入是记录和用例，不作为当前宣传文案；历史截图不得直接用于新版本发布。demo 切点仍由人工维护，不自动同步。
+修改时手动同步对应位置，宣传图更新 SVG 后需同时重新导出 JPEG 和 PNG。商店详细介绍复用第二条 `lead` 并补充显示方式和操作，避免重复摘要的用途介绍。历史截图与测试输入是记录和用例，不作为当前宣传文案；新版本发布前须使用待发布源码或安装包重新截图，并核对实际模型及页面布局。旧图可从 Git 历史恢复。demo 切点仍由人工维护，不自动同步。
 
 中文首页位于 `/`，英文首页位于 `/en/`，通过页头的 Doks 语言下拉菜单切换语言，按钮使用 `中` / `En` 简写，菜单保留完整语言名称。`content/_index.en.md` 仅维护英文标题、介绍和元信息，按钮等界面文案放在 `i18n/`。两种首页都通过 `hugo.Sites.Default.Home.Content` 渲染 `content/_index.md` 中的同一份中文 demo，包括引用来源和手写切点，不复制或翻译示例。隐私政策暂保留中文，英文页脚会标明其语言。
 
@@ -93,7 +93,7 @@ npm run release:site -- --base-url https://haodu.site/
 - `config/production/hugo.toml` 的 `baseURL` 为 `https://haodu.site/`；正式发布命令仍显式传入地址。`config/_default/hugo.toml` 的 `https://example.org/` 仅作默认占位，不用于部署。
 - `config/_default/params.toml` 的 `chromeWebStoreURL`：默认 Chrome 商店详情页地址，所有浏览器都可访问。`firefoxAddonsURL`：桌面 Firefox 的 AMO 详情页地址，已于 2026-10-20 核实公开上架并配置；留空时仍可查看 Chrome 版。修改后重新构建、部署网站。
 - `content/_index.md`：维护中文首页标题、SEO 标题、描述和两种语言共用的中文 demo；`content/_index.en.md` 维护对应英文介绍。
-- `config/_default/menus.toml` 和 `menus.en.toml`：中英文页脚的公开备案号与工信部查询链接，沿用主题菜单，无需覆盖页脚模板。
+- `config/_default/menus.toml` 和 `menus.en.toml`：中英文页脚的公开备案号与工信部查询链接。`layouts/_partials/footer/footer.html` 负责当前页脚布局及插件版本，修改备案菜单无需再改模板。
 
 首页安装入口中文显示“现在安装”，英文显示“Install now”。`assets/js/install-button.js` 根据浏览器标识为桌面 Firefox 选择已配置的 AMO 地址，Chrome / Edge 等保留 Chrome 商店入口。Safari、手机及平板（含使用桌面标识的 iPadOS）显示可点击的“查看 Chrome 版” / “View Chrome version”，按钮悬停提示说明可换到电脑上的 Chrome 安装；若清空 Firefox 地址，Firefox 也使用此回退。所有入口都保留链接、键盘焦点与新标签页打开行为，不因当前浏览器无法安装而阻止访问商店。浏览器识别只用于引导，不代替商店的兼容性检查；没有 JavaScript 或无法识别浏览器时，保留静态 Chrome 商店链接。页面不向商店请求审核状态，配置变更需重新部署。
 
@@ -119,7 +119,7 @@ npm --prefix site run build -- --baseURL https://example.org/haodu/
 
 **部署后仍需核验：** 域名 HTTPS 可访问；首页、英文页、隐私页、robots 和 sitemap 返回正确内容；无效路径返回真实 HTTP 404；HTTP 与备用域名跳转到正式 HTTPS 域名。然后在 Google Search Console 验证域名、提交 `/sitemap.xml` 并查看 URL 检查和实际 Core Web Vitals；这些线上状态不能由本地构建确认。
 
-2026-10-12 本地审查时，`https://haodu.site/` 的外部访问未成功，本机请求报 TLS 握手失败，因此未确认线上收录、跳转和性能状态；以上修补尚需重新部署。
+生产发布、域名配置及历史排查记录维护在私有仓库 `haodu-release`；本页只维护当前构建方法和部署后核验清单，历史访问失败不作为当前线上状态。
 
 ## 维护
 
