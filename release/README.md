@@ -6,6 +6,8 @@
 
 当前源码通过 `default_locale: "zh_CN"`、`_locales/zh_CN/messages.json` 和 manifest 中的名称、简介消息引用声明简体中文，三个浏览器目标均携带该语言文件。2026-10-21 已重新生成 Chrome / Edge 共用的 0.3.0 中文包，运行代码及模型与修正语言前完全相同。Firefox 0.3.0 已提交，保留该提交原有的安装包和审核源码，不用重建同版本覆盖；后续 Firefox 更新再采用新的语言声明。
 
+上述 0.3.0 提交完成后，源码另补充分隔线样式隔离修复，避免网页的单选框、复选框规则将线条移到控件左侧。该修复尚未重新打包或上传，现存 0.3.0 ZIP 保持原样；后续发布须先更新版本号，再构建包含此修复的新包。
+
 插件已发布于 Chrome Web Store 和 Firefox Add-ons，另提供 macOS Safari 开发测试包；Microsoft Edge 复用 Chromium 包单独提交。本仓库维护插件打包、站点构建和商店材料；官网的生产发布脚本、云资源配置及运维记录维护在私有仓库 [77Vincent/haodu-release](https://github.com/77Vincent/haodu-release)。公开仓库可独立开发、测试和构建，不需要该私有仓库或云端凭证。
 
 ## 1. 构建插件

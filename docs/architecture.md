@@ -150,6 +150,8 @@ adapter.connect(reader);
 
 Shadow DOM 中的标记加载同一个 `src/content.css`，该文件在 manifest 中声明为可访问资源，前端无需调用 Chrome API。
 
+分隔标记及其 `::before`、`::after` 使用局部的 `all: unset !important` 重置网页施加的定位、圆角、背景图等样式，并继承原文字号和可见性。标记保持行内，`::before` 负责现有的颜色、五档粗细和高度，`::after` 禁止生成内容。该重置只匹配 `.haodu-divider`，避免微软页面的 `.radio label span::before`、`.checkbox label span::before` 将线条绝对定位到控件左侧，同时保留控件自身的伪元素。自定义颜色、粗细变量不受 `all` 重置影响，强制颜色模式继续使用 `CanvasText`。这用于隔离常规网页样式，不宣称能够覆盖网页任意更高优先级的 `!important` 规则。
+
 Chrome 的推理消息路径：
 
 ```text

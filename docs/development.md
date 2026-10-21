@@ -39,6 +39,7 @@ python3 -m http.server 8765 --bind 127.0.0.1
 - `http://127.0.0.1:8765/test/browser-fixture.html`：普通网页适配器，运行真实 Worker 和模型，显示请求次数、输入长度和状态变化。
 - `http://127.0.0.1:8765/test/dom-read-fixture.html`：点击 **Run layout tests**，验证真实浏览器中的长节点、视口边界、内部滚动刷新、处理中缩放、加载完成后出现的正文及标记写入清理。
 - `http://127.0.0.1:8765/test/shadow-dom-fixture.html`：点击 **Run shadow DOM tests**，验证同尺寸标题替换后自动恢复标记、晚到及更新的嵌套评论、处理中合并更新、避免标记反馈循环、slot、宿主裁剪、样式和完整清理。
+- `http://127.0.0.1:8765/test/divider-style-fixture.html`：点击 **Run divider style tests**，验证微软单选框、复选框的伪元素规则不会把分隔线移到控件左侧；同时检查普通 DOM、影子根、字号继承、五档粗细、调色、隐藏及清理。可在高对比度模式下重复运行，核对系统文字色。
 
 内容监听的性能测试与复现方法见 [性能记录](../test/content-performance.md)。
 

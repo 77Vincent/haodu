@@ -1,3 +1,18 @@
+.haodu-divider,
+.haodu-divider::before,
+.haodu-divider::after {
+  /* Page rules such as .radio label span::before also match our marker.
+     Reset only our elements; unset preserves inherited font and visibility.
+     The all shorthand leaves the color/width custom properties intact. */
+  all: unset !important;
+  font: inherit !important;
+  pointer-events: none !important;
+}
+
+.haodu-divider {
+  display: inline !important;
+}
+
 .haodu-divider::before {
   display: inline-block !important;
   /* Five steps; level 2 preserves the original 18px text / 3px divider. */
@@ -9,6 +24,12 @@
   vertical-align: -0.15em !important;
   pointer-events: none !important;
   content: "" !important;
+}
+
+.haodu-divider::after {
+  /* Do not let a page add a checkbox glyph or another decoration. */
+  content: none !important;
+  display: none !important;
 }
 
 @media (forced-colors: active) {

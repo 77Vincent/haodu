@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="haodu" content="off">
+<title>分隔线样式隔离回归测试</title>
+<link id="divider-style" rel="stylesheet" href="../src/content.css">
+<style>
+  body { margin: 24px; font: 18px/1.7 system-ui; }
+  #fixture { max-width: 1100px; }
+  #results { font: 14px/1.6 monospace; white-space: pre-wrap; }
+  .radio, .checkbox { margin: 16px 0; }
+  .radio label, .checkbox label { display: block; position: relative; padding-left: 32px; }
+  .radio label > input, .checkbox label > input { position: absolute; opacity: 0; }
+  .radio small { display: block; }
+  /* Rules observed on Microsoft Partner Center. They also match injected spans. */
+  .radio label span::before {
+    border-radius: 100%; content: " "; width: 20px; height: 20px;
+    position: absolute; left: 0; top: 5px; border: 1px solid #323130;
+  }
+  .checkbox label span::before {
+    content: ""; height: 20px; width: 20px; position: absolute;
+    left: 0; top: 5px; cursor: pointer; border-radius: 2px; border: 1px solid #323130;
+  }
+  .checkbox label input:checked ~ span::before { content: "✓"; color: white; background: #0078d7; }
+  /* Other common page rules must not add a second icon or reposition our span. */
+  #fixture .hostile span { position: fixed; display: block; inset: 0; padding: 9px; transform: translateX(120px); }
+  #fixture .hostile span::before {
+    position: absolute; float: right; padding: 8px; border-radius: 50%;
+    background-image: linear-gradient(blue, green); box-shadow: 5px 5px 4px red;
+  }
+  #fixture .hostile span::after { content: "unexpected icon"; position: absolute; }
+  #fixture .large { font-size: 26px; }
+</style>
+<button id="run" type="button">Run divider style tests</button>
+<div id="fixture"></div>
+<pre id="results">Not run</pre>
+<script src="../src/divider-width.js"></script>
+<script src="../src/frontend/write.js"></script>
+<script>
+  const fixture = document.querySelector("#fixture");
+  const output = document.querySelector("#results");
+  const styleUrl = new URL("../src/content.css?fixture=" + Date.now(), location.href).href;
+  const assert = (condition, message) => { if (!condition) throw new Error(message); };
+  const close = (a, b) => Math.abs(a - b) < 0.1;
+  const style = (element, pseudo) => getComputedStyle(element, pseudo);
+  const properties = (element) => {
+    const css = style(element, "::before");
+    return ["position", "left", "top", "width", "height", "content", "backgroundColor", "borderRadius"]
+      .map((name) => css[name]).join(";");
+  };
+
+  document.querySelector("#run").addEventListener("click", async () => {
+    output.dataset.complete = "false";
+    output.textContent = "Running";
+    const contentStyle = document.querySelector("#divider-style");
+    if (contentStyle.href !== styleUrl) await new Promise((resolve, reject) => {
+      contentStyle.addEventListener("load", resolve, { once: true });
+      contentStyle.addEventListener("error", reject, { once: true });
+      contentStyle.href = styleUrl;
+    });
+    Haodu.clearMarkers();
+    Haodu.setMarkerColor("#ff1744");
+    Haodu.setMarkerWidth(2);
+    fixture.innerHTML = `
+      <div class="radio"><label><input type="radio" checked><span>公用</span><small id="public">使用 Microsoft Store 的任何人都可以查找和使用该扩展</small></label></div>
+      <div class="radio"><label><input type="radio"><span>已隐藏</span><small id="hidden">只有拥有你的扩展 Microsoft Store 一览 URL 的客户才能使用它</small></label></div>
+      <div class="checkbox"><label><input type="checkbox" checked><span id="future">使我的扩展在将来的任意市场中可用</span></label></div>
+      <p id="plain">普通正文中的分隔线需要始终留在切分位置</p>
+      <p id="hostile" class="hostile large">特殊页面样式不应改变文字中的分隔线位置</p>
+      <p id="hidden-parent">页面隐藏文字后分隔线也应该一起隐藏</p>
+      <div id="shadow-host"></div>`;
+    const controls = Array.from(fixture.querySelectorAll("label > span"));
+    const originalControls = controls.map(properties);
+    const shadow = fixture.querySelector("#shadow-host").attachShadow({ mode: "open" });
+    shadow.innerHTML = `<style>p {font-size:26px} span::before {position:absolute;left:0;border-radius:100%} span::after {content:"icon"}</style><p>影子根中的分隔线也应保留原文位置</p>`;
+    const samples = [
+      [fixture.querySelector("#public"), "使用 Microsoft Store 的任何人".length],
+      [fixture.querySelector("#hidden"), "只有拥有你的".length],
+      [fixture.querySelector("#future"), "使我的扩展".length],
+      [fixture.querySelector("#plain"), 6],
+      [fixture.querySelector("#hostile"), 6],
+      [fixture.querySelector("#hidden-parent"), 6],
+      [shadow.querySelector("p"), 6],
+    ].map(([element, cut]) => {
+      const node = element.firstChild;
+      const text = node.nodeValue;
+      Haodu.addMarkers({ node, parent: element, text, start: 0, end: text.length }, [cut], styleUrl);
+      return { element, text, marker: element.querySelector(".haodu-divider") };
+    });
+    // The writer loads the production stylesheet into newly discovered roots.
+    const shadowLink = shadow.querySelector("link");
+    if (!shadowLink.sheet) await new Promise((resolve, reject) => {
+      shadowLink.addEventListener("load", resolve, { once: true });
+      shadowLink.addEventListener("error", reject, { once: true });
+    });
+    const checks = [];
+    function check(name, run) {
+      try { run(); checks.push(`PASS ${name}`); }
+      catch (error) { checks.push(`FAIL ${name}: ${error.message}`); }
+    }
+    check("微软单选框和复选框中的分隔线保持原文位置", () => {
+      for (const { element, marker } of samples.slice(0, 3)) {
+        assert(style(marker, "::before").position === "static", element.id + " pseudo-element is positioned");
+        const left = document.createRange();
+        left.selectNodeContents(marker.previousSibling);
+        const leftRect = Array.from(left.getClientRects()).at(-1);
+        const right = document.createRange();
+        right.selectNodeContents(marker.nextSibling);
+        const rightRect = right.getClientRects()[0];
+        const rect = marker.getBoundingClientRect();
+        assert(rect.left >= leftRect.right - 1 && rect.right <= rightRect.left + 1, element.id + " divider is outside its text gap");
+      }
+    });
+    check("正文、嵌套规则和影子根不会改变标记定位或添加额外图标", () => {
+      for (const { marker } of samples) {
+        const css = style(marker);
+        const before = style(marker, "::before");
+        assert(css.position === "static" && css.display === "inline" && css.transform === "none", "wrapper moved");
+        assert(before.position === "static" && before.cssFloat === "none", "pseudo-element moved");
+        assert(before.borderRadius === "0px" && before.paddingLeft === "0px", "page changed divider geometry");
+        assert(before.backgroundImage === "none" && before.boxShadow === "none", "page decorated divider");
+        assert(style(marker, "::after").content === "none", "page added an after icon");
+      }
+    });
+    check("字号继承和五档粗细在普通 DOM 与影子根一致", () => {
+      for (const step of [1, 2, 3, 4, 5]) {
+        Haodu.setMarkerWidth(step);
+        for (const { element, marker } of samples) {
+          const fontSize = parseFloat(style(element).fontSize);
+          const before = style(marker, "::before");
+          assert(close(parseFloat(before.width), fontSize * step / 12), `width ${step}, ${element.id}`);
+          assert(close(parseFloat(before.height), fontSize), "height lost source font size");
+        }
+      }
+      Haodu.setMarkerWidth(2);
+    });
+    check("调色更新已有分隔线，高对比度采用系统文字色", () => {
+      Haodu.setMarkerColor("#1744ff");
+      const probe = document.createElement("span");
+      probe.style.color = "CanvasText";
+      fixture.append(probe);
+      const expected = matchMedia("(forced-colors: active)").matches ? style(probe).color : "rgb(23, 68, 255)";
+      for (const { marker } of samples) assert(style(marker, "::before").backgroundColor === expected, "wrong divider color");
+      probe.remove();
+      Haodu.setMarkerColor("#ff1744");
+    });
+    check("控件自身的圆圈和勾选图案保持原样", () => {
+      assert(controls.every((control, index) => properties(control) === originalControls[index]), "a control pseudo-element changed");
+    });
+    check("分隔线跟随页面文字隐藏", () => {
+      const { element, marker } = samples[5];
+      element.style.visibility = "hidden";
+      assert(style(marker).visibility === "hidden" && style(marker, "::before").visibility === "hidden", "divider escaped hidden parent");
+      element.style.visibility = "";
+    });
+    check("写入及清理保留原文，并移除影子根样式", () => {
+      assert(samples.every(({ element, text }) => element.textContent === text), "insertion changed text");
+      Haodu.clearMarkers();
+      assert(samples.every(({ element, text }) => element.textContent === text && !element.querySelector(".haodu-divider")), "cleanup changed text or left dividers");
+      assert(!shadow.querySelector("link"), "shadow stylesheet remained");
+    });
+    output.textContent = checks.join("\n");
+    output.dataset.complete = "true";
+    output.dataset.failed = String(checks.filter((line) => line.startsWith("FAIL")).length);
+  });
+</script>
+</html>
