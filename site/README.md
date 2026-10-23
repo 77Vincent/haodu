@@ -60,6 +60,10 @@ npm --prefix site ci
 npm --prefix site run dev
 ```
 
+需要预览私有部署配置时，将 `.env.example` 复制为 `site/.env.local`，填写 `SITE_CONFIG`（外部 Hugo 配置文件）和 `SITE_STATIC_DIR`（配套静态资源目录）。路径相对于 `site/`，也可使用绝对路径。开发入口自动读取该文件并挂载资源，不将私有文件复制进源码；已有进程环境变量优先。`.env.local` 已被 Git 忽略，修改后重启开发服务。没有配置时，仅显示公开源码的页脚链接。
+
+该 `.env.local` 仅供 `dev` 使用，普通构建和正式发布不会自动读取它；发布仍由私有发布入口提供配置。
+
 开发预览通过 `--renderToMemory` 在内存中提供页面和资源，与生产构建的 `public/` 分开。`config/development/hugo.toml` 同时将开发资源的编译缓存放到已忽略的 `resources/development/`，避免生产构建的 `--cleanDestinationDir` 或 `--gc` 删除预览正在使用的文件。可以在预览运行时执行构建。
 
 共享控件资源通过目录挂载并用 `files` 筛选所需的 CSS 和 JS，使 `src/reader-controls.css` 等文件的修改也能触发热刷新，不会挂载模型或其他扩展代码。修改挂载来源后需重启一次开发服务，使新的监听目录生效；普通样式修改无需重启。配置方式见 [Hugo 模块挂载文档](https://gohugo.io/configuration/module/#mounts)。
@@ -93,7 +97,7 @@ npm run release:site -- --base-url https://haodu.site/
 - `config/production/hugo.toml` 的 `baseURL` 为 `https://haodu.site/`；正式发布命令仍显式传入地址。`config/_default/hugo.toml` 的 `https://example.org/` 仅作默认占位，不用于部署。
 - `config/_default/params.toml` 的 `chromeWebStoreURL`：默认 Chrome 商店详情页地址，所有浏览器都可访问。`firefoxAddonsURL`：桌面 Firefox 的 AMO 详情页地址，已于 2026-10-20 核实公开上架并配置；留空时仍可查看 Chrome 版。修改后重新构建、部署网站。
 - `content/_index.md`：维护中文首页标题、SEO 标题、描述和两种语言共用的中文 demo；`content/_index.en.md` 维护对应英文介绍。
-- `config/_default/menus.toml` 和 `menus.en.toml`：中英文页脚的公开备案号与工信部查询链接。`layouts/_partials/footer/footer.html` 负责当前页脚布局及插件版本，修改备案菜单无需再改模板。
+- `config/_default/menus.toml` 和 `menus.en.toml`：中英文页脚的隐私政策入口。站点专属备案信息及图标由私有发布仓库 `haodu-release` 维护，发布时注入，源码中不保存具体编号。构建入口支持 `--config /path/to/deployment.toml` 加载外部 Hugo 配置；其中 `params.footerLinks` 可追加各语言共用的链接，字段为 `name`、`url`、可选 `icon` 和 `newtab`。图标等发布资源由发布流程补入产物。`layouts/_partials/footer/` 只负责通用渲染及对齐；未配置本地环境的开发预览和独立构建不显示这些额外链接。
 
 首页安装入口中文显示“现在安装”，英文显示“Install now”。`assets/js/install-button.js` 根据浏览器标识为桌面 Firefox 选择已配置的 AMO 地址，Chrome / Edge 等保留 Chrome 商店入口。Safari、手机及平板（含使用桌面标识的 iPadOS）显示可点击的“查看 Chrome 版” / “View Chrome version”，按钮悬停提示说明可换到电脑上的 Chrome 安装；若清空 Firefox 地址，Firefox 也使用此回退。所有入口都保留链接、键盘焦点与新标签页打开行为，不因当前浏览器无法安装而阻止访问商店。浏览器识别只用于引导，不代替商店的兼容性检查；没有 JavaScript 或无法识别浏览器时，保留静态 Chrome 商店链接。页面不向商店请求审核状态，配置变更需重新部署。
 

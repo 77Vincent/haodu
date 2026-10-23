@@ -5,7 +5,10 @@
       <div class="col-lg-8 text-lg-start">
         <ul class="list-inline">
           {{ range .Site.Menus.footer -}}
-            <li class="list-inline-item"><a class="text-muted" href="{{ .URL | relURL }}">{{ .Name }}</a></li>
+            {{ partial "footer/link.html" (dict "name" .Name "url" .URL "icon" .Params.icon "newtab" .Params.newtab) }}
+          {{- end }}
+          {{ range site.Params.footerLinks -}}
+            {{ partial "footer/link.html" . }}
           {{- end }}
         </ul>
       </div>

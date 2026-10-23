@@ -1,12 +1,13 @@
 import { execFileSync } from 'node:child_process';
 import { readFile, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { checkSiteSeo } from './check-site-seo.mjs';
 
 const { values } = parseArgs({ options: {
   'base-url': { type: 'string' }, preview: { type: 'boolean', default: false },
+  config: { type: 'string' },
 } });
 const input = values['base-url'] || process.env.SITE_BASE_URL;
 if (!values.preview && !input) throw new Error('Supply --base-url https://your-domain/ or SITE_BASE_URL for a release build.');
@@ -21,9 +22,10 @@ if (url && !url.pathname.endsWith('/')) url.pathname += '/';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const output = values.preview ? 'dist/site-preview' : 'dist/site';
 const destination = join(root, output);
+const configArgs = values.config ? ['--config', resolve(values.config)] : [];
 await rm(destination, { recursive: true, force: true });
 execFileSync('npm', ['run', 'build', '--', '--baseURL', url?.href || '/',
-  '--environment', values.preview ? 'preview' : 'production', '--destination', destination], {
+  '--environment', values.preview ? 'preview' : 'production', '--destination', destination, ...configArgs], {
   cwd: join(root, 'site'), stdio: 'inherit',
 });
 for (const page of ['index.html', 'en/index.html', 'privacy/index.html', '404.html', 'en/404.html']) {

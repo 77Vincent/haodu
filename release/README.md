@@ -56,6 +56,8 @@ npm run release:site -- --base-url https://haodu.site/
 
 CI 也可以通过 `SITE_BASE_URL` 传入地址。正式地址必须包含 HTTPS；若有子路径，包含子路径。发布入口会拒绝缺失地址及常见占位域名。`site/config/_default/hugo.toml` 的本地默认占位地址不用于正式发布。
 
+上述独立构建不包含站点专属备案信息。官网部署使用私有 `haodu-release` 的发布入口，在构建时加载其外部配置并补入配套图标；具体编号及图标不放进公开源码。通用构建入口通过 `--config /path/to/deployment.toml` 接受外部 Hugo 配置。
+
 将 **`dist/site/` 内的文件**上传到静态网站根目录，保留 CSS、JS、字体与图片路径结构。不要上传 `site/` 源码目录或插件 ZIP。中文首页为 `index.html`，英文首页为 `en/index.html`，错误页为 `404.html` 和 `en/404.html`，中文隐私页为 `privacy/index.html`。中英文首页共用同一份中文 demo。
 
 托管服务要支持目录首页（`/privacy/` → `privacy/index.html`）和真正的 404 状态，不要配置所有路径回退到首页。为 HTML、CSS、JS、SVG、PNG、字体设置正确的 Content-Type。HTTPS 证书必须覆盖正式域名。

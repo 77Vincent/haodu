@@ -8,8 +8,3 @@
   name = '隐私政策'
   url = '/privacy/'
   weight = 20
-
-[[footer]]
-  name = '沪ICP备2026053533号'
-  url = 'https://beian.miit.gov.cn/'
-  weight = 30
