@@ -1,6 +1,6 @@
 # Firefox 开发与安装
 
-Firefox 版使用 Manifest V3，面向桌面 Firefox 140 及以上版本。与 Chrome、Safari 共用页面处理、模型推理和控件，不引入 UI 库或扩展 API 兼容库。Android 尚未验收，本次不发布 Android 版。
+Firefox 版使用 Manifest V3，面向桌面 Firefox 140 及以上版本。与 Chrome、Safari 共用页面处理、模型推理和控件，不引入 UI 库或扩展 API 兼容库。Android 尚未验收。
 
 ## 构建与临时安装
 
@@ -15,7 +15,7 @@ npm run release:firefox
 
 打开 Firefox 的 `about:debugging#/runtime/this-firefox`，点击“临时载入附加组件”，选择生成目录中的 `manifest.json`，授予测试网站访问权限。在工具栏打开好读并开启，默认快捷键为 macOS 的 Option + Shift + U / 其他平台的 Alt + Shift + U，可在附加组件管理器的“管理扩展快捷键”中修改。面板显示浏览器返回的实际绑定。
 
-临时安装在浏览器退出后失效；正式安装需要 Mozilla 签名。更新代码后重新构建、重载扩展并刷新测试网页。
+临时安装在浏览器退出后失效。更新代码后重新构建、重载扩展并刷新测试网页。
 
 ## 平台差异
 
@@ -24,7 +24,7 @@ npm run release:firefox
 - 为满足 AMO 对可解析文件的大小限制，构建时把模型导出文件拆成小型 JSON 元数据和原始 Float32 二进制权重。Firefox Worker 从扩展包内读取这两个文件，再加载共享后端；没有网络模型下载，也不上传正文。
 - 二进制权重与原 base64 解码结果逐字节相同，不重新训练、不量化、不改变阈值。Chrome 和 Safari 仍使用原模型文件。
 - manifest 声明固定 ID `haodu@haodu.site` 和 `data_collection_permissions.required: ["none"]`。网页文本只在本地处理；该声明表示不向外传输用户数据。最低版本 140 支持 Mozilla 内置的数据收集声明。
-- 不声明 `gecko_android`，避免 AMO 强制启用 Android 分发；上传时只选择桌面 Firefox。
+- 当前构建仅配置桌面 Firefox，不声明 `gecko_android`。
 
 ## 验证
 
@@ -37,5 +37,3 @@ python3 -m http.server 8765 --bind 127.0.0.1
 ```
 
 访问 `http://127.0.0.1:8765/test/extension-fixture.html`，通过工具栏控制真实扩展。该页只提供测试正文，不加载或模拟扩展。
-
-发布材料和审核说明见 [Firefox Add-ons](../release/firefox-addons.md)。

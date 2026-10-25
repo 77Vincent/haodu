@@ -14,17 +14,16 @@
 
 首页的切分示例是静态演示，浏览器不加载模型。切点直接写在 `content/_index.md` 的 `lead` 和 `reader-demo` 正文中，以 `｜` 标记，由人工维护并定期审查。模板将这些标记渲染为分隔线；开发服务启动、热刷新和构建均使用文案中保存的切点，不改写源文件。
 
-产品文案以本站为准，按用途复用：
+页面与扩展文案按以下位置维护：
 
 | 内容 | 文案来源 | 同步位置 |
 | --- | --- | --- |
-| 中文名称、标语与介绍 | `config/_default/hugo.toml`、`content/_index.md` 的 `title`、`lead` | [项目 README](../README.md)、商店材料、截图用例；复用正文时仅省略 `｜` 标记 |
-| 中文摘要 | `content/_index.md` 的 `description` | `params.toml`、`_locales/zh_CN/messages.json` 的 `extensionDescription`、两份 `package.json`、商店摘要；根 `manifest.json` 通过消息引用读取 |
+| 中文名称、标语与介绍 | `config/_default/hugo.toml`、`content/_index.md` 的 `title`、`lead` | [项目 README](../README.md)；复用正文时省略 `｜` 标记 |
+| 中文摘要 | `content/_index.md` 的 `description` | `params.toml`、`_locales/zh_CN/messages.json` 的 `extensionDescription`、两份 `package.json`；根 `manifest.json` 通过消息引用读取 |
 | 英文名称与介绍 | `config/_default/languages.toml`、`content/_index.en.md` | 名称统一为小写 `haodu`，英文摘要同时用于语言配置 |
 | 按钮 | `i18n/zh-cn.toml`、`i18n/en.toml` | 可安装的平台显示“现在安装” / “Install now”；其他平台保留“查看 Chrome 版” / “View Chrome version”入口 |
-| 宣传图短语 | 从中文 `lead` 概括为“保留原文 · 长句切分 · 离线运行 · 安全高效” | `release/assets/` 中的两份 SVG、对应 JPEG / PNG 和截图用例页脚 |
 
-修改时手动同步对应位置，宣传图更新 SVG 后需同时重新导出 JPEG 和 PNG。商店详细介绍复用第二条 `lead` 并补充显示方式和操作，避免重复摘要的用途介绍。历史截图与测试输入是记录和用例，不作为当前宣传文案；新版本发布前须使用待发布源码或安装包重新截图，并核对实际模型及页面布局。旧图可从 Git 历史恢复。demo 切点仍由人工维护，不自动同步。
+修改文案时同步对应配置。demo 切点由人工维护，不自动同步。
 
 中文首页位于 `/`，英文首页位于 `/en/`，通过页头的 Doks 语言下拉菜单切换语言，按钮使用 `中` / `En` 简写，菜单保留完整语言名称。`content/_index.en.md` 仅维护英文标题、介绍和元信息，按钮等界面文案放在 `i18n/`。两种首页都通过 `hugo.Sites.Default.Home.Content` 渲染 `content/_index.md` 中的同一份中文 demo，包括引用来源和手写切点，不复制或翻译示例。隐私政策暂保留中文，英文页脚会标明其语言。
 
@@ -60,9 +59,9 @@ npm --prefix site ci
 npm --prefix site run dev
 ```
 
-需要预览私有部署配置时，将 `.env.example` 复制为 `site/.env.local`，填写 `SITE_CONFIG`（外部 Hugo 配置文件）和 `SITE_STATIC_DIR`（配套静态资源目录）。路径相对于 `site/`，也可使用绝对路径。开发入口自动读取该文件并挂载资源，不将私有文件复制进源码；已有进程环境变量优先。`.env.local` 已被 Git 忽略，修改后重启开发服务。没有配置时，仅显示公开源码的页脚链接。
+需要预览外部页脚配置时，将 `.env.example` 复制为 `site/.env.local`，填写 `SITE_CONFIG`（外部 Hugo 配置文件）和 `SITE_STATIC_DIR`（配套静态资源目录）。路径相对于 `site/`，也可使用绝对路径。开发入口自动读取该文件并挂载资源，不将外部文件复制进源码；已有进程环境变量优先。`.env.local` 已被 Git 忽略，修改后重启开发服务。没有配置时，仅显示源码配置的页脚链接。
 
-该 `.env.local` 仅供 `dev` 使用，普通构建和正式发布不会自动读取它；发布仍由私有发布入口提供配置。
+该 `.env.local` 仅供 `dev` 使用，构建命令不会自动读取它。
 
 开发预览通过 `--renderToMemory` 在内存中提供页面和资源，与生产构建的 `public/` 分开。`config/development/hugo.toml` 同时将开发资源的编译缓存放到已忽略的 `resources/development/`，避免生产构建的 `--cleanDestinationDir` 或 `--gc` 删除预览正在使用的文件。可以在预览运行时执行构建。
 
@@ -80,26 +79,25 @@ npm --prefix site run dev -- --port 1315
 npm --prefix site run build
 ```
 
-将 `site/public/` 部署到静态托管服务即可。`public/`、`node_modules/`、`resources/`、`hugo_stats.json` 和 Hugo 锁文件均已忽略；`package-lock.json` 应提交，保证干净检出后可通过 `npm ci` 安装相同依赖。
+静态文件输出到 `site/public/`。`public/`、`node_modules/`、`resources/`、`hugo_stats.json` 和 Hugo 锁文件均已忽略；`package-lock.json` 应提交，保证干净检出后可通过 `npm ci` 安装相同依赖。
 
-正式发布推荐从仓库根目录运行：
+要检查完整产物及 SEO 元信息，在仓库根目录运行：
 
 ```sh
-npm run release:site -- --base-url https://haodu.site/
+npm run release:site:preview
+python3 -m http.server 8088 --bind 127.0.0.1 --directory dist/site-preview
 ```
 
-该入口必须指定真实 HTTPS 地址，输出到独立的 `dist/site/`，并检查中英文首页、隐私页、扩展跳过标记及下面列出的 SEO 元信息。它不会修改开发配置；部署只上传 `dist/site/` 的内容。构建步骤见 [`../release/README.md`](../release/README.md)；官网生产发布与运维独立维护在私有仓库 `haodu-release`，不影响本站的独立开发和构建。
+访问 `http://127.0.0.1:8088/`。产物位于 `dist/site-preview/`，使用 `noindex` 和禁止抓取的 robots 配置。
 
-只需检查本地构建产物时，运行 `npm run release:site:preview`，生成 `dist/site-preview/`，用本地静态服务器预览即可。预览产物禁用抓取并标记 noindex，不能当作正式发布包。
+## 内容与配置
 
-## 发布前配置
-
-- `config/production/hugo.toml` 的 `baseURL` 为 `https://haodu.site/`；正式发布命令仍显式传入地址。`config/_default/hugo.toml` 的 `https://example.org/` 仅作默认占位，不用于部署。
-- `config/_default/params.toml` 的 `chromeWebStoreURL`：默认 Chrome 商店详情页地址，所有浏览器都可访问。`firefoxAddonsURL`：桌面 Firefox 的 AMO 详情页地址，已于 2026-10-20 核实公开上架并配置；留空时仍可查看 Chrome 版。修改后重新构建、部署网站。
+- `config/_default/hugo.toml`：站点基础配置；`baseURL` 影响 canonical、sitemap 和绝对链接。
+- `config/_default/params.toml`：`chromeWebStoreURL` 为默认安装入口，`firefoxAddonsURL` 用于桌面 Firefox；后者留空时仍可查看 Chrome 版。
 - `content/_index.md`：维护中文首页标题、SEO 标题、描述和两种语言共用的中文 demo；`content/_index.en.md` 维护对应英文介绍。
-- `config/_default/menus.toml` 和 `menus.en.toml`：中英文页脚的隐私政策入口。站点专属备案信息及图标由私有发布仓库 `haodu-release` 维护，发布时注入，源码中不保存具体编号。构建入口支持 `--config /path/to/deployment.toml` 加载外部 Hugo 配置；其中 `params.footerLinks` 可追加各语言共用的链接，字段为 `name`、`url`、可选 `icon` 和 `newtab`。图标等发布资源由发布流程补入产物。`layouts/_partials/footer/` 只负责通用渲染及对齐；未配置本地环境的开发预览和独立构建不显示这些额外链接。
+- `config/_default/menus.toml` 和 `menus.en.toml`：中英文页脚的隐私政策入口。`params.footerLinks` 可追加各语言共用的链接，字段为 `name`、`url`、可选 `icon` 和 `newtab`。`layouts/_partials/footer/` 负责通用渲染及对齐；未配置时不显示额外链接。
 
-首页安装入口中文显示“现在安装”，英文显示“Install now”。`assets/js/install-button.js` 根据浏览器标识为桌面 Firefox 选择已配置的 AMO 地址，Chrome / Edge 等保留 Chrome 商店入口。Safari、手机及平板（含使用桌面标识的 iPadOS）显示可点击的“查看 Chrome 版” / “View Chrome version”，按钮悬停提示说明可换到电脑上的 Chrome 安装；若清空 Firefox 地址，Firefox 也使用此回退。所有入口都保留链接、键盘焦点与新标签页打开行为，不因当前浏览器无法安装而阻止访问商店。浏览器识别只用于引导，不代替商店的兼容性检查；没有 JavaScript 或无法识别浏览器时，保留静态 Chrome 商店链接。页面不向商店请求审核状态，配置变更需重新部署。
+首页安装入口中文显示“现在安装”，英文显示“Install now”。`assets/js/install-button.js` 根据浏览器标识为桌面 Firefox 选择已配置的 AMO 地址，Chrome / Edge 等保留 Chrome 商店入口。Safari、手机及平板（含使用桌面标识的 iPadOS）显示可点击的“查看 Chrome 版” / “View Chrome version”，按钮悬停提示说明可换到电脑上的 Chrome 安装；若清空 Firefox 地址，Firefox 也使用此回退。所有入口都保留链接、键盘焦点与新标签页打开行为，不因当前浏览器无法安装而阻止访问商店。浏览器识别只用于引导，不代替商店的兼容性检查；没有 JavaScript 或无法识别浏览器时，保留静态 Chrome 商店链接。配置变更后需重新构建。
 
 也可以在构建时指定地址：
 
@@ -107,23 +105,18 @@ npm run release:site -- --base-url https://haodu.site/
 npm --prefix site run build -- --baseURL https://example.org/haodu/
 ```
 
-页面使用 Doks/Thulite 的 SEO 集成生成元信息和 sitemap，保留自定义的 `robots.txt`。404 页面设有 `noindex`。子路径部署时，爬虫读取域名根目录的 `/robots.txt`，需在根配置中添加对应 sitemap 地址。
+页面使用 Doks/Thulite 的 SEO 集成生成元信息和 sitemap，保留自定义的 `robots.txt`。404 页面设有 `noindex`。
 
 ## SEO
 
-- `static/baidu_verify_codeva-D5zGDCgJlL.html` 是百度站点所有权验证文件，构建时原样复制到站点根目录；保持文件名和内容不变，验证通过后也需保留。
 - 标题与描述来自各页面 front matter；中英文首页分别使用自己的 canonical。语言互链与 sitemap 直接使用主题默认模板：HTML 使用 `zh-cn` / `en` 并提供 `x-default`，sitemap 使用 `zh-CN` / `en-US`。两者都链接到中英文首页并包含自身，无需为统一写法覆盖模板。
-- 分享卡片与项目 README、商店首页截图共用 [`store-screenshot-1280x800.jpg`](../release/assets/store-screenshot-1280x800.jpg)，展示首页与 controls。`module.toml` 将这一个文件挂载为站点资源，Thulite 输出 Open Graph / Twitter 大图，项目补充实际尺寸和中英文替代文字。更新截图后重新构建即可，不需维护第二份图片。
+- 分享卡片与项目 README 共用 [`store-screenshot-1280x800.jpg`](../release/assets/store-screenshot-1280x800.jpg)，展示首页与 controls。`module.toml` 将这一个文件挂载为站点资源，Thulite 输出 Open Graph / Twitter 大图，项目补充实际尺寸和中英文替代文字。更新截图后重新构建即可，不需维护第二份图片。
 - `WebSite` 结构化数据使用主题默认模板，名称按语言配置输出「好读」或 `haodu`，URL 均指向站点根地址。无需维护本地覆盖模板来额外添加别名。
 - 页面正文在静态 HTML 中可读取，不依赖 JavaScript。英文 H1 的分隔线处保留文本空格，避免文本提取后变成 `Chineseeasier`，不增加视觉间距。中文演示区保留在中英文首页，使用 `data-nosnippet` 避免书籍例文被 Google 抽作产品搜索摘要；不影响演示显示及正文收录。搜索摘要仍由搜索引擎决定。
-- 正式站允许抓取；开发和预览页、所有 404 页面使用 `noindex`。sitemap 索引包含两种语言的子 sitemap，仅列出两个首页及隐私政策，不包含 404 或语言重定向页。
-- [`check-site-seo.mjs`](../scripts/check-site-seo.mjs) 随发布和预览构建执行，检查标题、描述、H1、canonical、语言互链、收录设置、分享图片文件、JSON-LD 和 sitemap 覆盖；不通过就终止构建。检查允许主题默认的语言代码与 locale 差异，不要求两种语言的结构化数据全文相同，也不要求 sitemap 重复 HTML 中的 `x-default`。
+- 普通构建允许抓取；开发和预览页、所有 404 页面使用 `noindex`。sitemap 索引包含两种语言的子 sitemap，仅列出两个首页及隐私政策，不包含 404 或语言重定向页。
+- [`check-site-seo.mjs`](../scripts/check-site-seo.mjs) 由仓库根目录的站点构建脚本调用，检查标题、描述、H1、canonical、语言互链、收录设置、分享图片文件、JSON-LD 和 sitemap 覆盖；不通过就终止构建。检查允许主题默认的语言代码与 locale 差异，不要求两种语言的结构化数据全文相同，也不要求 sitemap 重复 HTML 中的 `x-default`。
 
 主题的描述长度提醒使用统一的 110–160 长度区间，不能当作中英文 SEO 的硬性标准。保持当前准确简洁的描述，不为消除提醒填充文字；Google 会根据设备宽度截断摘要，见[官方说明](https://developers.google.com/search/docs/appearance/snippet)。
-
-**部署后仍需核验：** 域名 HTTPS 可访问；首页、英文页、隐私页、robots 和 sitemap 返回正确内容；无效路径返回真实 HTTP 404；HTTP 与备用域名跳转到正式 HTTPS 域名。然后在 Google Search Console 验证域名、提交 `/sitemap.xml` 并查看 URL 检查和实际 Core Web Vitals；这些线上状态不能由本地构建确认。
-
-生产发布、域名配置及历史排查记录维护在私有仓库 `haodu-release`；本页只维护当前构建方法和部署后核验清单，历史访问失败不作为当前线上状态。
 
 ## 维护
 

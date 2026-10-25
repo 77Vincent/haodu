@@ -1,6 +1,6 @@
 # Safari 开发与安装
 
-Safari 构建面向 macOS，复用 Chrome 版的模型、切分、页面处理和控件。当前是开发测试版本，尚未在 App Store 发布，也未验收 iPhone / iPad。
+Safari 构建面向 macOS，复用 Chrome 版的模型、切分、页面处理和控件。当前是开发测试版本，尚未验收 iPhone / iPad。
 
 ## 构建
 
@@ -44,7 +44,7 @@ npm run release:safari
 
 ## 验证
 
-自动化测试覆盖 Chrome 回归、Safari 后台启动及重建、推理并发和超时恢复、开关及外观保存、官网预览协作、访问拒绝和发布包引用。测试中的浏览器 API 是模拟接口，不能替代 Safari 原生安装验收。
+自动化测试覆盖 Chrome 回归、Safari 后台启动及重建、推理并发和超时恢复、开关及外观保存、官网预览协作、访问拒绝和构建产物引用。测试中的浏览器 API 是模拟接口，不能替代 Safari 原生安装验收。
 
 2026-10-16 在 macOS Safari 26.6.2 中已验证真实临时扩展的注入、模型推理、简繁混排、Shadow DOM、动态文本和代码区域排除；另用同一份控件 HTML/CSS 验证了 Safari 中轨道的明暗主题、禁用状态及开关尺寸。重新加载修复后的临时扩展后，用户在原生工具栏面板确认粗细轨道与快捷键显示正常，Option + Shift + U 可以切换好读。
 
@@ -58,10 +58,4 @@ python3 -m http.server 8765 --bind 127.0.0.1
 
 访问 `http://127.0.0.1:8765/test/extension-fixture.html`，使用真实扩展测试开关、变色、粗细、动态文本及 Shadow DOM；该页不加载扩展核心或模型，不会以网页模拟掩盖扩展问题。另一个 `test/browser-fixture.html` 用于独立验证标准 DOM/Worker 核心。
 
-发布前还需检查：跨标签页、关闭再开启、浏览器重启、后台休眠后再次推理、网站权限撤销/重新授予、原生弹窗明暗主题及官网快捷键预览协作。Safari WebDriver 自动化需要在 Safari 开发者设置中开启“允许远程自动化”。
-
-## 正式发布
-
-使用 [Safari Web Extension Packager](https://developer.apple.com/documentation/safariservices/packaging-and-distributing-safari-web-extensions-with-app-store-connect) 将 Safari 构建产物打包，配置 Apple Developer 账号，通过 TestFlight 测试后提交 App Store。也可使用完整 Xcode 中的打包工具生成项目做本地调试；仅安装 Command Line Tools 不包含这个工具。
-
-当前 ZIP 是 Web Extension 输入包，不是已签名的 Mac 安装应用；生成 ZIP 不代表已完成 Apple 签名、审核或发布。获得正式商店地址后再添加官网 Safari 安装入口。
+手工测试还需覆盖跨标签页、关闭再开启、浏览器重启、后台休眠后再次推理、网站权限撤销/重新授予、原生弹窗明暗主题及官网快捷键预览协作。Safari WebDriver 自动化需要在 Safari 开发者设置中开启“允许远程自动化”。

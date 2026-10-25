@@ -6,7 +6,7 @@
 
 ## 环境
 
-- Chrome 113 或更新版本，满足后台推理使用的 `offscreen` 的 `WORKERS` 原因类型要求。macOS Safari 使用独立后台宿主和发布包，见 [Safari 开发与安装](safari.md)。
+- Chrome 113 或更新版本，满足后台推理使用的 `offscreen` 的 `WORKERS` 原因类型要求。macOS Safari 使用独立后台宿主和构建目标，见 [Safari 开发与安装](safari.md)。
 - 桌面 Firefox 140 或更新版本，使用独立后台宿主和本地二进制模型包，见 [Firefox 开发与安装](firefox.md)。
 - Node.js 24.13 或更新版本。
 - 打包扩展需要 `zip`，macOS 自带；Ubuntu 可安装 `zip`。
@@ -57,8 +57,8 @@ python3 -m http.server 8765 --bind 127.0.0.1
 
 数值参考由同一组 float32 权重分别在 PyTorch CPU float64 和 Metal float32 下独立计算。浏览器对 CPU 的 logit 容差仍为 `2e-5 + 4e-6 × abs(reference)`，概率容差仍为 `1e-5`。12 条数值参考中，E6 的 Metal float32 概率与浏览器最多相差约 `1.45e-5`，重复运行可复现；Metal 概率检查采用 `2e-5` 容差，同时要求 CPU、Metal 和浏览器的最高分位置与 45% 阈值判断一致。这是数值验证容差，不改变运行时的切分阈值。
 
-## 发布与网站维护
+## 本地构建与网站开发
 
-- [扩展打包、网站构建与部署](../release/README.md)
-- [Chrome Web Store 发布材料](../release/chrome-web-store.md)
-- [网站开发与静态演示维护](../site/README.md)
+扩展构建入口为 `scripts/build-extension.mjs`，各浏览器的运行文件清单位于 `scripts/extension-targets.mjs`。构建会检查 JavaScript 语法和 manifest 引用，按清单复制运行文件及当前模型；新增运行文件时需要同步更新清单。
+
+网站环境、本地预览、构建与静态演示维护见 [网站开发](../site/README.md)。

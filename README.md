@@ -7,8 +7,8 @@
 
 让中文更好读
 
-好读是一款阅读辅助插件。保留原文的同时按人类习惯把长句切成短句，使阅读更轻松。<br>
-使用离线运行的微型神经网络，极致智能、安全、高效且无额外网络开销。
+好读是一款中文阅读辅助插件，在保留原文的基础上，将长句划分为短句。<br>
+微型神经网络在浏览器本地运行，无需联网推理。
 
 [安装使用](#安装使用) · [开发文档](docs/development.md) · [问题反馈](https://github.com/77Vincent/haodu/issues)
 
@@ -16,29 +16,46 @@
 
 ## 安装使用
 
-需要 Chrome 113 或更新版本。从源码安装还需要 Node.js 24.13+ 和 `zip`（macOS 自带）。
+本地开发需要 Node.js 24.13+ 和 `zip`（macOS 自带），无需安装 npm 依赖。
 
 ```sh
 git clone https://github.com/77Vincent/haodu.git
 cd haodu
+```
+
+按浏览器选择构建命令，以下命令均在仓库根目录执行。
+
+### Chrome
+
+```sh
 npm run release:extension
 ```
 
-1. 打开 Chrome 的 `chrome://extensions/`，开启**开发者模式**。
-2. 点击**加载已解压的扩展程序**，选择生成的 `dist/extension/` 目录。
-3. 打开中文网页，点击工具栏中的好读图标，在弹出面板中切换「阅读辅助」开关。红色表示开启，灰色表示关闭。
+Chrome 113+：打开 `chrome://extensions/`，开启**开发者模式**，点击**加载已解压的扩展程序**，选择 `dist/extension/`。调试本地 HTML 时，在扩展详情中开启“允许访问文件网址”。
 
-默认快捷键：macOS 使用 **Option + Shift + U**（⌥⇧U），其他平台使用 **Alt + Shift + U**。可在 `chrome://extensions/shortcuts` 查看或修改实际绑定。
+### Safari
 
-开启好读后，拖动面板中的色带可调整分隔线颜色，默认使用好读红；下方滑块可调整粗细，共五档，默认第二档。关闭时两项调节器禁用，已选设置保留。开关、颜色和粗细设置会在切换网页、刷新页面及重启浏览器后保留。使用本地 HTML 文件时，需要在扩展设置中开启“允许访问文件网址”。
+```sh
+npm run release:safari
+```
 
-macOS Safari 开发版：运行 `npm run release:safari`，在支持临时扩展的 Safari 中加载 `dist/safari-extension/`。与 Chrome 共用模型和控件，需授予网站访问权限，不支持本地文件；尚未在 App Store 发布。安装、验证和正式打包步骤见 [Safari 开发与安装](docs/safari.md)。
+使用支持[临时扩展](https://developer.apple.com/documentation/safariservices/running-your-safari-web-extension)的 macOS Safari：在“设置 → 高级”开启网页开发者功能，再到“开发者 → 添加临时扩展”选择 `dist/safari-extension/`。按提示授权，在“扩展”中启用好读并允许访问测试网站。
 
-桌面 Firefox 140+：可从 [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/haodu/) 安装。开发时运行 `npm run release:firefox`，在 `about:debugging#/runtime/this-firefox` 临时载入 `dist/firefox-extension/manifest.json`。构建、验证与发布步骤见 [Firefox 开发与安装](docs/firefox.md)。
+### Firefox
+
+```sh
+npm run release:firefox
+```
+
+桌面 Firefox 140+：打开 `about:debugging#/runtime/this-firefox`，点击**临时载入附加组件**，选择 `dist/firefox-extension/manifest.json`，允许访问测试网站。退出浏览器后需重新载入。
+
+加载后打开中文网页，点击工具栏中的好读图标，在面板中开启「阅读辅助」，也可调整分隔线颜色和粗细。
+
+> 默认快捷键：macOS 使用 **Option + Shift + U**（⌥⇧U），其他平台使用 **Alt + Shift + U**。
 
 ## 开发与贡献
 
-欢迎通过 [Issues](https://github.com/77Vincent/haodu/issues) 反馈问题或提出建议，也欢迎提交 Pull Request。报告切分或页面兼容问题时，请附上复现步骤、相关例句和浏览器版本。
+本仓库包含浏览器插件、模型推理代码和展示站点。已内置训练好的模型，开发和测试无需训练数据。实现说明见 [架构与实现](docs/architecture.md)，调试方法见 [开发与测试](docs/development.md)。
 
 修改扩展代码后，运行测试：
 
@@ -46,11 +63,12 @@ macOS Safari 开发版：运行 `npm run release:safari`，在支持临时扩展
 npm test
 ```
 
-本仓库用于构建“好读“浏览器插件和产品展示站点，包含已训练并导出的模型，及推理代码。插件按一定规则提取页面可见文字，在本地运用模型推理出切分点，再写回页面。后端包含一整套读取、写回、标记、撤销等逻辑，以便高效、低开销地在本地设备，完成实时计算和DOM操作。模型训练在独立的私有仓库维护，日常开发、测试和构建无需训练数据。详细步骤见 [开发与测试](docs/development.md)。
+随后重新运行对应浏览器的构建命令，在浏览器中重载扩展并刷新测试网页。
+
+欢迎提交 Pull Request 或通过 [Issues](https://github.com/77Vincent/haodu/issues) 反馈问题；请附上复现步骤、相关例句和浏览器版本。
 
 ## 文档
 
 - [架构与实现](docs/architecture.md)
 - [网站开发](site/README.md)
-- [发布与部署](release/README.md)
 - [隐私政策](site/content/privacy.md)
