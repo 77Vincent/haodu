@@ -1,6 +1,0 @@
-<li class="list-inline-item">
-  <a class="text-muted d-inline-flex align-items-center align-middle gap-1" href="{{ .url | relURL }}"{{ if .newtab }} target="_blank" rel="noopener noreferrer"{{ end }}>
-    {{- with .icon }}<img src="{{ . | relURL }}" width="16" height="18" alt="" aria-hidden="true">{{ end -}}
-    {{ .name }}
-  </a>
-</li>

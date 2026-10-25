@@ -1,7 +1,7 @@
 <h1>
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="release/assets/haodu-wordmark-dark.svg">
-    <img src="release/assets/haodu-wordmark.svg" alt="好读 · haodu" width="259" height="52">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/haodu-wordmark-dark.svg">
+    <img src="docs/assets/haodu-wordmark.svg" alt="好读 · haodu" width="259" height="52">
   </picture>
 </h1>
 
@@ -12,7 +12,7 @@
 
 [安装使用](#安装使用) · [开发文档](docs/development.md) · [问题反馈](https://github.com/77Vincent/haodu/issues)
 
-![好读首页与控制面板预览](release/assets/store-screenshot-1280x800.jpg)
+![好读首页与控制面板预览](docs/assets/store-screenshot-1280x800.jpg)
 
 ## 安装使用
 
@@ -55,7 +55,7 @@ npm run release:firefox
 
 ## 开发与贡献
 
-本仓库包含浏览器插件、模型推理代码和展示站点。已内置训练好的模型，开发和测试无需训练数据。实现说明见 [架构与实现](docs/architecture.md)，调试方法见 [开发与测试](docs/development.md)。
+本仓库包含浏览器插件和模型推理代码。已内置训练好的模型，开发和测试无需训练数据。实现说明见 [架构与实现](docs/architecture.md)，调试方法见 [开发与测试](docs/development.md)。
 
 修改扩展代码后，运行测试：
 
@@ -70,5 +70,4 @@ npm test
 ## 文档
 
 - [架构与实现](docs/architecture.md)
-- [网站开发](site/README.md)
-- [隐私政策](site/content/privacy.md)
+- [隐私政策](https://haodu.site/privacy/)

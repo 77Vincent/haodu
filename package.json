@@ -8,8 +8,6 @@
     "icons:generate": "node scripts/generate-icons.mjs",
     "release:extension": "node scripts/build-extension.mjs",
     "release:safari": "node scripts/build-extension.mjs --browser safari",
-    "release:firefox": "node scripts/build-extension.mjs --browser firefox",
-    "release:site": "node scripts/build-site.mjs",
-    "release:site:preview": "node scripts/build-site.mjs --preview"
+    "release:firefox": "node scripts/build-extension.mjs --browser firefox"
   }
 }

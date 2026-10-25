@@ -48,5 +48,4 @@ for (const [state, sizes] of [['on', [16, 32, 48, 128]], ['off', [16, 32]]]) {
     await writeFile(new URL(`icons/${state}-${size}.png`, root), png(size, colors[state]));
   }
 }
-await writeFile(new URL('site/static/favicon.png', root), png(32, colors.on));
-console.log('Generated divider SVG, six extension icons and the site favicon.');
+console.log('Generated divider SVG and six extension icons.');
