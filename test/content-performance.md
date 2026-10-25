@@ -38,6 +38,6 @@ The measured 5,000-node case spent roughly 100 ms in a synchronous scan, enough 
 
 ## Run the current benchmark
 
-Run `python3 -m http.server 8765 --bind 127.0.0.1` from the repository, open `http://127.0.0.1:8765/test/content-performance.html`, click **Run benchmark**, and keep the tab visible. Completion displays the full JSON, including validity checks. Expect approximately two minutes.
+Run `npm run test:serve` from the repository, open `http://127.0.0.1:8765/test/content-performance.html`, click **Run benchmark**, and keep the tab visible. Completion displays the full JSON, including validity checks. Expect approximately two minutes.
 
 Record the current commit, browser and environment alongside new results. Do not overwrite the archived JSON with results from a different version. To repeat the historical experiment, use the source and fixture from commit `6be0ca4`.

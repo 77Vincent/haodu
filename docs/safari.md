@@ -53,7 +53,7 @@ npm run release:safari
 启动本地测试页：
 
 ```sh
-python3 -m http.server 8765 --bind 127.0.0.1
+npm run test:serve
 ```
 
 访问 `http://127.0.0.1:8765/test/extension-fixture.html`，使用真实扩展测试开关、变色、粗细、动态文本及 Shadow DOM；该页不加载扩展核心或模型，不会以网页模拟掩盖扩展问题。另一个 `test/browser-fixture.html` 用于独立验证标准 DOM/Worker 核心。

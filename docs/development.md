@@ -25,11 +25,11 @@
 
 高对比度检查：在 Windows 对比度主题或 Chrome DevTools 的 Rendering 面板中启用 `forced-colors: active`。弹窗色带应隐藏，不占布局空间且无法通过 Tab 聚焦，开关和粗细滑块仍可正常操作；网页分隔线应采用系统文字色（`CanvasText`），普通 DOM 与 open Shadow DOM 一致。退出该模式后自动显示色带并恢复用户选择的颜色，不改动本地设置。深色主题本身不会触发这套规则。
 
-`npm test` 只需要 Node.js，验证扩展与推理相关行为。数据准备、Parquet 语料及训练与推理对齐测试随训练工具迁入私有仓库，本仓库测试无需训练数据或 Python 依赖。下面的浏览器测试页可用 Python 静态服务器或其他本地 HTTP 服务器打开。
+`npm test` 只需要 Node.js，验证扩展与推理相关行为。数据准备、Parquet 语料及训练与推理对齐测试随训练工具迁入私有仓库，本仓库测试无需训练数据。浏览器调试时，运行 `npm run test:serve` 启动本地测试页服务，仅供本机访问，按 Ctrl+C 停止。
 
 ```bash
 npm test
-python3 -m http.server 8765 --bind 127.0.0.1
+npm run test:serve
 ```
 
 - `http://127.0.0.1:8765/test/browser-fixture.html`：普通网页适配器，运行真实 Worker 和模型，显示请求次数、输入长度和状态变化。

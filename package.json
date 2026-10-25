@@ -5,6 +5,7 @@
   "description": "中文阅读辅助，按人类习惯，将长句划分为短句，让阅读更轻松。",
   "scripts": {
     "test": "node --test",
+    "test:serve": "node scripts/serve-tests.mjs",
     "icons:generate": "node scripts/generate-icons.mjs",
     "release:extension": "node scripts/build-extension.mjs",
     "release:safari": "node scripts/build-extension.mjs --browser safari",

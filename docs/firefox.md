@@ -33,7 +33,7 @@ npm run release:firefox
 2026-10-16 在隔离的 macOS Firefox 158 中临时安装真实 ZIP，验证了正文与 open Shadow DOM 切分、动态文字更新、代码区域排除，以及浏览器注册的 Alt + Shift + U 命令。实际扩展的 popup 页面验证了开关、颜色两端、粗细 1–5 档、设置保存与恢复、关闭时禁用和明暗主题；网页分隔线使用了所选颜色和宽度。自动化以扩展页面验证控件，不等同于手工验收所有系统的原生工具栏弹窗。
 
 ```sh
-python3 -m http.server 8765 --bind 127.0.0.1
+npm run test:serve
 ```
 
 访问 `http://127.0.0.1:8765/test/extension-fixture.html`，通过工具栏控制真实扩展。该页只提供测试正文，不加载或模拟扩展。
