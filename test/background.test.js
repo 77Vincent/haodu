@@ -532,6 +532,67 @@ test("Chrome access denials are quiet for both CSS and script injection and do n
   }
 });
 
+test("native error pages quietly skip all reader work and recover when the page loads", async () => {
+  for (const enabled of [false, true]) {
+    const background = createBackground({ enabled });
+    background.addTab(1, "http://localhost:1313/research/");
+    background.injectionErrors.set(1, {
+      method: "executeScript", message: "Frame with ID 0 is showing error page",
+    });
+    background.badges.set(1, "ERR");
+    await background.focus(1);
+    await background.windowFocus(1);
+    await background.navigate(1);
+    await background.restartWorker();
+    await background.focus(1);
+    assert.equal(background.badges.get(1), "");
+    assert.equal(background.titles.get(1), `好读（${enabled ? "已开启" : "已关闭"} / Alt+Shift+U 切换）`);
+    assert.equal(background.pages.has(1), false);
+    assert.equal(background.commands.length, 0);
+    assert.equal(background.cssInjections.length, 0);
+    assert.equal(background.injected.length, 0);
+    assert.equal(background.requests.length, 0);
+    assert.equal(background.creations(), 0);
+    assert.equal(background.writes.length, 0);
+    assert.equal((await background.popup({ type: "HAODU_GET_ENABLED" })).enabled, enabled);
+
+    // Error pages do not prevent the user's global switch from working.
+    await background.shortcut(1);
+    assert.equal(background.saved.enabled, !enabled);
+    assert.equal(background.badges.get(1), "");
+    await background.popup({ type: "HAODU_SET_ENABLED", enabled: true });
+    assert.equal(background.badges.get(1), "");
+    assert.equal(background.pages.has(1), false);
+
+    background.injectionErrors.delete(1);
+    await background.navigate(1);
+    assert.equal(background.pages.get(1).reader.status().enabled, true);
+    assert.equal(background.badges.get(1), "");
+  }
+});
+
+test("navigation to a native error page during CSS or reader injection is also quiet", async () => {
+  for (const method of ["insertCSS", "executeScript"]) {
+    const background = createBackground({ enabled: true });
+    background.injectionErrors.set(1, {
+      method, filesOnly: true, message: "Frame with ID 0 is showing error page",
+    });
+    await background.focus(1);
+    assert.equal(background.badges.get(1), "");
+    assert.equal(background.pages.has(1), false);
+    assert.equal(background.creations(), 0);
+    assert.equal(background.requests.length, 0);
+    assert.equal(background.writes.length, 0);
+    assert.equal(background.cssInjections.length, 1);
+    assert.equal(background.injected.length, method === "executeScript" ? 1 : 0);
+
+    background.injectionErrors.delete(1);
+    await background.navigate(1);
+    assert.equal(background.pages.get(1).reader.status().enabled, true);
+    assert.equal(background.badges.get(1), "");
+  }
+});
+
 test("unexpected injection failures still show ERR", async () => {
   for (const method of ["insertCSS", "executeScript"]) {
     const background = createBackground({ enabled: true });
@@ -545,16 +606,18 @@ test("unexpected injection failures still show ERR", async () => {
 });
 
 test("access-like errors from the reader are not mistaken for injection denials", async () => {
-  const background = createBackground({ enabled: true });
-  await background.focus(1);
-  const page = background.pages.get(1);
-  page.reader.toggle(false);
-  page.process = async () => { throw new Error("Blocked"); };
-  page.reader.toggle(true);
-  await drain();
-  assert.equal(background.badges.get(1), "ERR");
-  await background.focus(1);
-  assert.equal(background.badges.get(1), "ERR");
+  for (const message of ["Blocked", "Frame with ID 0 is showing error page"]) {
+    const background = createBackground({ enabled: true });
+    await background.focus(1);
+    const page = background.pages.get(1);
+    page.reader.toggle(false);
+    page.process = async () => { throw new Error(message); };
+    page.reader.toggle(true);
+    await drain();
+    assert.equal(background.badges.get(1), "ERR");
+    await background.focus(1);
+    assert.equal(background.badges.get(1), "ERR");
+  }
 });
 
 test("switching away during script loading leaves that tab inert until it is focused again", async () => {

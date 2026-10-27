@@ -169,7 +169,7 @@ function createBackground(saved = {}, browser = "chrome") {
         if (func) {
           previewSyncs.push({ tabId: target.tabId, args });
           const failure = injectionErrors.get(target.tabId);
-          if (failure?.method === "executeScript") throw new Error(failure.message);
+          if (failure?.method === "executeScript" && !failure.filesOnly) throw new Error(failure.message);
           const document = previewDocuments.get(target.tabId) || {
             URL: tabs.get(target.tabId).url,
             querySelector: (selector) => selector === 'meta[name="haodu"][content="off"]'

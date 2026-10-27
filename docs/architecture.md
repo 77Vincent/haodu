@@ -138,7 +138,7 @@ adapter.connect(reader);
 
 后台同时只做一次活动页检查。检查期间若再次聚焦或页面刷新完成，只设一个 `checkPending` 标志；当前检查结束后重新查询最新活动页和当前文档，不保存中间标签页队列。旧文档的延迟状态回复不再让新文档错过检查。
 
-自动处理新网站需要 manifest 中的 HTTP、HTTPS 和本地文件访问权限，替代原来只覆盖用户点击页面的 `activeTab`；修改 manifest 后需要重新加载扩展。本地文件还需打开“允许访问文件网址”。浏览器内部页面、Chrome 商店、未获访问权限的页面会静默跳过，不显示 `ERR`，也不改变全局开关。相关权限要求见 [Chrome 内容脚本文档](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts#inject-programmatically)。
+自动处理新网站需要 manifest 中的 HTTP、HTTPS 和本地文件访问权限，替代原来只覆盖用户点击页面的 `activeTab`；修改 manifest 后需要重新加载扩展。本地文件还需打开“允许访问文件网址”。浏览器内部页面、Chrome 商店、未获访问权限的页面会静默跳过，不显示 `ERR`，也不改变全局开关。Chrome 原生网络错误页即使地址栏仍保留请求的 HTTP(S) URL，也会根据 scripting API 的错误页拒绝静默跳过，不注入 reader 或启动推理；页面恢复加载后重新按普通页面检查，无需增加权限。相关权限要求见 [Chrome 内容脚本文档](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts#inject-programmatically)。
 
 网页可在初始 HTML 的 `<head>` 中加入以下标记，禁止扩展处理该页：
 

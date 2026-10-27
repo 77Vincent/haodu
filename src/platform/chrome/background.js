@@ -43,7 +43,10 @@ function isPageAccessDenied(error) {
   // Scripting API rejections have messages, not typed error codes. Restrict
   // this classification to injection; reader/model errors must remain visible.
   const message = error?.message || "";
-  return message.startsWith("Cannot access contents of ") || [
+  // Native network error documents retain the requested HTTP(S) tab URL, so
+  // the URL check cannot exclude them. Chrome refuses injection explicitly.
+  return /^Frame with ID \d+ is showing error page$/u.test(message)
+    || message.startsWith("Cannot access contents of ") || [
     "The extensions gallery cannot be scripted.",
     "The New Tab Page cannot be scripted.",
     "Cannot access a chrome:// URL",
