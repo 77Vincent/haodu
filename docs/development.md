@@ -39,6 +39,17 @@ npm run test:serve
 
 内容监听的历史性能基线及当前基准脚本的运行方法见 [性能记录](../test/content-performance.md)；旧测量值不代表当前源码性能。
 
+需要评估后端或模型时，在本仓库运行 `npm run golden:benchmark`：通过相邻私有
+`haodu-training` 仓库，对本仓库实际模型和后端执行标贝全量 10,000 句测试，
+默认固定 8 个进程各处理 1,250 句，分别预热后完整跑两轮取算术平均值（轮内并行、轮间串行）。
+主报告仅为结构化 `report.json`，包含后端/模型/规则配置、整句正确率、Precision、Recall、F1、
+整轮等待时间及累计后端/模型耗时；不再生成 Markdown 报告。
+结果保存在 `../haodu-training/training/artifacts/backend-benchmark/public/parallel-8/`；
+首次成功运行固定基线，后续自动比较。完整协议见
+[后端基准说明](../../haodu-training/training/BACKEND_BENCHMARK.md)。
+该命令需要相邻私有仓库，不属于扩展打包流程，也不复制题库到公开源码。
+全量基准按需启动，不是每次 Git 提交的强制步骤；提交已验证的改动时复用适用的已有检查结果。
+
 ## 模型训练
 
 离线数据准备、训练、评估、导出及实验资料维护在私有仓库 [77Vincent/haodu-training](https://github.com/77Vincent/haodu-training)，访问需要仓库权限。本仓库保留浏览器推理代码和导出的 `src/boundary-model-data.js`，可独立测试和打包。
