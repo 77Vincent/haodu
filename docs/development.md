@@ -39,24 +39,23 @@ npm run test:serve
 
 内容监听的历史性能基线及当前基准脚本的运行方法见 [性能记录](../test/content-performance.md)；旧测量值不代表当前源码性能。
 
-需要评估后端或模型时，在本仓库运行 `npm run golden:benchmark`：通过相邻私有
-`haodu-training` 仓库，对本仓库实际模型和后端执行标贝全量 10,000 句测试，
-默认固定 8 个进程各处理 1,250 句，分别预热后完整跑两轮取算术平均值（轮内并行、轮间串行）。
-主报告仅为结构化 `report.json`，包含后端/模型/规则配置、整句正确率、Precision、Recall、F1、
-整轮等待时间及累计后端/模型耗时；不再生成 Markdown 报告。
-结果保存在 `../haodu-training/training/artifacts/backend-benchmark/public/parallel-8/`；
-首次成功运行固定基线，后续自动比较。完整协议见
-[后端基准说明](../../haodu-training/training/BACKEND_BENCHMARK.md)。
-该命令需要相邻私有仓库，不属于扩展打包流程，也不复制题库到公开源码。
-全量基准按需启动，不是每次 Git 提交的强制步骤；提交已验证的改动时复用适用的已有检查结果。
+需要评估后端或模型时，在本仓库运行 `npm run golden:benchmark`。脚本、评分和测试都在
+`benchmark/`，直接加载本仓库的实际模型和后端，不依赖 training 仓库或 PyTorch。
+需要额外安装 Python 3.9+；首次使用按 [题库说明](../benchmark/golden/README.md) 导入标贝官方标注。
+本地已有题库可以直接执行。固定评测全部 10,000 句，8 个进程各处理 1,250 句，
+分别预热后完整跑两轮取算术平均值（轮内并行、轮间串行）。
+主报告为 `artifacts/backend-benchmark/public/parallel-8/report.json`，包含后端/模型/规则、
+整句正确率、Precision、Recall、F1 和性能。首次成功运行固定基线，后续自动比较。
+完整协议见 [后端基准说明](backend-benchmark.md)。题库和生成结果留在本地，不纳入 Git 或扩展包。
+全量基准按需启动，不是每次 Git 提交的强制步骤；脚本测试使用 `npm run golden:benchmark:test`。
 
 ## 模型训练
 
-离线数据准备、训练、评估、导出及实验资料维护在私有仓库 [77Vincent/haodu-training](https://github.com/77Vincent/haodu-training)，访问需要仓库权限。本仓库保留浏览器推理代码和导出的 `src/boundary-model-data.js`，可独立测试和打包。
+模型训练数据准备、训练、训练过程中的验证、导出及实验资料维护在私有仓库 [77Vincent/haodu-training](https://github.com/77Vincent/haodu-training)，访问需要仓库权限。本仓库保留浏览器推理代码和导出的 `src/boundary-model-data.js`，可独立测试和打包。
 
 训练代码、数据、检查点及运行任务均已迁入私有仓库，本仓库不再保留本地 `training/` 目录；忽略规则用于防止误拷回并提交。日常开发、测试和扩展构建不依赖私有仓库。
 
-需要更新模型时，在私有仓库训练、验证并导出，再将导出文件写入或复制到本仓库的 `src/boundary-model-data.js`，执行模型对齐验证、测试和扩展打包。两仓库没有 submodule、符号链接或固定相对路径依赖。
+需要更新模型时，在私有仓库训练、验证并导出，再将导出文件写入或复制到本仓库的 `src/boundary-model-data.js`，执行模型对齐验证、测试和扩展打包。公开仓库的运行、构建和 benchmark 均不依赖私有训练仓库。两者通过导出的模型文件交接。
 
 模型导出格式为 `haodu-f32-v1`，浏览器全局对象为 `HaoduBoundaryModelData`。使用训练仓库当前的 `training/export_browser_model.py` 导出；历史实验快照中的导出器可能使用过时接口，需要重新导出后再接入。
 

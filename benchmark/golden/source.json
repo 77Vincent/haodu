@@ -1,0 +1,44 @@
+{
+  "dataset": "BZNSYP",
+  "version": "bznsyp-golden-v1",
+  "total": 10000,
+  "source": {
+    "url": "https://weixinxcxdb.oss-cn-beijing.aliyuncs.com/gwYinPinKu/BZNSYP.rar",
+    "official_page": "https://www.data-baker.com/open_source.html",
+    "source_file": "BZNSYP/ProsodyLabeling/000001-010000.txt",
+    "license": "Official release: non-commercial use only",
+    "archive_content_length": 2293620016,
+    "archive_etag": "929D874C9910B1936FBEF1F093EF364C-55",
+    "download_range": "bytes=0-618802",
+    "downloaded_bytes": 618803,
+    "extracted_bytes": 1629488,
+    "text_sha256": "b90c254679f022ca2c9745b376d92d8c1fe183aed16ccc6caabde06b89e3ffe5",
+    "rar_file_crc32_verified": true,
+    "rar_solid_archive": false,
+    "lines": 20000
+  },
+  "cases_sha256": "17f41e30be210d82f0ac423777d33cec682dd4af074fa975bb7101549320860c",
+  "imported_labels": {
+    "2": "optional",
+    "3": "required"
+  },
+  "import_transform": "Remove #1 word-level and #4 sentence-end markers only; keep every sentence and every other character.",
+  "evaluation_thresholds": [
+    12,
+    13
+  ],
+  "final_fragment_maximum": 13,
+  "eligibility_policy": "all-annotated-boundaries-v2",
+  "eligibility_boundaries": [2, 3],
+  "final_fragment_scope": "complete #2+#3 annotation",
+  "production_threshold_changed": false,
+  "exclusions": {
+    "003892": "Confirmed #3 splits the place name 东河疃村 at 东|河. Keep source row; exclude from both scoring cohorts."
+  },
+  "audit": {
+    "sentences": 400,
+    "boundaries": 1120,
+    "confirmed_wrong_boundaries": 1,
+    "note": "Sample review only, not exhaustive certification; not a systematic missing-boundary audit."
+  }
+}

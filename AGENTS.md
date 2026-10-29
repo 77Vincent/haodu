@@ -12,10 +12,15 @@ validation for a substantive backend/model change. Reuse applicable completed
 checks when committing already-validated work; do not impose a per-commit
 benchmark gate.
 
-This delegates to the adjacent private `../haodu-training` checkout, uses this
-repository's actual backend and model export, and keeps its public-target
-baseline there under `public/parallel-8/` by default. Do not copy private datasets or research weights into this repo.
-If the private checkout is unavailable, report the benchmark as not run.
+The runner, scoring, dataset provenance and focused tests live in `benchmark/`.
+The default loads this repository's own `src/backend` and exported model. Never
+make this command depend on a training checkout, checkpoint, PyTorch or training
+metadata. Custom exported models use `--model /path/model.js --output /path/results`.
+
+The official BZNSYP corpus is installed in ignored `benchmark/golden/cases.csv`;
+its fixed hash and import instructions are tracked. Do not redistribute the
+corpus or research weights with the public code. Missing data must produce an
+actionable setup error, never silently select another dataset.
 
 The benchmark covers all 10,000 sentences, with #3 required, #2 optional and
 closing-double-quote equivalence. One invocation tests one backend/model. It uses
@@ -25,11 +30,11 @@ wall time, and summed backend/model call times. Different worker counts and the
 old serial protocol are not performance-comparable. Do not substitute a filtered
 threshold cohort, cached predictions, or a temporary ad hoc script.
 
-The main result is the compact `public/parallel-8/report.json`, containing
+The main result is the compact `artifacts/backend-benchmark/public/parallel-8/report.json`, containing
 backend/model/rules, test settings, accuracy/precision/recall/F1 and performance.
 Do not generate Markdown reports or rerun inference just to change formatting.
 
-Read `../haodu-training/training/BACKEND_BENCHMARK.md` for report fields and exit
+Read `docs/backend-benchmark.md` for report fields and exit
 codes. Ordinary runs compare to the pinned baseline. Do not use `--set-baseline`
 to hide a regression; updating an existing baseline requires the user's explicit
 acceptance. Avoid concurrent training/benchmarks while measuring speed.

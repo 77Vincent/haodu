@@ -4,7 +4,12 @@
   "private": true,
   "description": "中文阅读辅助，按人类习惯，将长句划分为短句，让阅读更轻松。",
   "scripts": {
-    "golden:benchmark": "python3 ../haodu-training/training/benchmark_backend.py --target public",
+    "golden:benchmark": "python3 benchmark/benchmark_backend.py",
+    "golden:benchmark:test": "node --test benchmark/test_backend_benchmark.cjs && python3 -m unittest discover -s benchmark -p 'test_*.py'",
+    "golden:import": "python3 benchmark/import_bznsyp_golden.py",
+    "golden:prepare": "python3 benchmark/prepare_golden.py",
+    "golden:check": "python3 benchmark/check_golden_min_length.py",
+    "golden:evaluate": "python3 benchmark/prepare_golden.py && python3 benchmark/evaluate_golden.py",
     "test": "node --test",
     "test:serve": "node scripts/serve-tests.mjs",
     "icons:generate": "node scripts/generate-icons.mjs",
