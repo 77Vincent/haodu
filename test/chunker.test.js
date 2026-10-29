@@ -21,7 +21,7 @@ function withModel(scoreTokens, inputRepresentation = "unicode-context-v1") {
   return context.HaoduChunker;
 }
 
-test("uncertain mixed-language notices stay intact after inference", () => {
+test("pure English skips inference and uncertain mixed-language notices stay intact", () => {
   let calls = 0;
   const chunker = withModel((tokens) => { calls++; return tokens.slice(1).map(() => 0); });
   const english = "mentioned you in the conversation about the upcoming release meeting and would like you to review the latest document.";
@@ -29,7 +29,7 @@ test("uncertain mixed-language notices stay intact after inference", () => {
     assert.ok(chunker.visualLength(text) >= 13);
     assert.deepEqual(Array.from(chunker.process([text])[0]), []);
   }
-  assert.equal(calls, 4);
+  assert.equal(calls, 3);
 });
 
 test("recursive children with no legal gap skip inference without changing normalization", () => {

@@ -284,7 +284,9 @@
   }
 
   function chunkByModel(text, segmenter, minConfidence) {
-    if (visualLength(text) < MIN_SPLIT_VISUAL_LENGTH) return [text];
+    // A whole DOM node can contain Han outside this clause, including clipped
+    // content. Latin words count toward length but do not make text Chinese.
+    if (!HAN_CHARACTER.test(text) || visualLength(text) < MIN_SPLIT_VISUAL_LENGTH) return [text];
     const tokens = tokenizeContext(text);
     if (tokens.length < 2) return [text];
     if (!modelBackend || typeof modelBackend.scoreTokens !== "function") {
@@ -325,6 +327,10 @@
     }
     // Use a stack so repeated choices near one end cannot overflow the call stack.
     const glyphs = tokens.map((token) => String.fromCodePoint(text.codePointAt(token.index)));
+    const hanCounts = new Uint32Array(tokens.length + 1);
+    for (let index = 0; index < glyphs.length; index++) {
+      hanCounts[index + 1] = hanCounts[index] + Number(HAN_CHARACTER.test(glyphs[index]));
+    }
     const pendingRanges = [{ start: 0, end: tokens.length }];
     while (pendingRanges.length > 0) {
       const { start, end } = pendingRanges.pop();
@@ -332,6 +338,7 @@
       const length = visualOffsets[interior.end] - visualOffsets[interior.start];
       if (
         interior.end - interior.start < 2 ||
+        hanCounts[interior.end] === hanCounts[interior.start] ||
         length < MIN_SPLIT_VISUAL_LENGTH ||
         allowedGapCounts[interior.end - 1] === allowedGapCounts[interior.start]
       ) {
@@ -408,7 +415,7 @@
    * positions inside each corresponding input; no DOM or task scheduling here.
    * @param {string[]} texts
    * @param {{minConfidence?: number, scoringStrategy?: "recursive-model"}} options
-   * Defaults to >45% at 13 or more visual units; shorter
+   * Defaults to >45% at 13 or more visual units; shorter or non-Han
    * fragments skip inference. Each eligible child receives fresh inference.
    * An explicit minConfidence overrides the default; 0 disables abstention.
    * @returns {number[][]}
