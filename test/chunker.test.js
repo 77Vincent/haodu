@@ -669,7 +669,7 @@ test("without abstention the bundled model splits the divider example within the
 test("uses model scores and word protection for the reading example", () => {
   const chunks = chunkText("而是帮助大脑更快地识别信息结构。", { minConfidence: 0 });
 
-  assert.deepEqual(chunks, ["而是", "帮助大脑更快地识别信息", "结构。"]);
+  assert.deepEqual(chunks, ["而是帮助大脑", "更快地识别信息", "结构。"]);
   assert.ok(chunks.every((chunk) => visualLength(chunk) <= 12));
 });
 
@@ -742,8 +742,8 @@ test("visual chunks preserve punctuation-delimited boundaries", () => {
 
 test("vertical separators appear only at model boundaries inside one clause", () => {
   assert.deepEqual(buildVisualChunks("而是帮助大脑更快地识别信息结构。", { minConfidence: 0 }), [
-    { text: "而是", processed: true, separated: false },
-    { text: "帮助大脑更快地识别信息", processed: true, separated: true },
+    { text: "而是帮助大脑", processed: true, separated: false },
+    { text: "更快地识别信息", processed: true, separated: true },
     { text: "结构。", processed: true, separated: true },
   ]);
   assert.deepEqual(buildVisualChunks("春天来了，我们出发。"), [

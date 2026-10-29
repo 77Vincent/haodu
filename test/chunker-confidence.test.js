@@ -288,12 +288,12 @@ test("punctuation separates independent confidence distributions and preserves U
 
 test("bundled model uses the 45% default and honors a stricter explicit threshold", () => {
   const moderate = "我一直在思考明天早上的早餐吃什么";
-  const confident = "很多高三学子都梦寐以求可以进入知名学府求学";
-  assert.deepEqual(realChunker.process([moderate, confident]), [[6], [11]]);
-  // E6 gives these top gaps about 91.55% and 97.46%, respectively.
-  assert.deepEqual(realChunker.process([moderate, confident], { minConfidence: .95 }), [[], [11]]);
+  const confident = "他打了个盹醒来后发现已经过了半晌";
+  assert.deepEqual(realChunker.process([moderate, confident]), [[6], [5]]);
+  // The E8 joint endpoint gives these top gaps about 93.66% and 98.19%.
+  assert.deepEqual(realChunker.process([moderate, confident], { minConfidence: .95 }), [[], [5]]);
   assert.deepEqual(realChunker.process([confident], { minConfidence: .99 }), [[]]);
-  assert.deepEqual(realChunker.process([moderate, confident], { minConfidence: 0 }), [[6], [11]]);
+  assert.deepEqual(realChunker.process([moderate, confident], { minConfidence: 0 }), [[6], [5]]);
   const tokens = realChunker.tokenizeContext(moderate);
   const probabilities = realChunker.gapProbabilities(backend.scoreTokens(tokens.map((t) => t.segment)));
   assert.equal(probabilities.indexOf(Math.max(...probabilities)), 5);

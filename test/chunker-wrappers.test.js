@@ -118,7 +118,7 @@ test("NFKC expansion gaps remain forbidden and supplementary Han offsets remain 
   assert.equal(chunks.join(""), input);
 });
 
-test("the reported citation example does not emit a standalone left quote with E6", () => {
+test("the reported citation example does not emit a standalone left quote with the bundled model", () => {
   const input = "回溯法关注的是研究报告后面的参考文献列表而引文检索关注的是“有什么文献引用了本篇相关研究”";
   const chunks = realChunker.chunkText(input);
   assert.equal(chunks.join(""), input);

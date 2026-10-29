@@ -3,21 +3,26 @@ const assert = require("node:assert/strict");
 const { readFileSync } = require("node:fs");
 const { join } = require("node:path");
 const backend = require("../src/backend/inference.js");
+const modelData = require("../src/boundary-model-data.js");
 const reference = require("./model-backend-reference.json");
 
 const projectRoot = join(__dirname, "..");
 
-test("browser backend loads the exported best checkpoint", () => {
+test("browser backend loads the E8 expanded-vocabulary joint fine-tuning endpoint", () => {
   const info = backend.getModelInfo();
 
-  assert.equal(info.bestEpoch, 6);
+  assert.equal(info.bestEpoch, null);
   assert.equal(info.bestEpoch, reference.bestEpoch);
-  // This validation-selected checkpoint has no full test-set evaluation.
+  assert.equal(modelData.sourceEpoch, 8);
+  assert.equal(modelData.sourceEpoch, reference.sourceEpoch);
+  assert.equal(modelData.exportedState, "joint fixed 5,000,000-example endpoint");
+  assert.equal(modelData.exportedState, reference.exportedState);
+  // This is a fixed joint fine-tuning endpoint, not a validation-selected best.
   assert.equal(info.testAccuracy, null);
   assert.equal(info.tokenization, "character");
   assert.equal(info.inputRepresentation, "unicode-context-v1");
   assert.equal(info.candidatePositions, "between every adjacent Unicode code point");
-  assert.equal(info.vocabularySize, 8192);
+  assert.equal(info.vocabularySize, 16384);
   assert.equal(info.channels, 192);
   assert.equal(info.residualBlocks, 8);
   assert.equal(info.convolutionLayers, 16);
@@ -49,8 +54,7 @@ test("browser inference matches independent PyTorch CPU and Metal references", (
       assert.equal(probabilities[index] > 0.45, probability > 0.45, `${example.text}, CPU gate ${index}`);
     });
     softmax(example.mpsScores).forEach((probability, index) => {
-      // E6's independently reproduced MPS float32 probabilities differ from
-      // browser/CPU float64 by up to 1.45e-5 (0.00145 percentage points).
+      // Metal float32 has a different reduction order from browser/CPU float64.
       // Keep the tighter CPU checks above and require identical gate decisions.
       assert.ok(Math.abs(probabilities[index] - probability) < 2e-5, `${example.text}, Metal probability ${index}`);
       assert.equal(probabilities[index] > 0.45, probability > 0.45, `${example.text}, Metal gate ${index}`);

@@ -49,9 +49,9 @@ npm run test:serve
 
 模型导出格式为 `haodu-f32-v1`，浏览器全局对象为 `HaoduBoundaryModelData`。使用训练仓库当前的 `training/export_browser_model.py` 导出；历史实验快照中的导出器可能使用过时接口，需要重新导出后再接入。
 
-当前内置模型于 2026-10-20 更新为已完成训练的 epoch 6 最佳权重，选自第 350,028,702 条样本处的验证检查点。完整验证集 2,515,459 条上的准确率为 91.5428%（epoch 5 为 91.4518%），尚未进行该检查点的完整测试集评估；此准确率衡量隐藏标点位置的恢复，不代表实际阅读切分质量。当时仅切换模型权重；后续预处理及递归规则已更新，以 [当前后端说明](architecture.md) 为准，默认置信度门槛仍严格大于 45%。模型身份由导出文件中的 `bestEpoch`、`checkpointSha256` 及配套数值参考测试共同校验。
+0.4.0 内置模型更新为 **E8 扩词表后、500 万条全参数联合微调的完成终点**，使用统一的 **16,384 项字符词表**。这是固定训练终点，不是中途选出的 best checkpoint；导出元数据为 `sourceEpoch: 8`、`bestEpoch: null` 和 `exportedState: "joint fixed 5,000,000-example endpoint"`，checkpoint SHA-256 为 `e34ac4e27983a251689652c81aed3910bbd0ee63f820d54ae4df1d5dafb8e986`。192 通道、8 个残差块（16 层卷积）的架构不变。实际切分规则见 [当前后端说明](architecture.md)：视觉长度达到 13 才尝试切分，置信度须严格大于 45%，无汉字的子句及递归子片段跳过推理。
 
-数值参考由同一组 float32 权重分别在 PyTorch CPU float64 和 Metal float32 下独立计算。浏览器对 CPU 的 logit 容差仍为 `2e-5 + 4e-6 × abs(reference)`，概率容差仍为 `1e-5`。12 条数值参考中，E6 的 Metal float32 概率与浏览器最多相差约 `1.45e-5`，重复运行可复现；Metal 概率检查采用 `2e-5` 容差，同时要求 CPU、Metal 和浏览器的最高分位置与 45% 阈值判断一致。这是数值验证容差，不改变运行时的切分阈值。
+数值参考由该终点的同一组 float32 权重分别在 PyTorch CPU float64 和 Metal float32 下独立计算，并覆盖扩展词表中的新字符。浏览器对 CPU 的 logit 容差为 `2e-5 + 4e-6 × abs(reference)`，概率容差为 `1e-5`；Metal 概率容差为 `2e-5`，同时要求 CPU、Metal 和浏览器的最高分位置与 45% 阈值判断一致。这些数值验证容差不改变运行时的切分阈值。
 
 ## 本地构建
 
