@@ -14,8 +14,8 @@ npm run release:safari
 产物：
 
 - `dist/safari-extension/`：Safari Web Extension 目录，根目录包含生成的 `manifest.json`。
-- `dist/haodu-0.3.0-safari.zip`：同一目录的 ZIP；版本取自根 manifest。
-- `dist/haodu-0.3.0-safari.zip.sha256` 与 `dist/safari-extension-release.json`：校验值和文件清单。
+- `dist/haodu-0.4.0-safari.zip`：同一目录的 ZIP；版本取自根 manifest。
+- `dist/haodu-0.4.0-safari.zip.sha256` 与 `dist/safari-extension-release.json`：校验值和文件清单。
 
 这一步不需要 Xcode、签名证书或训练数据。它不会改写根 manifest，也不会覆盖 `dist/extension/` 或 Chrome ZIP。
 
