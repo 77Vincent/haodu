@@ -70,4 +70,4 @@ npm test
 ## 文档
 
 - [架构与实现](docs/architecture.md)
-- [隐私政策](site/content/privacy.md)
+- [隐私政策](docs/privacy.md)

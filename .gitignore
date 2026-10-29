@@ -2,11 +2,7 @@
 # Prevent accidentally copying them back into the public repository.
 /training/
 # Website source and store materials live in the private haodu-release repo.
-# Keep the public privacy policy at its original path for store listing links.
-/site/*
-!/site/content/
-/site/content/*
-!/site/content/privacy.md
+/site/
 /release/
 __pycache__/
 *.pyc
