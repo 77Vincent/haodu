@@ -14,6 +14,7 @@ import uuid
 
 from bznsyp_golden import ROOT, CASES, load_cases, mark, sha
 from golden_scoring import SCORING_POLICY, SCORING_DESCRIPTION, aggregate, score
+from export_checkpoint import export_checkpoint
 
 SCHEMA = 'haodu-backend-benchmark-v3'
 REPORT_SCHEMA = 'haodu-benchmark-v1'
@@ -175,11 +176,13 @@ def compact_report(record):
         run_id=record['run_id'],
         backend=dict(
             target=record['target'],
-            source_sha256=digest({k: record['hashes'][k]['sha256'] for k in ('backend', 'inference')}),
+            source_sha256=digest({k: record['hashes'][k]['sha256'] for k in ('backend', 'inference', 'preprocessing')
+                                 if k in record['hashes']}),
             model=dict(epoch=model.get('sourceEpoch') or model.get('bestEpoch'),
                 state=model.get('exportedState'), vocabulary_size=model.get('vocabularySize'),
                 channels=model.get('channels'), convolution_layers=model.get('convolutionLayers'),
-                checkpoint_sha256=model.get('checkpointSha256')),
+                checkpoint_sha256=model.get('checkpointSha256'), task=model.get('task', 'single'),
+                trained_samples=model.get('trainedSamples')),
             rules={k: v for k, v in record['settings'].items() if k != 'options'}),
         test=dict(dataset=record['dataset']['name'], sentences=q['cases'],
             workers=request['workers'], rounds=request['repeats'],
@@ -201,6 +204,9 @@ def compact_report(record):
         quality_names = {'sentence_accuracy': 'sentence_accuracy', 'cut_precision': 'precision', 'required_coverage': 'recall'}
         result['comparison'] = dict(
             baseline_run_id=comparison['baseline_run_id'], status=comparison['status'],
+            quality_comparable=comparison['quality_comparable'],
+            performance_comparable=comparison['performance_comparable'],
+            performance_incompatibilities=comparison['performance_incompatibilities'],
             quality_delta_pp={quality_names[k]: rounded(v) for k, v in comparison['quality_delta_percentage_points'].items()},
             performance_delta_percent={k: rounded(v) for k, v in comparison['performance_delta_percent'].items()},
             regressions=comparison['regressions'])
@@ -230,23 +236,56 @@ def save_result(output, root, record, request):
 
 
 def run(args, root):
-    baseline, baseline_cases = load_baseline(root)
+    own_baseline, _ = load_baseline(root)
+    baseline, baseline_cases = load_baseline(args.compare_to.resolve() if args.compare_to else root)
+    if args.compare_to and baseline is None:
+        raise ValueError('--compare-to must name an existing benchmark output directory with a pinned baseline')
     rows, dataset = prepare()
-    backend = args.backend_dir.resolve() / 'chunker.js'
+    run_id = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ-') + uuid.uuid4().hex[:8]
+    output = root / 'runs' / run_id
+    output.mkdir(parents=True)
+    backend = HERE/'multicut_backend.js' if args.checkpoint else args.backend_dir.resolve() / 'chunker.js'
     inference = args.backend_dir.resolve() / 'inference.js'
     model = (args.model or ROOT / 'src/boundary-model-data.js').resolve()
-    target = 'custom' if args.model or args.backend_dir.resolve() != ROOT/'src/backend' else 'public'
+    preprocessing = []
+    checkpoint_sha = None
+    if args.checkpoint:
+        model = output/'model.js'
+        print('Importing checkpoint for JS inference (outside measurement)...', file=sys.stderr, flush=True)
+        checkpoint_sha = export_checkpoint(args.checkpoint.resolve(), model)
+        preprocessing = [HERE/'multicut_input.js']
+    elif args.model:
+        # Exported multi-cut artifacts are portable: no PyTorch needed to rerun.
+        task = subprocess.run(['node', '-e',
+            'const fs=require("node:fs"),vm=require("node:vm"),c=vm.createContext({});'
+            'vm.runInContext(fs.readFileSync(process.argv[1],"utf8"),c,{timeout:10000});'
+            'console.log(c.HaoduBoundaryModelData?.task || "single")', str(model)],
+            check=True, capture_output=True, text=True).stdout.strip()
+        if task == 'multi':
+            if args.backend_dir.resolve() != ROOT/'src/backend':
+                raise ValueError('Multi-cut models use the shared main inference engine; omit --backend-dir')
+            backend, preprocessing = HERE/'multicut_backend.js', [HERE/'multicut_input.js']
+        elif task != 'single':
+            raise ValueError('Unsupported exported model task')
+    target = 'custom' if args.checkpoint or args.model or args.backend_dir.resolve() != ROOT/'src/backend' else 'public'
     bridge = HERE / 'benchmark_backend.cjs'
     files = dict(cases=CASES, source=CASES.with_name('source.json'), projection=HERE/'bznsyp_golden.py',
                  scoring=HERE/'golden_scoring.py', runner=Path(__file__), bridge=bridge,
                  backend=backend, inference=inference, model=model)
+    if preprocessing:
+        files['preprocessing'] = preprocessing[0]
+        files['input_contract'] = HERE/'multicut-input-v20.json'
+    if args.checkpoint:
+        files['checkpoint'] = args.checkpoint.resolve()
+        files['checkpoint_importer'] = HERE/'export_checkpoint.py'
     hashes = {key: dict(path=str(p.resolve()), sha256=sha(p)) for key, p in files.items()}
-    run_id = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ-') + uuid.uuid4().hex[:8]
-    output = root / 'runs' / run_id
-    output.mkdir(parents=True)
+    if checkpoint_sha and hashes['checkpoint']['sha256'] != checkpoint_sha:
+        raise ValueError('Checkpoint changed after import')
     request = dict(model=str(model), backend=str(backend), inference=str(inference),
         warmup=100, repeats=2, workers=args.workers, records=[dict(id=r['id'], raw=r['raw']) for r in rows],
         output=str(output/'timings.json'), progress=str(output/'progress.json'))
+    if preprocessing:
+        request['preprocessing'] = list(map(str, preprocessing))
     write(output/'request.json', request)
     print(f'BZNSYP: 10,000 sentences; target={target}; model={model}\n'
           f'Backend: {backend}\n{args.workers} workers; warmup 100 each; '
@@ -275,23 +314,26 @@ def run(args, root):
         settings=prediction['settings'], environment=prediction['environment'], hashes=hashes,
         quality=aggregate(scored), performance=prediction['performance'],
         files=dict(cases='cases.jsonl', cases_sha256=sha(cases_path), timings='timings.json'),
-        baseline_updated=baseline is None or args.set_baseline)
+        baseline_updated=own_baseline is None or args.set_baseline)
     report['comparison'] = compare(report, baseline, args.slowdown_percent) if baseline else dict(status='baseline_created')
     if baseline and report['comparison']['quality_comparable']:
         report['comparison']['paired'] = paired_changes(scored, baseline_cases)
     save_result(output, root, report, request)
     write(output/'progress.json', dict(phase='complete', run_id=run_id, status=report['comparison']['status']))
     print(str(root/'report.json'), flush=True)
-    if report['baseline_updated']:
+    if args.set_baseline or baseline is None:
         return 0
     return {'pass': 0, 'regression': 2, 'incomparable': 3}[report['comparison']['status']]
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--model', type=Path, help='Explicit exported model override (no checkpoint export performed)')
+    inputs = parser.add_mutually_exclusive_group()
+    inputs.add_argument('--model', type=Path, help='Explicit single/multi exported JS model')
+    inputs.add_argument('--checkpoint', type=Path, help='Multi-cut validation checkpoint; imports FP32 weights before timing')
     parser.add_argument('--backend-dir', type=Path, default=ROOT/'src/backend')
     parser.add_argument('--output', type=Path, help='Benchmark root; contains immutable runs and baseline/latest pointers')
+    parser.add_argument('--compare-to', type=Path, help='Compare against another output directory\'s pinned baseline (read-only)')
     parser.add_argument('--workers', type=int, default=8, help='Fixed parallel process count, default 8; separate baseline per count')
     parser.add_argument('--set-baseline', action='store_true', help='Explicitly accept this successful run as the new baseline')
     parser.add_argument('--slowdown-percent', type=float, default=5,
@@ -301,9 +343,18 @@ def main():
         parser.error('--slowdown-percent must be finite and nonnegative')
     if not 1 <= args.workers <= 10000:
         parser.error('--workers must be between 1 and 10000')
+    if args.checkpoint and args.backend_dir.resolve() != ROOT/'src/backend':
+        parser.error('--checkpoint uses the shared main inference engine; omit --backend-dir')
     if (args.model or args.backend_dir.resolve() != ROOT/'src/backend') and not args.output:
         parser.error('Use --output with a custom model/backend to keep the bundled-model baseline separate')
-    root = (args.output or ROOT/'artifacts/backend-benchmark/public'/f'parallel-{args.workers}').resolve()
+    default_root = ROOT/'artifacts/backend-benchmark/public'/f'parallel-{args.workers}'
+    if args.checkpoint:
+        if not args.checkpoint.is_file():
+            parser.error('Checkpoint file does not exist')
+        default_root = ROOT/'artifacts/backend-benchmark/checkpoints'/sha(args.checkpoint)/f'parallel-{args.workers}'
+    root = (args.output or default_root).resolve()
+    if args.checkpoint and root == (ROOT/'artifacts/backend-benchmark/public'/f'parallel-{args.workers}').resolve():
+        parser.error('Checkpoint output must be separate from the bundled-model baseline')
     root.mkdir(parents=True, exist_ok=True)
     with (root/'.lock').open('a') as lock:
         try:
@@ -312,7 +363,7 @@ def main():
             parser.error('A benchmark is already running in this output directory')
         try:
             return run(args, root)
-        except (ValueError, OSError, KeyError, subprocess.CalledProcessError) as error:
+        except (ValueError, OSError, KeyError, RuntimeError, subprocess.CalledProcessError) as error:
             print(f'Benchmark failed: {error}', file=sys.stderr)
             return 1
 

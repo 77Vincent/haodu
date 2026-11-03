@@ -5,7 +5,7 @@
   "description": "中文阅读辅助，按人类习惯，将长句划分为短句，让阅读更轻松。",
   "scripts": {
     "golden:benchmark": "python3 benchmark/benchmark_backend.py",
-    "golden:benchmark:test": "node --test benchmark/test_backend_benchmark.cjs && python3 -m unittest discover -s benchmark -p 'test_*.py'",
+    "golden:benchmark:test": "node --test benchmark/test_*.cjs && python3 -m unittest discover -s benchmark -p 'test_*.py'",
     "golden:import": "python3 benchmark/import_bznsyp_golden.py",
     "golden:prepare": "python3 benchmark/prepare_golden.py",
     "golden:check": "python3 benchmark/check_golden_min_length.py",

@@ -2,7 +2,8 @@
 
 固定评测 BZNSYP **10,000 句**，主报告只有一个 `report.json`，记录后端配置、切分指标和性能。
 不再生成 Markdown 报告。命令标准输出仅返回 JSON 路径，进度写到标准错误。
-不需要手写临时评测器、准备阈值子集、安装 PyTorch 或导出另一份模型。
+不需要手写临时评测器或准备阈值子集。默认模型及已导出的 JS 模型不需要 PyTorch；
+显式传入 `.pt` checkpoint 时，仅计时前的格式转换需要它。
 需要 Node.js 24+、Python 3.9+，支持当前 macOS/Linux 开发环境。
 
 这是按需启动的评估工具，不是每次 Git 提交的强制步骤。仅请求提交已验证的改动时，
@@ -35,12 +36,59 @@ npm run golden:benchmark -- --model /path/to/export.js --output /path/to/results
 ```
 
 `--model` 或替代 `--backend-dir` 必须配合独立 `--output`，避免混入默认基线。
-每次命令只运行所选的一套后端和一个模型，不会额外运行另一版本，也不自动导出权重。
+每次命令只运行所选的一套后端和一个模型，不会额外运行另一版本。
 `target: public` 表示本仓库默认模型/后端；自定义输入记为 `custom`。这些是来源标签，不是发布版本号。
 
 后端阈值、置信度、预处理和递归都直接使用实际代码默认值，不替换源码常量。
 目前默认是至少 13 个视觉单位、置信度严格大于 0.45；将来代码变更会自然体现在同一测试中。
-实验门控尚未接入公开后端，因此此入口不会自动加入门控。
+独立门控研究已结束，此入口不加入门控。
+
+### 多切点 checkpoint
+
+同一入口现在可直接接受多切点的验证节点或最终 `best.pt`：
+
+```sh
+npm run golden:benchmark -- --checkpoint /absolute/path/to/checkpoint.pt
+```
+
+仅第一次使用 checkpoint 导入时，在 main 安装可选依赖（本地忽略目录，不依赖 training）：
+
+```sh
+python3 -m pip install --target artifacts/benchmark-deps -r benchmark/checkpoint-requirements.txt
+```
+
+读取明确提供的文件，使用其中的 `model_state`，不自动换成 `best_state`，不训练。
+验证节点从与其 epoch、已训练样本数完全对应的验证记录取概率阈值；最终 `best.pt`
+读取 `selection.threshold`。缺失对应记录时直接报错，不使用旧节点阈值或在标贝上调参。
+当前支持 `unicode-context-v20` 输入规范、FP32 字符模型；未知规范或网络结构明确拒绝。
+
+权重在计时前转为现有 JS 张量格式，保存到本次结果目录的 `model.js`。
+此转换及 checkpoint 读取时间不计入推理或进程启动时间。复跑也可对该文件使用 `--model`，
+会自动识别多切点模式，此时不需要 PyTorch。
+
+默认输出 `artifacts/backend-benchmark/checkpoints/<checkpoint SHA-256>/parallel-8/report.json`，
+可用 `--output` 指定独立目录；不会覆盖内置模型的正式基线。报告仍使用同一 JSON 结构，
+`backend.model.task`、`trained_samples` 和 `backend.rules` 记录任务、训练节点与规则。
+
+单切点沿用当前递归与 13 视觉单位阈值；多切点对规范化后的整句只计算一次，
+逐个字符间隙的 sigmoid 分数与验证阈值比较，没有递归、长度下限或最多三刀的推理限制。
+超出模型声明的输入上限时失败，不截断、不筛掉标贝题目。输入规范化、原文坐标映射、
+网络与解码都在后端计时范围内；模型时间只包含双方共享的 `src/backend/inference.js`。
+这项接入用于研究评测，未更改已发布扩展的模型或切分行为。
+
+### 两种模型对比
+
+分别执行两次，使用相同 Node 引擎、CPU、进程数、分片、预热与轮数：
+
+```sh
+npm run golden:benchmark -- --output artifacts/backend-benchmark/single-reference
+npm run golden:benchmark -- --checkpoint /path/to/checkpoint.pt --compare-to artifacts/backend-benchmark/single-reference
+```
+
+`--compare-to` 只读取该目录的**固定基线**，将质量差值和性能差值写入同一报告，
+不会修改该基线。若该目录已有更早的固定基线，要测当前对照请选一个新的输出目录。
+不同测量协议或环境的旧报告会标为性能不可比，不能把历史 PyTorch 批量计时与 JS 计时相除。
+后端端到端速度包含各自推理策略的成本，是两套完整方案的比较，不代表只改变了训练目标。
 
 ## 固定题面与评分
 
@@ -57,7 +105,7 @@ npm run golden:benchmark -- --model /path/to/export.js --output /path/to/results
 
 ## 性能口径
 
-使用实际 JavaScript 推理实现和 `HaoduChunker.process([text])`。默认固定 **8 个 Node 进程**，
+两种任务都使用实际 JavaScript 推理实现和 `HaoduChunker.process([text])`。默认固定 **8 个 Node 进程**，
 按原始题目索引 `index % 8` 分片，各负责 1,250 句；每个进程内按原始顺序逐句执行。
 分片不依赖模型、答案或预测结果。可用 `--workers N` 明确改进程数；不会按机器负载自动改变。
 
@@ -145,6 +193,7 @@ npm run golden:benchmark -- --set-baseline
 
 后端、评分、题库导入、阈值研究与回归工具均由 main 维护；训练仓库只产出模型文件。
 模型研究可单向使用本仓库的评测工具，main 不反向调用训练仓库。
+`--checkpoint` 是读取用户明确指定的单个模型资产，不读取训练清单、原始语料或训练代码。
 2026-10-29 将已有基准报告与基线完整迁入 `artifacts/backend-benchmark/`，逐文件 SHA-256 相同；
 保留旧报告中的原始路径作为当时运行记录，不改写测量结果或重设基线。
 当前 `public/parallel-8/report.json` 仍为原来的 0.4.0 测量结果。
@@ -157,7 +206,10 @@ npm run golden:benchmark:test
 ```
 
 覆盖全量来源、原有评分、预热隔离、固定分片覆盖与顺序、进程间并行及轮间等待、无缓存重复执行、
-预测一致性、子进程失败清理、非法切点、等待时间与计算耗时回归、进程数/旧协议可比性及基线完整性。脚本本身只使用 Python 与 Node 标准库。公开新克隆尚未安装题库时，仅跳过需要官方题库的集成检查；算法与进程测试仍运行。
+预测一致性、子进程失败清理、非法切点、等待时间与计算耗时回归、进程数/旧协议可比性及基线完整性。
+多切点还检查 v20 文本/UTF-16 坐标、0～N 刀、无递归、阈值与权重对应、非法权重及超长输入拒绝。
+基本脚本只使用 Python 与 Node 标准库；checkpoint 导入另用可选 PyTorch。
+公开新克隆未安装题库或可选依赖时，仅跳过对应集成检查；算法与进程测试仍运行。
 
 历史串行协议验收（2026-10-29，v1）：当前 E8 / 16,384 / 5M 导出执行三轮全量测试，全部切点跨轮一致，
 且与前次 10,000 题对比的预测逐题一致。整句正确率 59.620%、Precision 87.705%、Recall 60.066%。

@@ -13,9 +13,15 @@ checks when committing already-validated work; do not impose a per-commit
 benchmark gate.
 
 The runner, scoring, dataset provenance and focused tests live in `benchmark/`.
-The default loads this repository's own `src/backend` and exported model. Never
-make this command depend on a training checkout, checkpoint, PyTorch or training
-metadata. Custom exported models use `--model /path/model.js --output /path/results`.
+The default loads this repository's own `src/backend` and exported model, with
+no training checkout or PyTorch dependency. Custom exported models use
+`--model /path/model.js --output /path/results`. An explicit `--checkpoint /path/model.pt`
+imports multi-cut FP32 tensors and their validated input/threshold contract before
+measurement. Only that optional import needs PyTorch; it never imports private
+training modules, resolves a training manifest, or trains/selects weights. Both
+tasks run the same JavaScript inference engine and benchmark measurement loop.
+Multi-cut normalization and single-pass decoding live in `benchmark/`; they are
+research backends, not an automatic change to the shipped extension.
 
 The official BZNSYP corpus is installed in ignored `benchmark/golden/cases.csv`;
 its fixed hash and import instructions are tracked. Do not redistribute the

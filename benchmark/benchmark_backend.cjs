@@ -59,6 +59,9 @@ function createSession(input, progress = () => {}) {
     modelTokens += tokens.length;
     return scores;
   } });
+  for (const file of input.preprocessing || []) {
+    vm.runInContext(fs.readFileSync(file, 'utf8'), context, { filename: file });
+  }
   const backendSource = fs.readFileSync(input.backend, 'utf8');
   vm.runInContext(backendSource, context, { filename: input.backend });
   const api = context.HaoduChunker;
@@ -75,7 +78,8 @@ function createSession(input, progress = () => {}) {
     const match = backendSource.match(new RegExp(`const ${name}\\s*=\\s*([0-9.]+)\\s*;`));
     return match ? Number(match[1]) : null;
   };
-  const settings = { min_visual_length: numberConstant('MIN_SPLIT_VISUAL_LENGTH'),
+  const settings = api.getSettings ? JSON.parse(JSON.stringify(api.getSettings())) : {
+    min_visual_length: numberConstant('MIN_SPLIT_VISUAL_LENGTH'),
     min_confidence: numberConstant('MIN_SPLIT_CONFIDENCE'), options: 'backend defaults' };
   const warmStarted = performance.now();
   for (let i = 0; i < input.warmup; i++) {
@@ -123,7 +127,8 @@ function createSession(input, progress = () => {}) {
   const cpu = os.cpus();
   return { runPass, rows, metadata: { settings, model: { ...original.getModelInfo(),
     sourceEpoch: metadata.sourceEpoch ?? null, exportedState: metadata.exportedState ?? null,
-    format: metadata.format ?? null, architecture: metadata.architecture ?? null },
+    format: metadata.format ?? null, architecture: metadata.architecture ?? null,
+    task: metadata.task || 'single', trainedSamples: metadata.trainedSamples ?? null },
     environment: { node: process.version, v8: process.versions.v8, icu: process.versions.icu,
       platform: process.platform, arch: process.arch, os_release: os.release(),
       cpu: cpu[0]?.model ?? null, logical_cpus: cpu.length, memory_bytes: os.totalmem(),
