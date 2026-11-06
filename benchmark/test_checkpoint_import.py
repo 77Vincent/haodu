@@ -80,6 +80,45 @@ class CheckpointIntegrationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'embedding.weight'):
                 export_checkpoint(source,output)
 
+    def test_long_inputs_use_exported_weights_shared_js_engine_and_standard_runner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, output = root/'checkpoint.pt', root/'model.js'
+            checkpoint = self.checkpoint()
+            torch.save(checkpoint,source)
+            export_checkpoint(source,output)
+            lengths = [65,130,1,64]
+            request = dict(model=str(output), inference=str(HERE.parent/'src/backend/inference.js'),
+                backend=str(HERE/'multicut_backend.js'), preprocessing=[str(HERE/'multicut_input.js')],
+                records=[dict(id=str(n),raw='甲'*n) for n in lengths],
+                warmup=1,repeats=2,workers=2)
+            script = ('const {runBenchmark}=require(process.argv[1]);'
+                'runBenchmark(JSON.parse(process.argv[2])).then(r=>console.log(JSON.stringify(r)))'
+                '.catch(e=>{console.error(e.message);process.exitCode=1;});')
+            command = ['node','-e',script,str(HERE/'benchmark_backend.cjs'),json.dumps(request)]
+            result = subprocess.run(command,capture_output=True,text=True,timeout=30)
+            self.assertEqual(result.returncode,0,result.stderr)
+            measured = json.loads(result.stdout)
+            self.assertEqual(measured['settings']['long_input'],'advance from last predicted mappable cut')
+            self.assertEqual(measured['settings']['nonfinal_window_without_cut'],'error')
+            self.assertEqual(measured['settings']['final_window_without_cut'],'accept')
+            for row, length, calls, tokens in zip(measured['rows'],lengths,[2,3,0,1],[66,132,0,64]):
+                self.assertEqual(row['cuts'],list(range(1,length)))
+                self.assertEqual(row['model_calls'],[calls,calls])
+                self.assertEqual(row['model_tokens'],[tokens,tokens])
+            self.assertEqual([p['model_calls'] for p in measured['performance']['passes']],[6,6])
+            self.assertGreater(measured['performance']['model_total_ms'],0)
+
+            # Actual network output below threshold must propagate an error,
+            # rather than turning an unprocessed long input into a zero-cut answer.
+            checkpoint['model_state']['boundary_output.bias'].fill_(-2)
+            torch.save(checkpoint,source)
+            export_checkpoint(source,output)
+            failed = subprocess.run(command,capture_output=True,text=True,timeout=30)
+            self.assertEqual(failed.returncode,1)
+            self.assertIn('no valid cut',failed.stderr)
+            self.assertEqual(failed.stdout,'')
+
     def test_full_command_auto_selects_multi_and_writes_standard_report(self):
         from bznsyp_golden import CASES
         if not CASES.is_file():

@@ -20,8 +20,9 @@ imports multi-cut FP32 tensors and their validated input/threshold contract befo
 measurement. Only that optional import needs PyTorch; it never imports private
 training modules, resolves a training manifest, or trains/selects weights. Both
 tasks run the same JavaScript inference engine and benchmark measurement loop.
-Multi-cut normalization and single-pass decoding live in `benchmark/`; they are
-research backends, not an automatic change to the shipped extension.
+Multi-cut normalization and windowed decoding live in `benchmark/`; each window
+predicts all cuts once, with long inputs advancing from the last predicted cut.
+These are research backends, not an automatic change to the shipped extension.
 
 The official BZNSYP corpus is installed in ignored `benchmark/golden/cases.csv`;
 its fixed hash and import instructions are tracked. Do not redistribute the
