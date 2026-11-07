@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
-const {createNormalizer} = require('./multicut_input.js');
+const {createNormalizer} = require('../src/backend/multicut-input.js');
 const policy = require('./multicut-input-v20.json');
 const fixtures = require('./fixtures/multicut-v20-normalization.json');
 
@@ -21,10 +21,12 @@ function backend(scores, options = {}) {
   const calls = [];
   const context = vm.createContext({
     HaoduMultiCutInput: {createNormalizer},
+    HaoduClauses: require('../src/backend/clauses.js'),
     HaoduBoundaryModelData: {task:'multi',multiCut:{threshold:.5,maximumCharacters:64,inputPolicy:policy,...options}},
     HaoduModelBackend: {scoreTokens(tokens) { calls.push(tokens); return scores(tokens, calls.length-1); }},
   });
-  vm.runInContext(fs.readFileSync(path.join(__dirname,'multicut_backend.js'),'utf8'),context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../src/backend/multicut.js'),'utf8'),context);
+  vm.runInContext('globalThis.HaoduChunker = HaoduMultiCut.createChunker(HaoduBoundaryModelData, HaoduModelBackend)',context);
   return {process:raw => Array.from(context.HaoduChunker.process([raw])[0]), calls,
     settings: () => JSON.parse(JSON.stringify(context.HaoduChunker.getSettings()))};
 }
@@ -123,20 +125,34 @@ test('only unmappable predictions cannot advance a nonfinal window', () => {
   assert.equal(model.calls.length,1);
 });
 
-test('long input is normalized once with full quote/proxy context and global UTF-16 offsets', () => {
+test('each pre-split clause is normalized once and windows retain clause UTF-16 offsets', () => {
   const model = backend(tokens => tokens.slice(1).map(() => 10), {maximumCharacters:4});
-  assert.deepEqual(model.process('甲乙: "丙丁，戊己" 庚辛壬癸'),[1,4,5,6,7,9,10,11,12,13,14,15]);
-  assert.deepEqual(model.calls.map(tokens => tokens.join('')),['甲乙"丙','丙丁戊己','己" 庚','庚辛壬癸']);
+  assert.deepEqual(model.process('甲乙: "丙丁，戊己" 庚辛壬癸'),[1,4,5,6,9,10,11,12,13,14,15]);
+  assert.deepEqual(model.calls.map(tokens => tokens.join('')),['甲乙"丙','丙丁','戊己" ',' 庚辛壬','壬癸']);
 });
 
 test('the input limit counts normalized characters rather than raw or visual length', () => {
   const model = backend(tokens => logits(tokens,[]));
   assert.deepEqual(model.process('甲，'.repeat(64)),[]);
-  assert.deepEqual(model.calls.map(tokens => tokens.length),[64]);
-  // A long ASCII run still consists of individual model characters.
-  assert.throws(() => model.process('1'.repeat(65)), /no valid cut/);
+  assert.deepEqual(model.calls,[],'single-character clauses are never joined for inference');
+  // Mixed Han/ASCII counts individual model characters, not visual units.
+  assert.throws(() => model.process('甲'+'1'.repeat(64)), /no valid cut/);
   const expanded = backend(tokens => logits(tokens,[]),{maximumCharacters:4});
   assert.throws(() => expanded.process('㍻㍻甲'), /no valid cut/);
+});
+
+test('long-window progression resets at every natural clause boundary', () => {
+  const model = backend((tokens, call) => logits(tokens,call % 2 === 0 ? [48] : []));
+  assert.deepEqual(model.process('甲'.repeat(70)+'，'+'乙'.repeat(70)+'。'),[48,119]);
+  assert.deepEqual(model.calls.map(tokens => tokens.join('')),
+    ['甲'.repeat(64),'甲'.repeat(22),'乙'.repeat(64),'乙'.repeat(22)]);
+});
+
+test('a long paragraph of short clauses never enters the long-window failure path', () => {
+  const model = backend(tokens => logits(tokens,[]));
+  assert.deepEqual(model.process('甲乙丙丁，'.repeat(40)),[]);
+  assert.equal(model.calls.length,40);
+  assert.ok(model.calls.every(tokens => tokens.join('') === '甲乙丙丁'));
 });
 
 test('settings expose the window policy for benchmark report provenance', () => {
@@ -147,4 +163,8 @@ test('settings expose the window policy for benchmark report provenance', () => 
   assert.equal(settings.long_input,'advance from last predicted mappable cut');
   assert.equal(settings.nonfinal_window_without_cut,'error');
   assert.equal(settings.final_window_without_cut,'accept');
+  assert.equal(settings.presegmentation,'shared natural clauses');
+  assert.equal(settings.non_han_clauses,'skip');
+  assert.equal(settings.normalization_scope,'clause');
+  assert.equal(settings.window_scope,'clause');
 });

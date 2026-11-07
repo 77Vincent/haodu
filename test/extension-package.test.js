@@ -49,7 +49,8 @@ for (const browser of ["chrome", "safari", "firefox"]) {
       }
     }
     required.push(...(browser === "firefox" ? ["src/platform/firefox/inference-worker.js", "src/boundary-model-data.json", "src/boundary-model-weights.bin"] : ["src/inference-worker.js", "src/boundary-model-data.js"]),
-      "src/backend/inference.js", "src/backend/chunker.js");
+      "src/backend/inference.js", "src/backend/chunker.js", "src/backend/clauses.js", "src/backend/single-cut.js",
+      "src/backend/multicut-input.js", "src/backend/multicut.js");
     for (const file of required) assert.ok(target.files.includes(file), `Missing ${file}`);
   });
 

@@ -20,13 +20,21 @@ imports multi-cut FP32 tensors and their validated input/threshold contract befo
 measurement. Only that optional import needs PyTorch; it never imports private
 training modules, resolves a training manifest, or trains/selects weights. Both
 tasks run the same JavaScript inference engine and benchmark measurement loop.
-Multi-cut normalization and windowed decoding live in `benchmark/`; each window
-predicts all cuts once, with long inputs advancing from the last predicted cut.
-These are research backends, not an automatic change to the shipped extension.
+Both tasks enter `src/backend/chunker.js`, which dispatches using model metadata.
+Both decoders use the same `src/backend/clauses.js` presegmentation and skip
+clauses without Han. Multi-cut normalization and windowed decoding operate
+independently within each pre-split clause; never join clauses across proxies.
+Each window predicts all cuts once, with long clauses advancing from the last
+predicted cut. Natural clause boundaries are not emitted as model dividers.
+The bundled export is the explicitly promoted multi-cut epoch-1 checkpoint at
+3,000,103,049 samples (validation threshold 0.95). Single-cut decoding remains
+available for explicit historical model comparisons. Do not duplicate decoders
+inside benchmark or silently promote another checkpoint.
 
 The official BZNSYP corpus is installed in ignored `benchmark/golden/cases.csv`;
 its fixed hash and import instructions are tracked. Do not redistribute the
-corpus or research weights with the public code. Missing data must produce an
+corpus or unselected research checkpoints with the public code; only the explicitly
+promoted browser export belongs in src/boundary-model-data.js. Missing data must produce an
 actionable setup error, never silently select another dataset.
 
 The benchmark covers all 10,000 sentences, with #3 required, #2 optional and

@@ -250,6 +250,8 @@
   return Object.freeze({
     getModelInfo() {
       return Object.freeze({
+        task: modelData.task || "single",
+        trainedSamples: modelData.trainedSamples ?? null,
         bestEpoch: modelData.bestEpoch,
         checkpointSha256: modelData.checkpointSha256,
         testAccuracy: modelData.testAccuracy,

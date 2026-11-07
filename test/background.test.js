@@ -866,7 +866,7 @@ test("the inference service sends a whole viewport once and validates the data i
   assert.deepEqual(urls, ["./inference-worker.js"]);
 });
 
-test("the actual worker uses fresh recursive inference with the 13-unit and 45% gates", () => {
+test("the actual worker uses one multi-cut pass per natural clause, including below 13 characters", () => {
   let response;
   const inputs = [];
   const context = vm.createContext({ atob, btoa, console, Intl });
@@ -888,25 +888,24 @@ test("the actual worker uses fresh recursive inference with the 13-unit and 45% 
     "切分阅读",
     "使用神经网络，在长句中找到符合人类习惯的断句点，把长句切成更短的语意块提升阅读效率。",
     "即便是完全符合语法的通顺的但没有任何标点断句的句子模型依然能够找到恰当的切分点。",
+    "你的 smart #5 EHD 在 150 km/h 时，系统会调用并联模式（发动机直驱 + 电机辅助）：",
+    "3挡DHT 能让发动机保持在最高挡位，转速不会像纯油车那么夸张。同时，电机可以出力帮发动机一把，减轻发动机负荷。",
+    "你的插混车（3挡DHT）：最强的“持久战选手”，但也有瓶颈",
   ];
   context.onmessage({ data: { id: 50, texts } });
   assert.equal(response.error, undefined);
   assert.equal(response.id, 50);
   assert.deepEqual(Array.from(response.offsetsByText, (cuts) => Array.from(cuts)),
-    [[9, 25, 31, 50], [], [11, 35], [10, 13, 25, 27]]);
-  assert.deepEqual(inputs.map((tokens) => tokens.join("")), [
-    "中文天然不使用空格切分语意块",
-    "因此过长的的句子会破坏阅读体验",
-    "过长的的句子会破坏阅读体验",
-    "请感受本文里断句的出现是否让你的阅读更轻松",
-    "在长句中找到符合人类习惯的断句点",
-    "把长句切成更短的语意块提升阅读效率",
+    [[50], [], [35], [13], [], [], []]);
+  assert.deepEqual(inputs.slice(0,9).map(tokens => tokens.join("")), [
+    "中文天然不使用空格切分语意块", "而仅用标点断句", "因此过长的的句子会破坏阅读体验",
+    "请感受本文里断句的出现是否让你的阅读更轻松", "切分阅读", "使用神经网络",
+    "在长句中找到符合人类习惯的断句点", "把长句切成更短的语意块提升阅读效率",
     "即便是完全符合语法的通顺的但没有任何标点断句的句子模型依然能够找到恰当的切分点",
-    "即便是完全符合语法的通顺的",
-    "但没有任何标点断句的句子模型依然能够找到恰当的切分点",
-    "但没有任何标点断句的句子模型",
-  ], "the worker passes long child fragments back into the CNN");
-  assert.equal(inputs.reduce((n, tokens) => n + tokens.length, 0), 188);
+  ]);
+  assert.equal(inputs.length,19,'each screenshot clause is independently scored without recursion');
+  assert.equal(inputs[9].join(""), "你的 smart #5 EHD 在 150 km/h 时");
+  assert.equal(context.HaoduChunker.getSettings().min_confidence, .95);
 });
 
 test("the actual worker returns ordered model results for a whole viewport including long strings", () => {

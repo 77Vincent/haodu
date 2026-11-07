@@ -36,8 +36,9 @@ const source=fs.readFileSync(input.backend,'utf8');
 const minimum=Number(source.match(/const MIN_SPLIT_VISUAL_LENGTH\s*=\s*(\d+)\s*;/)?.[1]);
 if(!minimum)throw Error('Cannot read backend minimum threshold');
 const context=vm.createContext({Intl,HaoduModelBackend:{getModelInfo:()=>({inputRepresentation:'unicode-context-v1'}),scoreTokens:()=>{throw Error('Inference forbidden')}}});
+vm.runInContext(fs.readFileSync(require('path').join(require('path').dirname(input.backend),'clauses.js'),'utf8'),context);
 vm.runInContext(source,context);
-const api=context.HaoduChunker;
+const api=context.HaoduSingleCut.createChunker(context.HaoduModelBackend);
 const results=input.rows.map(row=>{
  let text='',cuts=[];
  for(const ch of row.text){if(ch==='｜')cuts.push(text.length);else text+=ch;}
@@ -79,7 +80,7 @@ process.stdout.write(JSON.stringify({minimum,results,environment:{node:process.v
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--cases', type=Path, default=ROOT/'benchmark/golden/cases.csv')
-    parser.add_argument('--backend', type=Path, default=ROOT/'src/backend/chunker.js')
+    parser.add_argument('--backend', type=Path, default=ROOT/'src/backend/single-cut.js')
     parser.add_argument('--json', type=Path, help='Optional diagnostic report; never changes cases')
     parser.add_argument('--gap-rule', choices=['adjacent-han', 'book-title-only'], default='book-title-only', help='Current title-mark rule; adjacent-han is for historical manual-case checks only')
     args = parser.parse_args()

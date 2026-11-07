@@ -3,8 +3,8 @@ const assert = require("node:assert/strict");
 const { readFileSync } = require("node:fs");
 const { join } = require("node:path");
 const vm = require("node:vm");
-const realChunker = require("../src/backend/chunker.js");
-const source = readFileSync(join(__dirname, "../src/backend/chunker.js"), "utf8");
+const realChunker = require("./helpers/single-cut.cjs").chunker;
+const source = require("./helpers/single-cut.cjs").source;
 const inner = "甲乙丙丁戊己庚辛壬癸子丑寅";
 
 function withScores(scoreTokens) {

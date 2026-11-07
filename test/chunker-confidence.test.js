@@ -4,8 +4,8 @@ const { readFileSync } = require("node:fs");
 const { join } = require("node:path");
 const vm = require("node:vm");
 const backend = require("../src/backend/inference.js");
-const realChunker = require("../src/backend/chunker.js");
-const source = readFileSync(join(__dirname, "../src/backend/chunker.js"), "utf8");
+const realChunker = require("./helpers/single-cut.cjs").chunker;
+const source = require("./helpers/single-cut.cjs").source;
 const text = "甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥天地";
 
 function withScores(scoreTokens) {
@@ -286,18 +286,21 @@ test("punctuation separates independent confidence distributions and preserves U
   for (const offset of cuts) assert.doesNotMatch(input[offset], /[\uDC00-\uDFFF]/u);
 });
 
-test("bundled model uses the 45% default and honors a stricter explicit threshold", () => {
+test("single-cut default honors a stricter explicit threshold", () => {
   const moderate = "我一直在思考明天早上的早餐吃什么";
   const confident = "他打了个盹醒来后发现已经过了半晌";
-  assert.deepEqual(realChunker.process([moderate, confident]), [[6], [5]]);
-  // The E8 joint endpoint gives these top gaps about 93.66% and 98.19%.
-  assert.deepEqual(realChunker.process([moderate, confident], { minConfidence: .95 }), [[], [5]]);
-  assert.deepEqual(realChunker.process([confident], { minConfidence: .99 }), [[]]);
-  assert.deepEqual(realChunker.process([moderate, confident], { minConfidence: 0 }), [[6], [5]]);
-  const tokens = realChunker.tokenizeContext(moderate);
-  const probabilities = realChunker.gapProbabilities(backend.scoreTokens(tokens.map((t) => t.segment)));
-  assert.equal(probabilities.indexOf(Math.max(...probabilities)), 5);
-  assert.ok(probabilities[5] > realChunker.MIN_SPLIT_CONFIDENCE && probabilities[5] < .95);
+  const chunker = withScores(tokens => {
+    const strong = tokens.join("") === confident;
+    const probability = strong ? .98 : .9;
+    const gap = strong ? 4 : 5;
+    return tokens.slice(1).map((_, i) => i === gap
+      ? Math.log(probability * (tokens.length-2) / (1-probability)) : 0);
+  });
+  const run = options => JSON.parse(JSON.stringify(chunker.process([moderate, confident], options)));
+  assert.deepEqual(run(), [[6], [5]]);
+  assert.deepEqual(run({minConfidence:.95}), [[], [5]]);
+  assert.deepEqual(run({minConfidence:.99}), [[], []]);
+  assert.deepEqual(run({minConfidence:0}), [[6], [5]]);
 });
 
 test("default recursion runs fresh inference and can accept a different second boundary", () => {

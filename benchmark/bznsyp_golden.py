@@ -12,7 +12,7 @@ from golden_scoring import SCORING_POLICY, SCORING_DESCRIPTION, u16, score, aggr
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = ROOT / 'benchmark/golden/cases.csv'
-BACKEND = ROOT / 'src/backend/chunker.js'
+BACKEND = ROOT / 'src/backend/single-cut.js'
 ELIGIBILITY_POLICY = 'all-annotated-boundaries-v2'
 PROXIES = frozenset('，。！？；…、：,.!?;:')
 

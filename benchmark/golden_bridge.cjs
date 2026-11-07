@@ -8,6 +8,8 @@ const context = vm.createContext({Intl, atob, btoa});
 for (const file of [input.model, input.inference]) {
   vm.runInContext(fs.readFileSync(file, 'utf8'), context, {filename:file});
 }
+assert.notEqual(context.HaoduBoundaryModelData.task, 'multi', 'Length-cohort research requires an explicit single-cut export; use golden:benchmark for multi-cut');
+vm.runInContext(fs.readFileSync(require('node:path').join(require('node:path').dirname(input.backend), 'clauses.js'), 'utf8'), context);
 const source = fs.readFileSync(input.backend, 'utf8');
 const pattern = /const MIN_SPLIT_VISUAL_LENGTH\s*=\s*\d+\s*;/g;
 assert.equal([...source.matchAll(pattern)].length, 1, 'Cannot locate runtime threshold');
@@ -15,7 +17,7 @@ const results = {};
 for (const minimum of input.thresholds) {
   assert.ok(Number.isInteger(minimum) && minimum >= 9 && minimum <= 16);
   vm.runInContext(source.replace(pattern, `const MIN_SPLIT_VISUAL_LENGTH = ${minimum};`), context);
-  const api = context.HaoduChunker;
+  const api = context.HaoduSingleCut.createChunker(context.HaoduModelBackend);
   const ids = new Set(input.cohorts[String(minimum)]);
   results[minimum] = [];
   for (const row of input.records) {

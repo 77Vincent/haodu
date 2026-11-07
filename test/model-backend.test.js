@@ -8,56 +8,37 @@ const reference = require("./model-backend-reference.json");
 
 const projectRoot = join(__dirname, "..");
 
-test("browser backend loads the E8 expanded-vocabulary joint fine-tuning endpoint", () => {
+test("browser backend loads the validation-selected multi-cut checkpoint", () => {
   const info = backend.getModelInfo();
-
-  assert.equal(info.bestEpoch, null);
-  assert.equal(info.bestEpoch, reference.bestEpoch);
-  assert.equal(modelData.sourceEpoch, 8);
-  assert.equal(modelData.sourceEpoch, reference.sourceEpoch);
-  assert.equal(modelData.exportedState, "joint fixed 5,000,000-example endpoint");
-  assert.equal(modelData.exportedState, reference.exportedState);
-  // This is a fixed joint fine-tuning endpoint, not a validation-selected best.
-  assert.equal(info.testAccuracy, null);
-  assert.equal(info.tokenization, "character");
-  assert.equal(info.inputRepresentation, "unicode-context-v1");
-  assert.equal(info.candidatePositions, "between every adjacent Unicode code point");
-  assert.equal(info.vocabularySize, 16384);
-  assert.equal(info.channels, 192);
-  assert.equal(info.residualBlocks, 8);
-  assert.equal(info.convolutionLayers, 16);
+  assert.equal(info.task, "multi");
   assert.equal(info.checkpointSha256, reference.checkpointSha256);
+  assert.equal(info.trainedSamples, reference.trainedSamples);
+  assert.equal(modelData.sourceEpoch, reference.sourceEpoch);
+  assert.equal(modelData.exportedState, "model_state");
+  assert.equal(info.vocabularySize, reference.vocabularySize);
+  assert.equal(info.channels, 192);
+  assert.equal(info.convolutionLayers, 16);
+  assert.equal(modelData.multiCut.threshold, reference.threshold);
+  const settings = require('../src/backend/chunker.js').getSettings();
+  assert.equal(settings.task, 'multi');
+  assert.equal(settings.recursion, false);
+  assert.equal(settings.min_visual_length, null);
+  assert.equal(settings.max_model_window_tokens, 64);
 });
 
-test("browser inference matches independent PyTorch CPU and Metal references", () => {
+test("browser logits and sigmoid decisions match independent PyTorch references", () => {
+  const sigmoid = x => Math.fround(1 / (1 + Math.exp(-x)));
   for (const example of reference.cases) {
     const scores = backend.scoreTokens(Array.from(example.text));
     assert.equal(scores.length, example.scores.length);
-    scores.forEach((score, index) => {
-      // Compare to CPU float64 using the same stored float32 weights. This
-      // keeps export accuracy separate from Metal's float32 reduction order.
-      // Check actual Metal probabilities, top-1 and the runtime gate below.
-      const tolerance = 2e-5 + 4e-6 * Math.abs(example.scores[index]);
-      assert.ok(Math.abs(score - example.scores[index]) < tolerance, `${example.text}, gap ${index}`);
-    });
-    assert.equal(scores.indexOf(Math.max(...scores)), example.bestGap);
-    assert.equal(example.bestGap, example.mpsBestGap);
-    assert.equal(example.mpsScores.length, scores.length);
-    const softmax = (values) => {
-      const exponentials = values.map((value) => Math.exp(value - Math.max(...values)));
-      const sum = exponentials.reduce((a, b) => a + b, 0);
-      return exponentials.map((value) => value / sum);
-    };
-    const probabilities = softmax(scores);
-    softmax(example.scores).forEach((probability, index) => {
-      assert.ok(Math.abs(probabilities[index] - probability) < 1e-5, `${example.text}, probability ${index}`);
-      assert.equal(probabilities[index] > 0.45, probability > 0.45, `${example.text}, CPU gate ${index}`);
-    });
-    softmax(example.mpsScores).forEach((probability, index) => {
-      // Metal float32 has a different reduction order from browser/CPU float64.
-      // Keep the tighter CPU checks above and require identical gate decisions.
-      assert.ok(Math.abs(probabilities[index] - probability) < 2e-5, `${example.text}, Metal probability ${index}`);
-      assert.equal(probabilities[index] > 0.45, probability > 0.45, `${example.text}, Metal gate ${index}`);
+    scores.forEach((score, i) => {
+      const tolerance = 2e-5 + 4e-6 * Math.abs(example.scores[i]);
+      assert.ok(Math.abs(score - example.scores[i]) < tolerance, `${example.text}, gap ${i}`);
+      for (const expected of [example.scores[i], example.float32Scores[i]]) {
+        assert.ok(Math.abs(sigmoid(score) - sigmoid(expected)) < 2e-5, `${example.text}, probability ${i}`);
+        assert.equal(sigmoid(score) >= Math.fround(reference.threshold),
+          sigmoid(expected) >= Math.fround(reference.threshold), `${example.text}, cut ${i}`);
+      }
     });
   }
 });

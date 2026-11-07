@@ -15,7 +15,7 @@ const ready = Promise.all([
   .then(([data, weights]) => {
     data.weightsBytes = new Uint8Array(weights);
     globalThis.HaoduBoundaryModelData = data;
-    importScripts("../../backend/inference.js", "../../backend/chunker.js");
+    importScripts("../../backend/inference.js", "../../backend/clauses.js", "../../backend/single-cut.js", "../../backend/multicut-input.js", "../../backend/multicut.js", "../../backend/chunker.js");
   })
   .catch((error) => { initializationError = error; });
 

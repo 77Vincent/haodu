@@ -57,11 +57,21 @@ npm run test:serve
 
 需要更新模型时，在私有仓库训练、验证并导出，再将导出文件写入或复制到本仓库的 `src/boundary-model-data.js`，执行模型对齐验证、测试和扩展打包。公开仓库的运行、构建和 benchmark 均不依赖私有训练仓库。两者通过导出的模型文件交接。
 
-模型导出格式为 `haodu-f32-v1`，浏览器全局对象为 `HaoduBoundaryModelData`。使用训练仓库当前的 `training/export_browser_model.py` 导出；历史实验快照中的导出器可能使用过时接口，需要重新导出后再接入。
+模型导出格式为 `haodu-f32-v1`，浏览器全局对象为 `HaoduBoundaryModelData`。
+当前工作区固定使用多切点验证节点 `epoch-1-samples-3000103049.pt`，SHA-256 为
+`e716e4860cf53282dfd472c13ca88b451b026b2972da1937f3d8ac8b8b8e73fd`。
+12,226 项字符词表、192 通道、8 个残差块、16 层卷积，阈值为该节点验证选择的 0.95。
+这是对默认模型的显式接入；已发布的 0.4.0 仍是 E8 单切点模型，不会自动重新发布。
 
-0.4.0 内置模型更新为 **E8 扩词表后、500 万条全参数联合微调的完成终点**，使用统一的 **16,384 项字符词表**。这是固定训练终点，不是中途选出的 best checkpoint；导出元数据为 `sourceEpoch: 8`、`bestEpoch: null` 和 `exportedState: "joint fixed 5,000,000-example endpoint"`，checkpoint SHA-256 为 `e34ac4e27983a251689652c81aed3910bbd0ee63f820d54ae4df1d5dafb8e986`。192 通道、8 个残差块（16 层卷积）的架构不变。实际切分规则见 [当前后端说明](architecture.md)：视觉长度达到 13 才尝试切分，置信度须严格大于 45%，无汉字的子句及递归子片段跳过推理。
+多切点导出可通过 `benchmark/export_checkpoint.py` 的 `export_checkpoint(source, output)`
+将明确指定的 checkpoint 转为浏览器权重；仅转换需要 PyTorch，推理与构建无需训练仓库。
+`npm run golden:benchmark` 直接测试当前内置模型，`--checkpoint` 则测试指定研究节点。
+两条路径使用同一个正式后端入口和测量循环。
 
-数值参考由该终点的同一组 float32 权重分别在 PyTorch CPU float64 和 Metal float32 下独立计算，并覆盖扩展词表中的新字符。浏览器对 CPU 的 logit 容差为 `2e-5 + 4e-6 × abs(reference)`，概率容差为 `1e-5`；Metal 概率容差为 `2e-5`，同时要求 CPU、Metal 和浏览器的最高分位置与 45% 阈值判断一致。这些数值验证容差不改变运行时的切分阈值。
+独立数值参考通过 `python3 scripts/generate-model-reference.py /absolute/path/checkpoint.pt`
+生成，使用 PyTorch functional CPU float64 与 float32 前向计算；不调用 JS 引擎或私有训练代码。
+`test/model-backend-reference.json` 固定权重身份、逐 gap logits 与验证阈值。
+测试检查浏览器与参考的 logits、sigmoid 概率和全部阈值决策；相应容差不是推理阈值。
 
 ## 本地构建
 

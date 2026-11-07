@@ -8,7 +8,7 @@ export function extensionTarget(sourceManifest, browser = 'chrome') {
     'icons/on-16.png', 'icons/on-32.png', 'icons/on-48.png', 'icons/on-128.png',
     'icons/off-16.png', 'icons/off-32.png',
     'src/app/reader.js',
-    'src/backend/chunker.js', 'src/backend/inference.js', 'src/boundary-model-data.js',
+    'src/backend/chunker.js', 'src/backend/clauses.js', 'src/backend/single-cut.js', 'src/backend/multicut-input.js', 'src/backend/multicut.js', 'src/backend/inference.js', 'src/boundary-model-data.js',
     'src/content.css', 'src/divider-color.js', 'src/divider-width.js',
     'src/frontend/content-changes.js', 'src/frontend/dom-tree.js',
     'src/frontend/processed-text.js', 'src/frontend/read.js',

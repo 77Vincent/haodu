@@ -15,7 +15,7 @@ class MinimumLengthTests(unittest.TestCase):
         self.assertFalse(feasible([[0,5,12,16],[0,0,7,11],[0,0,0,4],[0,0,0,0]],13))
 
     def test_real_backend_numeric_units_and_presegmentation(self):
-        backend=Path(__file__).resolve().parents[1]/'src/backend/chunker.js'
+        backend=Path(__file__).resolve().parents[1]/'src/backend/single-cut.js'
         texts=['有一名男子｜在家中疑似中风｜动弹不了','有一名男子｜在家中疑似中风动弹不了','利用这种技术｜医生、护士和其他医疗专业人员','一般山脊海拔大于2000米｜切割深度大于1000米','甲'*13,'甲'*14]
         result=subprocess.run(['node','-e',HELPERS],input=json.dumps({'backend':str(backend),'rows':[{'line':i+2,'text':t} for i,t in enumerate(texts)]}),text=True,capture_output=True,check=True)
         report=json.loads(result.stdout)
@@ -28,7 +28,7 @@ class MinimumLengthTests(unittest.TestCase):
 
 
     def test_hard_gap_rules(self):
-        backend=Path(__file__).resolve().parents[1]/'src/backend/chunker.js'
+        backend=Path(__file__).resolve().parents[1]/'src/backend/single-cut.js'
         texts=['如今的《圆桌派》｜每期质量参差不齐','包括｜α辐射和其他辐射类型','我｜们需要更加认真地研究这个问题','我们｜需要更加认真地研究这个问题','这是引用“内容”｜后面的文字','前面的文字｜“这是引用的内容”']
         result=subprocess.run(['node','-e',HELPERS],input=json.dumps({'backend':str(backend),'rows':[{'line':i+2,'text':t} for i,t in enumerate(texts)]}),text=True,capture_output=True,check=True)
         rows=json.loads(result.stdout)['results']

@@ -3,8 +3,8 @@ const assert = require("node:assert/strict");
 const { readFileSync } = require("node:fs");
 const { join } = require("node:path");
 const vm = require("node:vm");
-const realChunker = require("../src/backend/chunker.js");
-const source = readFileSync(join(__dirname, "../src/backend/chunker.js"), "utf8");
+const realChunker = require("./helpers/single-cut.cjs").chunker;
+const source = require("./helpers/single-cut.cjs").source;
 const english = "Hi everyone, Please review and update the following tasks for the 27.4.0 EU New ECWH project: 1. Owner Confirmation";
 const chinese = "𠮷甲乙丙丁戊己庚辛壬癸子丑";
 

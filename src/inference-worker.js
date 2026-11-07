@@ -1,6 +1,6 @@
 "use strict";
 
-importScripts("boundary-model-data.js", "backend/inference.js", "backend/chunker.js");
+importScripts("boundary-model-data.js", "backend/inference.js", "backend/clauses.js", "backend/single-cut.js", "backend/multicut-input.js", "backend/multicut.js", "backend/chunker.js");
 
 // Each message is a complete viewport. The backend only sees text data.
 self.onmessage = (event) => {

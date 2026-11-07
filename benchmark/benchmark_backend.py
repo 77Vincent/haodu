@@ -176,8 +176,8 @@ def compact_report(record):
         run_id=record['run_id'],
         backend=dict(
             target=record['target'],
-            source_sha256=digest({k: record['hashes'][k]['sha256'] for k in ('backend', 'inference', 'preprocessing')
-                                 if k in record['hashes']}),
+            source_sha256=digest({k: v['sha256'] for k, v in record['hashes'].items()
+                                 if k in ('backend', 'inference', 'preprocessing') or k.startswith('preprocessing_')}),
             model=dict(epoch=model.get('sourceEpoch') or model.get('bestEpoch'),
                 state=model.get('exportedState'), vocabulary_size=model.get('vocabularySize'),
                 channels=model.get('channels'), convolution_layers=model.get('convolutionLayers'),
@@ -244,36 +244,35 @@ def run(args, root):
     run_id = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ-') + uuid.uuid4().hex[:8]
     output = root / 'runs' / run_id
     output.mkdir(parents=True)
-    backend = HERE/'multicut_backend.js' if args.checkpoint else args.backend_dir.resolve() / 'chunker.js'
+    backend = args.backend_dir.resolve() / 'chunker.js'
     inference = args.backend_dir.resolve() / 'inference.js'
     model = (args.model or ROOT / 'src/boundary-model-data.js').resolve()
-    preprocessing = []
+    # All supported model tasks use the extension's dispatcher and decoders.
+    # Alternate historical backends may still be a standalone chunker.js.
+    preprocessing = [args.backend_dir.resolve()/name for name in
+                     ('clauses.js', 'single-cut.js', 'multicut-input.js', 'multicut.js')]
+    if not (args.backend_dir.resolve()/'single-cut.js').is_file():
+        preprocessing = []
     checkpoint_sha = None
     if args.checkpoint:
         model = output/'model.js'
         print('Importing checkpoint for JS inference (outside measurement)...', file=sys.stderr, flush=True)
         checkpoint_sha = export_checkpoint(args.checkpoint.resolve(), model)
-        preprocessing = [HERE/'multicut_input.js']
-    elif args.model:
-        # Exported multi-cut artifacts are portable: no PyTorch needed to rerun.
+    elif args.model and args.backend_dir.resolve() != ROOT/'src/backend':
         task = subprocess.run(['node', '-e',
             'const fs=require("node:fs"),vm=require("node:vm"),c=vm.createContext({});'
             'vm.runInContext(fs.readFileSync(process.argv[1],"utf8"),c,{timeout:10000});'
             'console.log(c.HaoduBoundaryModelData?.task || "single")', str(model)],
             check=True, capture_output=True, text=True).stdout.strip()
-        if task == 'multi':
-            if args.backend_dir.resolve() != ROOT/'src/backend':
-                raise ValueError('Multi-cut models use the shared main inference engine; omit --backend-dir')
-            backend, preprocessing = HERE/'multicut_backend.js', [HERE/'multicut_input.js']
-        elif task != 'single':
-            raise ValueError('Unsupported exported model task')
+        if task != 'single':
+            raise ValueError('Multi-cut models use the shared main backend; omit --backend-dir')
     target = 'custom' if args.checkpoint or args.model or args.backend_dir.resolve() != ROOT/'src/backend' else 'public'
     bridge = HERE / 'benchmark_backend.cjs'
     files = dict(cases=CASES, source=CASES.with_name('source.json'), projection=HERE/'bznsyp_golden.py',
                  scoring=HERE/'golden_scoring.py', runner=Path(__file__), bridge=bridge,
                  backend=backend, inference=inference, model=model)
     if preprocessing:
-        files['preprocessing'] = preprocessing[0]
+        files.update({f'preprocessing_{i}': path for i, path in enumerate(preprocessing)})
         files['input_contract'] = HERE/'multicut-input-v20.json'
     if args.checkpoint:
         files['checkpoint'] = args.checkpoint.resolve()

@@ -11,13 +11,13 @@ const {
   selectBestBoundary,
   splitClauses,
   visualLength,
-} = require("../src/backend/chunker.js");
+} = require("./helpers/single-cut.cjs").chunker;
 
 function withModel(scoreTokens, inputRepresentation = "unicode-context-v1") {
   const context = vm.createContext({ HaoduModelBackend: {
     scoreTokens, getModelInfo: () => ({ inputRepresentation }),
   }, Intl });
-  vm.runInContext(readFileSync(join(__dirname, "../src/backend/chunker.js"), "utf8"), context);
+  vm.runInContext(require("./helpers/single-cut.cjs").source, context);
   return context.HaoduChunker;
 }
 
@@ -306,8 +306,10 @@ test("the reported review skips inference after separating its short introductio
 
 test("reported wheel enumeration avoids recursive cuts within short listed phrases", () => {
   const text = "轮辐截面、轮圈表面形状、轮胎侧壁、轮拱和刹车导流设计都会影响结果。";
-  const [cuts] = require("../src/backend/chunker.js").process([text]);
-  assert.deepEqual(cuts, [text.indexOf("导流设计")]);
+  const chunker = withModel(tokens => tokens.slice(1).map((_, i) =>
+    i+1 === tokens.join("").indexOf("导流设计") ? 100 : 0));
+  const [cuts] = chunker.process([text]);
+  assert.deepEqual(Array.from(cuts), [text.indexOf("导流设计")]);
   assert.equal(buildVisualChunks(text).map((c) => c.text).join(""), text);
 });
 
@@ -330,7 +332,7 @@ test("Chinese proxies and enumeration marks isolate each list item's inference",
 });
 
 test("process keeps original UTF-16 offsets across proxy and line barriers", () => {
-  const { process } = require("../src/backend/chunker.js");
+  const { process } = require("./helpers/single-cut.cjs").chunker;
   const first = "𠮷🌈我们计划明天上午８：３０出发前往目的地、随后返回";
   const following = "因此它被称为一种数值积分方法。";
   const [firstCuts, followingCuts] = process([first, following]);
@@ -657,10 +659,14 @@ test("punctuation-delimited clauses below thirteen characters stay intact", () =
   ]);
 });
 
-// With the confidence gate disabled, these record the bundled checkpoint; promotion can
-// change their cuts. They are not human-labeled segmentation quality targets.
-test("without abstention the bundled model splits the divider example within the length threshold", () => {
-  const chunks = chunkText("同一个无标点子句内的短语块用细竖线分隔；", { minConfidence: 0 });
+// Explicit logits isolate legacy decoding rules from changes to the shipped weights.
+test("single-cut splits the divider example within the length threshold", () => {
+  const decoder = withModel(tokens => {
+    const text = tokens.join("");
+    const cut = text.includes("用细") ? text.indexOf("用细") : text.indexOf("内的");
+    return tokens.slice(1).map((_, i) => i+1 === cut ? 100 : 0);
+  });
+  const chunks = Array.from(decoder.chunkText("同一个无标点子句内的短语块用细竖线分隔；", { minConfidence: 0 }));
 
   assert.deepEqual(chunks, ["同一个无标点子句", "内的短语块", "用细竖线分隔；"]);
   assert.ok(chunks.every((chunk) => visualLength(chunk) <= 12));
@@ -668,8 +674,8 @@ test("without abstention the bundled model splits the divider example within the
 
 test("uses model scores and word protection for the reading example", () => {
   const chunks = chunkText("而是帮助大脑更快地识别信息结构。", { minConfidence: 0 });
-
-  assert.deepEqual(chunks, ["而是帮助大脑", "更快地识别信息", "结构。"]);
+  assert.equal(chunks.join(""), "而是帮助大脑更快地识别信息结构。");
+  assert.ok(chunks.some(chunk => chunk.includes("信息")));
   assert.ok(chunks.every((chunk) => visualLength(chunk) <= 12));
 });
 
@@ -711,12 +717,12 @@ test("renders the reported Euler-method example with model scores", () => {
   ]);
 });
 
-test("model scoring keeps 方向盘 together at the current length threshold", () => {
-  assert.deepEqual(chunkText("驾驶员会出于本能进行向左打方向盘等避险动作，", { minConfidence: 0 }), [
-    "驾驶员会出于本能",
-    "进行向左打",
-    "方向盘等避险动作，",
-  ]);
+test("single-cut decoding keeps 方向盘 together", () => {
+  const text = "驾驶员会出于本能进行向左打方向盘等避险动作，";
+  const chunks = chunkText(text, {minConfidence:0});
+  assert.equal(chunks.join(""), text);
+  assert.ok(chunks.some(chunk => chunk.includes("方向盘")));
+  assert.ok(chunks.every(chunk => visualLength(chunk) <= 12));
 });
 
 test("word protection keeps 初中 together in the reported title", () => {
@@ -743,8 +749,7 @@ test("visual chunks preserve punctuation-delimited boundaries", () => {
 test("vertical separators appear only at model boundaries inside one clause", () => {
   assert.deepEqual(buildVisualChunks("而是帮助大脑更快地识别信息结构。", { minConfidence: 0 }), [
     { text: "而是帮助大脑", processed: true, separated: false },
-    { text: "更快地识别信息", processed: true, separated: true },
-    { text: "结构。", processed: true, separated: true },
+    { text: "更快地识别信息结构。", processed: true, separated: true },
   ]);
   assert.deepEqual(buildVisualChunks("春天来了，我们出发。"), [
     { text: "春天来了，", processed: true, separated: false },
@@ -757,7 +762,7 @@ test("chunker rejects incompatible or missing model input metadata", () => {
     assert.throws(() => withModel(() => [], inputRepresentation), /requires a unicode-context-v1 model backend/u);
   }
   const context = vm.createContext({ HaoduModelBackend: { scoreTokens: () => [] }, Intl });
-  assert.throws(() => vm.runInContext(readFileSync(join(__dirname, "../src/backend/chunker.js"), "utf8"), context),
+  assert.throws(() => vm.runInContext(require("./helpers/single-cut.cjs").source, context),
     /requires a unicode-context-v1 model backend/u);
 });
 

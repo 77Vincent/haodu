@@ -89,7 +89,9 @@ class CheckpointIntegrationTests(unittest.TestCase):
             export_checkpoint(source,output)
             lengths = [65,130,1,64]
             request = dict(model=str(output), inference=str(HERE.parent/'src/backend/inference.js'),
-                backend=str(HERE/'multicut_backend.js'), preprocessing=[str(HERE/'multicut_input.js')],
+                backend=str(HERE.parent/'src/backend/chunker.js'),
+                preprocessing=[str(HERE.parent/'src/backend'/name) for name in
+                               ('clauses.js', 'single-cut.js','multicut-input.js','multicut.js')],
                 records=[dict(id=str(n),raw='甲'*n) for n in lengths],
                 warmup=1,repeats=2,workers=2)
             script = ('const {runBenchmark}=require(process.argv[1]);'
@@ -138,7 +140,16 @@ class CheckpointIntegrationTests(unittest.TestCase):
             self.assertEqual(report['backend']['model']['task'],'multi')
             self.assertEqual(report['backend']['model']['trained_samples'],100)
             self.assertFalse(report['backend']['rules']['recursion'])
-            self.assertEqual(report['performance']['model_calls_per_round'],10000)
+            self.assertEqual(report['backend']['rules']['presegmentation'],'shared natural clauses')
+            self.assertEqual(report['backend']['rules']['window_scope'],'clause')
+            # The fixed corpus contains multiple natural clauses in some rows.
+            self.assertEqual(report['performance']['model_calls_per_round'],10180)
+            from benchmark_backend import load_baseline, compact_report
+            record, _ = load_baseline(root/'results')
+            record['comparison'] = {}
+            self.assertEqual(compact_report(record)['backend']['source_sha256'],report['backend']['source_sha256'])
+            record['hashes']['preprocessing_0']['sha256'] = 'changed-clause-policy'
+            self.assertNotEqual(compact_report(record)['backend']['source_sha256'],report['backend']['source_sha256'])
             exported = next((root/'results/runs').glob('*/model.js'))
             # The portable export runs with the same command and engine.
             again = subprocess.run([sys.executable,str(HERE/'benchmark_backend.py'),'--model',str(exported),
