@@ -61,7 +61,7 @@ npm run test:serve
 当前工作区固定使用多切点验证节点 `epoch-1-samples-3000103049.pt`，SHA-256 为
 `e716e4860cf53282dfd472c13ca88b451b026b2972da1937f3d8ac8b8b8e73fd`。
 12,226 项字符词表、192 通道、8 个残差块、16 层卷积，阈值为该节点验证选择的 0.95。
-这是对默认模型的显式接入；已发布的 0.4.0 仍是 E8 单切点模型，不会自动重新发布。
+这是本地 0.5.0 对默认模型的显式接入；已发布的 0.4.0 仍是 E8 单切点模型，不会自动重新发布。
 
 多切点导出可通过 `benchmark/export_checkpoint.py` 的 `export_checkpoint(source, output)`
 将明确指定的 checkpoint 转为浏览器权重；仅转换需要 PyTorch，推理与构建无需训练仓库。
