@@ -747,11 +747,14 @@ test("visual chunks preserve punctuation-delimited boundaries", () => {
 });
 
 test("vertical separators appear only at model boundaries inside one clause", () => {
-  assert.deepEqual(buildVisualChunks("而是帮助大脑更快地识别信息结构。", { minConfidence: 0 }), [
+  const chunker = withModel(tokens => tokens.slice(1).map((_, i) => i + 1 === 6 ? 100 : 0));
+  const chunks = Array.from(chunker.buildVisualChunks("而是帮助大脑更快地识别信息结构。", { minConfidence: 0 }),
+    chunk => ({ ...chunk }));
+  assert.deepEqual(chunks, [
     { text: "而是帮助大脑", processed: true, separated: false },
     { text: "更快地识别信息结构。", processed: true, separated: true },
   ]);
-  assert.deepEqual(buildVisualChunks("春天来了，我们出发。"), [
+  assert.deepEqual(Array.from(chunker.buildVisualChunks("春天来了，我们出发。"), chunk => ({ ...chunk })), [
     { text: "春天来了，", processed: true, separated: false },
     { text: "我们出发。", processed: true, separated: false },
   ]);

@@ -28,9 +28,10 @@ clauses without Han. Multi-cut normalization and windowed decoding operate
 independently within each pre-split clause; never join clauses across proxies.
 Each window predicts all cuts once, with long clauses advancing from the last
 predicted cut. Natural clause boundaries are not emitted as model dividers.
-The bundled export is the explicitly promoted multi-cut epoch-1 checkpoint at
-3,000,103,049 samples (validation threshold 0.95). Single-cut decoding remains
-available for explicit historical model comparisons. Do not duplicate decoders
+The bundled export is the explicitly promoted single-cut epoch-1 checkpoint at
+3,600,043,757 samples, using the 13-visual-unit floor and strict softmax > 0.45
+gate. Multi-cut decoding remains available for explicitly supplied multi-cut models.
+Preserve original checkpoint validation records. Do not duplicate decoders
 inside benchmark or silently promote another checkpoint.
 
 The official BZNSYP corpus is installed in ignored `benchmark/golden/cases.csv`;

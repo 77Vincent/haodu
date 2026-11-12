@@ -40,7 +40,9 @@ npm run golden:benchmark -- --model /path/to/export.js --output /path/to/results
 `target: public` 表示本仓库默认模型/后端；自定义输入记为 `custom`。这些是来源标签，不是发布版本号。
 
 后端阈值、置信度、预处理和递归都直接使用实际代码默认值，不替换源码常量。
-当前默认导出为多切点 epoch 1 的 3,000,103,049 样本节点，sigmoid 阈值 0.95，无长度下限；单切点导出仍使用 13 视觉单位下限和严格大于 0.45 的 softmax。
+当前默认导出为单切点 epoch 1 的 3,600,043,757 样本节点，使用 13 视觉单位下限、
+严格大于 0.45 的 softmax、递归重算和词内保护。
+显式提供多切点 checkpoint 时仍读取其中对应验证记录的 sigmoid 阈值，不沿用本地旧模型覆盖值。
 独立门控研究已结束，此入口不加入门控。
 
 ### 单切点／多切点 checkpoint
@@ -94,7 +96,7 @@ softmax 严格大于 0.45、递归重算、词内保护。输入处理与 256-to
 `backend.rules` 同时记录窗口推进策略和零切点的处理策略。
 不筛掉标贝题目。输入规范化、原文坐标映射、网络与解码都在后端计时范围内；
 模型时间只包含双方共享的 `src/backend/inference.js`。
-扩展和 benchmark 共用 `src/backend/chunker.js`、`clauses.js`、`multicut.js`、`multicut-input.js`，不维护另一份研究解码器。当前内置模型已显式接入多切点；已发布的版本不随工作区修改自动更新。
+扩展和 benchmark 共用 `src/backend/chunker.js`、`clauses.js`、`single-cut.js`、`multicut.js`、`multicut-input.js`，不维护另一份研究解码器。当前内置模型为单切点；已发布的版本不随工作区修改自动更新。
 
 ### 两种模型对比
 

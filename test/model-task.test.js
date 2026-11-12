@@ -5,10 +5,14 @@ const {readFileSync} = require('node:fs');
 const {join} = require('node:path');
 const data = require('../src/boundary-model-data.js');
 
+// Exercise multi-cut dispatch independently of the currently bundled task.
+const multiCut = {threshold: .5, maximumCharacters: 64,
+  inputPolicy: require('../benchmark/multicut-input-v20.json')};
+
 function session(task, score = 10) {
   const calls = [];
   const context = vm.createContext({Intl,
-    HaoduBoundaryModelData: {...data, task},
+    HaoduBoundaryModelData: {...data, task, ...(task === 'multi' ? {multiCut} : {})},
     HaoduModelBackend: {
       getModelInfo: () => ({inputRepresentation:'unicode-context-v1'}),
       scoreTokens(tokens) { calls.push([...tokens]); return tokens.slice(1).map(() => score); },
@@ -24,7 +28,7 @@ test('the shared entry selects multi-cut or legacy single-cut from model metadat
   const multi = session('multi');
   assert.deepEqual(Array.from(multi.api.process(['甲乙丙丁'])[0]),[1,2,3]);
   assert.equal(multi.calls.length,1);
-  assert.equal(multi.api.getSettings().min_confidence,.95);
+  assert.equal(multi.api.getSettings().min_confidence,multiCut.threshold);
   for (const task of ['single',undefined]) {
     const single = session(task);
     assert.deepEqual(Array.from(single.api.process(['甲乙丙丁'])[0]),[]);

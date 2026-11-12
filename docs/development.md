@@ -58,20 +58,25 @@ npm run test:serve
 需要更新模型时，在私有仓库训练、验证并导出，再将导出文件写入或复制到本仓库的 `src/boundary-model-data.js`，执行模型对齐验证、测试和扩展打包。公开仓库的运行、构建和 benchmark 均不依赖私有训练仓库。两者通过导出的模型文件交接。
 
 模型导出格式为 `haodu-f32-v1`，浏览器全局对象为 `HaoduBoundaryModelData`。
-当前工作区固定使用多切点验证节点 `epoch-1-samples-3000103049.pt`，SHA-256 为
-`e716e4860cf53282dfd472c13ca88b451b026b2972da1937f3d8ac8b8b8e73fd`。
-12,226 项字符词表、192 通道、8 个残差块、16 层卷积，阈值为该节点验证选择的 0.95。
+当前工作区固定使用单切点验证节点 `epoch-1-samples-3600043757.pt`，SHA-256 为
+`9194fa4f8c43e4be2eb05f67089accc5bbf4d3454e2b7fa9dd41d3e87f3e826b`。
+12,226 项字符词表、192 通道、8 个残差块、16 层卷积；原始验证正确率为 92.4315%。
+后端使用 13 视觉单位起切下限、严格大于 0.45 的 softmax 门槛、递归重算和词内保护。
+这是起切片段的长度门槛，不是切后每段的最小长度；数字表达式和英文单词各计一个视觉单位。
+导出的模型文件 SHA-256 为 `b4e6159376bc87fe5e850cf9a60026ef9dd74a5ac0bc6731339c93bc1e1e22cb`。
+此权重及 13 下限已在全量标贝测得 accuracy 60.36%、precision 88.3830%、recall 61.1122%、F1 72.2603%。
+12 下限实验的历史报告保留在独立目录，不覆盖正式基线。多切点模型仍可显式加载，其规则见架构文档。
 这是本地 0.5.0 对默认模型的显式接入；已发布的 0.4.0 仍是 E8 单切点模型，不会自动重新发布。
 
-多切点导出可通过 `benchmark/export_checkpoint.py` 的 `export_checkpoint(source, output)`
+单切点或多切点导出可通过 `benchmark/export_checkpoint.py` 的 `export_checkpoint(source, output)`
 将明确指定的 checkpoint 转为浏览器权重；仅转换需要 PyTorch，推理与构建无需训练仓库。
 `npm run golden:benchmark` 直接测试当前内置模型，`--checkpoint` 则测试指定研究节点。
 两条路径使用同一个正式后端入口和测量循环。
 
 独立数值参考通过 `python3 scripts/generate-model-reference.py /absolute/path/checkpoint.pt`
 生成，使用 PyTorch functional CPU float64 与 float32 前向计算；不调用 JS 引擎或私有训练代码。
-`test/model-backend-reference.json` 固定权重身份、逐 gap logits 与验证阈值。
-测试检查浏览器与参考的 logits、sigmoid 概率和全部阈值决策；相应容差不是推理阈值。
+`test/model-backend-reference.json` 固定任务、权重身份和逐 gap logits；多切点还记录验证阈值。
+当前测试检查浏览器与参考的 logits、softmax 概率、最优位置与置信度决策；相应容差不是推理阈值。
 
 ## 本地构建
 
