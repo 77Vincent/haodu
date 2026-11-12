@@ -73,10 +73,12 @@ def export_checkpoint(source, output):
     source, output = Path(source), Path(output)
     before = hashlib.sha256(source.read_bytes()).hexdigest()
     checkpoint = torch.load(source, map_location='cpu', weights_only=True)
-    if not isinstance(checkpoint, dict) or checkpoint.get('task') != 'multi':
-        raise ValueError('--checkpoint requires a multi-boundary checkpoint; '
-                         'single-boundary browser exports use --model')
+    if not isinstance(checkpoint, dict) or checkpoint.get('task') not in ('single', 'multi'):
+        raise ValueError('--checkpoint requires an explicit single or multi task')
+    task = checkpoint['task']
     config = checkpoint['configuration']
+    if config.get('task', task) != task:
+        raise ValueError('Checkpoint task disagrees with its configuration')
     if config.get('model_execution_contract') != 'masked-residual-convolutions-v1':
         raise ValueError('Unsupported checkpoint network execution contract')
     channels, blocks = config['channels'], config['residual_blocks']
@@ -84,7 +86,9 @@ def export_checkpoint(source, output):
     if any(type(v) is not int or v < 1 for v in (channels, blocks, maximum)) or maximum < 2:
         raise ValueError('Invalid checkpoint dimensions or input limit')
     policy = input_contract(checkpoint['data_policy'])
-    threshold = selected_threshold(checkpoint)
+    # Single-cut logits are decoded by the existing recursive softmax backend.
+    # Its confidence gate is a backend rule, not a sigmoid validation threshold.
+    threshold = selected_threshold(checkpoint) if task == 'multi' else None
     vocabulary = checkpoint['vocabulary']
     if (not isinstance(vocabulary, dict) or vocabulary.get('<pad>') != 0 or vocabulary.get('<unk>') != 1
             or any(type(i) is not int for i in vocabulary.values())
@@ -110,15 +114,16 @@ def export_checkpoint(source, output):
         raise ValueError('Checkpoint changed while reading; use a saved validation snapshot')
     position = checkpoint.get('progress') or checkpoint.get('best_position') or {}
     epoch = position.get('epoch', checkpoint.get('selection', {}).get('epoch', checkpoint.get('epoch')))
-    payload = dict(format='haodu-f32-v1', task='multi', checkpointSha256=before,
+    payload = dict(format='haodu-f32-v1', task=task, checkpointSha256=before,
         sourceEpoch=epoch, trainedSamples=position.get('seen_examples', position.get('samples')),
         exportedState='model_state', tokenization='character', inputRepresentation='unicode-context-v1',
         candidatePositions='between every adjacent Unicode code point',
         architecture=dict(channels=channels, residualBlocks=blocks, convolutionsPerBlock=2, kernelSize=3, dilation=1),
-        multiCut=dict(threshold=threshold, thresholdSource='checkpoint validation',
-                      maximumCharacters=maximum, inputPolicy=policy),
         vocabulary=vocabulary, tensors=descriptors,
         weightsBase64=base64.b64encode(b''.join(chunks)).decode('ascii'))
+    if task == 'multi':
+        payload['multiCut'] = dict(threshold=threshold, thresholdSource='checkpoint validation',
+                                  maximumCharacters=maximum, inputPolicy=policy)
     text = '(function(root,data){if(typeof module==="object"&&module.exports)module.exports=data;'
     text += 'root.HaoduBoundaryModelData=data;})(globalThis,'
     text += json.dumps(payload, ensure_ascii=False, separators=(',', ':'), allow_nan=False) + ');\n'

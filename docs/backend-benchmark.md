@@ -43,9 +43,9 @@ npm run golden:benchmark -- --model /path/to/export.js --output /path/to/results
 当前默认导出为多切点 epoch 1 的 3,000,103,049 样本节点，sigmoid 阈值 0.95，无长度下限；单切点导出仍使用 13 视觉单位下限和严格大于 0.45 的 softmax。
 独立门控研究已结束，此入口不加入门控。
 
-### 多切点 checkpoint
+### 单切点／多切点 checkpoint
 
-同一入口现在可直接接受多切点的验证节点或最终 `best.pt`：
+同一入口直接接受明确标记 `task: single` 或 `task: multi` 的 checkpoint：
 
 ```sh
 npm run golden:benchmark -- --checkpoint /absolute/path/to/checkpoint.pt
@@ -58,13 +58,17 @@ python3 -m pip install --target artifacts/benchmark-deps -r benchmark/checkpoint
 ```
 
 读取明确提供的文件，使用其中的 `model_state`，不自动换成 `best_state`，不训练。
-验证节点从与其 epoch、已训练样本数完全对应的验证记录取概率阈值；最终 `best.pt`
+多切点验证节点从与其 epoch、已训练样本数完全对应的验证记录取概率阈值；最终 `best.pt`
 读取 `selection.threshold`。缺失对应记录时直接报错，不使用旧节点阈值或在标贝上调参。
 当前支持 `unicode-context-v20` 输入规范、FP32 字符模型；未知规范或网络结构明确拒绝。
+单切点不要求 sigmoid 阈值记录，自动进入现有单切点后端：13 视觉单位起切、
+softmax 严格大于 0.45、递归重算、词内保护。输入处理与 256-token 带上下文窗口也沿用
+该后端，不因新 checkpoint 的训练长度上限为 64 而改写历史比较规则。
+报告直接从单切点后端读取实际规则参数。
 
 权重在计时前转为现有 JS 张量格式，保存到本次结果目录的 `model.js`。
 此转换及 checkpoint 读取时间不计入推理或进程启动时间。复跑也可对该文件使用 `--model`，
-会自动识别多切点模式，此时不需要 PyTorch。
+会自动识别单切点或多切点模式，此时不需要 PyTorch。
 
 默认输出 `artifacts/backend-benchmark/checkpoints/<checkpoint SHA-256>/parallel-8/report.json`，
 可用 `--output` 指定独立目录；不会覆盖内置模型的正式基线。报告仍使用同一 JSON 结构，
@@ -97,8 +101,8 @@ python3 -m pip install --target artifacts/benchmark-deps -r benchmark/checkpoint
 分别执行两次，使用相同 Node 引擎、CPU、进程数、分片、预热与轮数：
 
 ```sh
-npm run golden:benchmark -- --output artifacts/backend-benchmark/single-reference
-npm run golden:benchmark -- --checkpoint /path/to/checkpoint.pt --compare-to artifacts/backend-benchmark/single-reference
+npm run golden:benchmark -- --checkpoint /path/to/single.pt --output artifacts/backend-benchmark/single-reference
+npm run golden:benchmark -- --checkpoint /path/to/multi.pt --compare-to artifacts/backend-benchmark/single-reference
 ```
 
 `--compare-to` 只读取该目录的**固定基线**，将质量差值和性能差值写入同一报告，
@@ -223,6 +227,7 @@ npm run golden:benchmark:test
 
 覆盖全量来源、原有评分、预热隔离、固定分片覆盖与顺序、进程间并行及轮间等待、无缓存重复执行、
 预测一致性、子进程失败清理、非法切点、等待时间与计算耗时回归、进程数/旧协议可比性及基线完整性。
+checkpoint 导入还检查任务识别、FP32 分数一致性、单切点递归与阈值规则；
 多切点还检查 v20 文本/UTF-16 坐标、0～N 刀、无递归、阈值与权重对应、非法权重及超长输入拒绝。
 基本脚本只使用 Python 与 Node 标准库；checkpoint 导入另用可选 PyTorch。
 公开新克隆未安装题库或可选依赖时，仅跳过对应集成检查；算法与进程测试仍运行。

@@ -329,7 +329,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     inputs = parser.add_mutually_exclusive_group()
     inputs.add_argument('--model', type=Path, help='Explicit single/multi exported JS model')
-    inputs.add_argument('--checkpoint', type=Path, help='Multi-cut validation checkpoint; imports FP32 weights before timing')
+    inputs.add_argument('--checkpoint', type=Path, help='Single/multi-cut checkpoint; imports FP32 model_state before timing')
     parser.add_argument('--backend-dir', type=Path, default=ROOT/'src/backend')
     parser.add_argument('--output', type=Path, help='Benchmark root; contains immutable runs and baseline/latest pointers')
     parser.add_argument('--compare-to', type=Path, help='Compare against another output directory\'s pinned baseline (read-only)')

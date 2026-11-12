@@ -16,10 +16,12 @@ The runner, scoring, dataset provenance and focused tests live in `benchmark/`.
 The default loads this repository's own `src/backend` and exported model, with
 no training checkout or PyTorch dependency. Custom exported models use
 `--model /path/model.js --output /path/results`. An explicit `--checkpoint /path/model.pt`
-imports multi-cut FP32 tensors and their validated input/threshold contract before
+imports single/multi-cut FP32 tensors and their validated input contract before
 measurement. Only that optional import needs PyTorch; it never imports private
 training modules, resolves a training manifest, or trains/selects weights. Both
 tasks run the same JavaScript inference engine and benchmark measurement loop.
+Single-cut checkpoints use the existing recursive decoder with its 13-visual-unit
+floor and softmax > 0.45 gate; only multi-cut imports a sigmoid validation threshold.
 Both tasks enter `src/backend/chunker.js`, which dispatches using model metadata.
 Both decoders use the same `src/backend/clauses.js` presegmentation and skip
 clauses without Han. Multi-cut normalization and windowed decoding operate

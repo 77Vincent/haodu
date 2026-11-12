@@ -347,6 +347,22 @@
 
   return Object.freeze({
     MIN_SPLIT_CONFIDENCE,
+    getSettings() {
+      return Object.freeze({
+        task: "single",
+        min_visual_length: MIN_SPLIT_VISUAL_LENGTH,
+        min_confidence: MIN_SPLIT_CONFIDENCE,
+        confidence: "softmax over all gaps; strictly greater than threshold",
+        recursion: true,
+        presegmentation: "shared natural clauses",
+        window_scope: "recursive fragment within clause",
+        max_model_window_tokens: MAX_MODEL_WINDOW_TOKENS,
+        window_context_radius: MODEL_CONTEXT_RADIUS,
+        word_protection: "Intl.Segmenter zh-CN",
+        non_han: "skip clause and recursive child",
+        options: "backend defaults",
+      });
+    },
     gapProbabilities,
     process,
     boundaryFallsInsideWord,

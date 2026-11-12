@@ -1,4 +1,4 @@
-"""Generate independent PyTorch logits for an explicitly promoted multi-cut checkpoint."""
+"""Generate independent PyTorch logits for an explicitly promoted checkpoint."""
 import hashlib
 import json
 from pathlib import Path
@@ -38,8 +38,8 @@ def forward(text, checkpoint, dtype, device):
 if __name__ == '__main__':
     source = Path(sys.argv[1])
     checkpoint = torch.load(source, map_location='cpu', weights_only=True)
-    if checkpoint['task'] != 'multi':
-        raise ValueError('Expected an explicit multi-cut checkpoint')
+    if checkpoint['task'] not in ('single', 'multi'):
+        raise ValueError('Expected an explicit single or multi task')
     torch.set_num_threads(1)
     output = ROOT/'test/model-backend-reference.json'
     texts = [row['text'] for row in json.loads(output.read_text())['cases']]
@@ -50,7 +50,9 @@ if __name__ == '__main__':
                   sourceEpoch=checkpoint['progress']['epoch'],
                   trainedSamples=checkpoint['progress']['seen_examples'],
                   vocabularySize=len(checkpoint['vocabulary']),
-                  threshold=selected_threshold(checkpoint), cases=[])
+                  task=checkpoint['task'], cases=[])
+    if checkpoint['task'] == 'multi':
+        result['threshold'] = selected_threshold(checkpoint)
     with torch.no_grad():
         for text in texts:
             result['cases'].append(dict(text=text,
