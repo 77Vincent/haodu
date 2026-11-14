@@ -712,8 +712,8 @@ test("renders the reported Euler-method example with model scores", () => {
     '用"无数个小矩形累加"',
     '来近似积分，',
     "因此",
-    "它被称为一种数值积分方法",
-    "（numerical integration method）。",
+    "它被称为一种数值",
+    "积分方法（numerical integration method）。",
   ]);
 });
 

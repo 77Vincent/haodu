@@ -8,11 +8,11 @@ const reference = require("./model-backend-reference.json");
 
 const projectRoot = join(__dirname, "..");
 
-test("browser backend loads the promoted 3.6-billion-sample single-cut checkpoint", () => {
+test("browser backend loads the promoted 5.05-billion-sample single-cut checkpoint", () => {
   const info = backend.getModelInfo();
   assert.equal(info.task, "single");
   assert.equal(reference.task, "single");
-  assert.equal(info.trainedSamples, 3600043757);
+  assert.equal(info.trainedSamples, 5050003261);
   assert.equal(info.checkpointSha256, reference.checkpointSha256);
   assert.equal(info.trainedSamples, reference.trainedSamples);
   assert.equal(modelData.sourceEpoch, reference.sourceEpoch);
