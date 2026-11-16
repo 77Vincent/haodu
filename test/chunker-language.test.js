@@ -39,8 +39,8 @@ test("English clauses inside a Han-containing node stay intact and preserve sour
     const input = prefix + chinese;
     const offset = prefix.length + "𠮷".length;
     assert.deepEqual(Array.from(chunker.process([input])[0]), [offset], delimiter);
-    assert.equal(inputs.length, 1, "only the Chinese clause receives inference");
-    assert.equal(inputs[0], chinese);
+    assert.deepEqual(inputs, [chinese],
+      "only the Chinese clause receives inference; its 12-unit child stops");
     assert.equal(Array.from(chunker.chunkText(input)).join(""), input);
   }
 });

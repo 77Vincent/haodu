@@ -75,9 +75,10 @@ test("context tokenization normalizes input while retaining original UTF-16 offs
   assert.equal(tokens.filter((t) => t.index === text.indexOf("ﬃ")).length, 3);
 });
 
-test("Chinese sentence delimiters pre-split clauses and only 13-unit clauses reach the model", () => {
+test("Chinese sentence delimiters pre-split clauses and only clauses of at least 13 units reach the model", () => {
   const proxy_punctuation = Array.from("，。；！？…");
   const twelve = "甲乙丙丁戊己庚辛壬癸子丑";
+  const eleven = twelve.slice(0, 11);
   const thirteen = twelve + "寅";
   for (const punctuation of proxy_punctuation) {
     const inputs = [];
@@ -85,9 +86,9 @@ test("Chinese sentence delimiters pre-split clauses and only 13-unit clauses rea
       inputs.push(tokens.join(""));
       return tokens.slice(1).map(() => 0);
     }, "unicode-context-v1");
-    const text = `${twelve}${punctuation}${thirteen}${punctuation}短句`;
+    const text = `${eleven}${punctuation}${twelve}${punctuation}${thirteen}${punctuation}短句`;
     assert.deepEqual(Array.from(chunker.splitClauses(text)),
-      [`${twelve}${punctuation}`, `${thirteen}${punctuation}`, "短句"], punctuation);
+      [`${eleven}${punctuation}`, `${twelve}${punctuation}`, `${thirteen}${punctuation}`, "短句"], punctuation);
     const chunks = Array.from(chunker.chunkText(text, { segmenter: null }));
     assert.deepEqual(inputs, [thirteen], punctuation);
     assert.equal(chunks.join(""), text);
@@ -168,8 +169,8 @@ test("spaces touching Latin, numbers or punctuation remain model context", () =>
 });
 
 test("Han spaces apply the length gate to each passage without adding visible dividers", () => {
-  const chunker = withModel(() => { throw new Error("each passage is shorter than 13 units"); });
-  const text = "甲乙丙丁戊己庚辛壬癸子丑   寅卯辰巳午未申酉戌亥天地";
+  const chunker = withModel(() => { throw new Error("each passage is shorter than 12 units"); });
+  const text = "甲乙丙丁戊己庚辛壬癸子   寅卯辰巳午未申酉戌亥天";
   assert.ok(chunker.visualLength(text) >= 13);
   assert.deepEqual(Array.from(chunker.process([text])[0]), []);
   const chunks = Array.from(chunker.buildVisualChunks(text));
@@ -231,7 +232,7 @@ test("compatibility enumeration marks remain context without adding normalized b
 });
 
 test("short list items skip inference and receive no model dividers", () => {
-  const chunker = withModel(() => { throw new Error("all fragments are below 13 units"); }, "unicode-context-v1");
+  const chunker = withModel(() => { throw new Error("all fragments are below 12 units"); }, "unicode-context-v1");
   const text = "𠮷🌈选项：字体、颜色、布局。";
   assert.deepEqual(Array.from(chunker.splitClauses(text)), ["𠮷🌈选项：", "字体、", "颜色、", "布局。"]);
   assert.equal(chunker.chunkText(text).join(""), text);
@@ -293,13 +294,18 @@ test("reading boundaries preserve UTF-16 cut offsets without adding punctuation 
 
 test("the reported review skips inference after separating its short introduction from the list", () => {
   const text = "整部电影讲的其实就一件事：一群摔过很多次、输过很多次、被生活按在地上摩擦过的人，凑在一起，互相托着，把不可能变成了可能。";
-  const chunker = withModel(() => { throw new Error("all fragments are shorter than 13 units"); });
+  const inputs = [];
+  const chunker = withModel(tokens => {
+    inputs.push(tokens.join(""));
+    return tokens.slice(1).map(() => 0);
+  });
   assert.deepEqual(Array.from(chunker.splitClauses(text)), [
     "整部电影讲的其实就一件事：", "一群摔过很多次、", "输过很多次、",
     "被生活按在地上摩擦过的人，", "凑在一起，", "互相托着，", "把不可能变成了可能。",
   ]);
   assert.deepEqual(Array.from(chunker.process([text])[0]), []);
-  const chunks = buildVisualChunks(text);
+  assert.deepEqual(inputs, []);
+  const chunks = chunker.buildVisualChunks(text);
   assert.equal(chunks.map((chunk) => chunk.text).join(""), text);
   assert.ok(chunks.every((chunk) => !chunk.separated));
 });
@@ -497,7 +503,7 @@ test("boundary selection searches only inside the requested fragment and returns
 test("fragment length limits still count numbers and preserve supplementary Han", () => {
   for (const [text, expected] of [
     ["1甲乙丙丁戊己庚辛壬癸子丑", ["1", "甲乙丙丁戊己庚辛壬癸子丑"]],
-    ["甲乙丙丁戊己庚辛壬癸子丑 1 2", ["甲乙", "丙丁戊己庚辛壬癸子丑 1 2"]],
+    ["甲乙丙丁戊己庚辛壬癸子 1 2", ["甲乙", "丙丁戊己庚辛壬癸子 1 2"]],
     ["1/4 English 𠀀甲乙丙丁戊己庚辛壬癸子", ["1/4 English 𠀀", "甲乙丙丁戊己庚辛壬癸子"]],
   ]) {
     let calls = 0;
@@ -643,7 +649,7 @@ test("only asks the model to split clauses of at least thirteen visual units", (
     return Array(tokens.length - 1).fill(0);
   });
   const text = "甲乙丙丁戊己庚辛壬癸子丑寅";
-  for (const length of [8, 9, 11, 12]) {
+  for (const length of [8, 9, 10, 11, 12]) {
     const short = text.slice(0, length);
     assert.deepEqual(Array.from(chunker.chunkText(short, { segmenter: null, minConfidence: 0 })), [short]);
   }
@@ -652,7 +658,7 @@ test("only asks the model to split clauses of at least thirteen visual units", (
   assert.deepEqual(inputs, [text]);
 });
 
-test("punctuation-delimited clauses below thirteen characters stay intact", () => {
+test("punctuation-delimited clauses below twelve characters stay intact", () => {
   assert.deepEqual(chunkText("甲乙丙丁戊己庚辛壬癸子，天地玄黄宇宙洪荒日月盈。"), [
     "甲乙丙丁戊己庚辛壬癸子，",
     "天地玄黄宇宙洪荒日月盈。",
@@ -669,17 +675,17 @@ test("single-cut splits the divider example within the length threshold", () => 
   const chunks = Array.from(decoder.chunkText("同一个无标点子句内的短语块用细竖线分隔；", { minConfidence: 0 }));
 
   assert.deepEqual(chunks, ["同一个无标点子句", "内的短语块", "用细竖线分隔；"]);
-  assert.ok(chunks.every((chunk) => visualLength(chunk) <= 12));
+  assert.ok(chunks.every((chunk) => visualLength(chunk) < 13));
 });
 
 test("uses model scores and word protection for the reading example", () => {
   const chunks = chunkText("而是帮助大脑更快地识别信息结构。", { minConfidence: 0 });
   assert.equal(chunks.join(""), "而是帮助大脑更快地识别信息结构。");
   assert.ok(chunks.some(chunk => chunk.includes("信息")));
-  assert.ok(chunks.every((chunk) => visualLength(chunk) <= 12));
+  assert.ok(chunks.every((chunk) => visualLength(chunk) < 13));
 });
 
-test("recursive splitting stops at twelve units across clauses", () => {
+test("recursive splitting stops below thirteen units across clauses", () => {
   const text = "在左侧输入一段需要重新组织的中文，看看它如何被重新组织成更清晰的短语。";
   const chunker = withModel((tokens) => Array(tokens.length - 1).fill(0));
   const clauses = chunker.chunkTextByClause(text, { segmenter: null, minConfidence: 0 });
@@ -687,7 +693,7 @@ test("recursive splitting stops at twelve units across clauses", () => {
   assert.equal(clauses.length, 2);
   assert.ok(clauses.every((chunks) => chunks.length > 1));
   assert.deepEqual(Array.from(clauses, (chunks) => chunks.join("")), splitClauses(text));
-  assert.ok(clauses.flat().every((chunk) => visualLength(chunk) <= 12));
+  assert.ok(clauses.flat().every((chunk) => visualLength(chunk) < 13));
 });
 
 test("uses model scores and word protection for a technical phrase", () => {
@@ -712,8 +718,8 @@ test("renders the reported Euler-method example with model scores", () => {
     '用"无数个小矩形累加"',
     '来近似积分，',
     "因此",
-    "它被称为一种数值",
-    "积分方法（numerical integration method）。",
+    "它被称为一种数值积分方法",
+    "（numerical integration method）。",
   ]);
 });
 

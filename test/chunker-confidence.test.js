@@ -67,15 +67,16 @@ test("default skips 12 units even at high confidence and requires strictly above
 });
 
 test("both 12-unit children stop without another model call", () => {
+  const input = text;
   const inputs = [];
   const chunker = withScores((tokens) => {
     inputs.push(tokens.join(""));
     if (tokens.length === 24) return tokens.slice(1).map((_, i) => i === 11 ? 100 : 0);
     throw new Error("12-unit children must skip inference");
   });
-  assert.deepEqual(Array.from(chunker.chunkText(text, { segmenter: null })),
-    [text.slice(0, 12), text.slice(12)]);
-  assert.deepEqual(inputs, [text]);
+  assert.deepEqual(Array.from(chunker.chunkText(input, { segmenter: null })),
+    [input.slice(0, 12), input.slice(12)]);
+  assert.deepEqual(inputs, [input]);
 });
 
 test("both 13-unit children receive fresh inference with the same strict 45% gate", () => {

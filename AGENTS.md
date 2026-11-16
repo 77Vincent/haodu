@@ -40,7 +40,7 @@ Never merge separate natural clauses to fix short pieces.
 Each window predicts all cuts once, with long clauses advancing from the last raw
 predicted cut before final selection. Natural clause boundaries are not emitted as model dividers.
 The bundled export is the explicitly promoted single-cut epoch-1 checkpoint at
-5,050,003,261 samples, using the 13-visual-unit floor and strict softmax > 0.45
+5,250,006,027 samples, using the 13-visual-unit floor and strict softmax > 0.45
 gate. Multi-cut decoding remains available for explicitly supplied multi-cut models.
 Preserve original checkpoint validation records. Do not duplicate decoders
 inside benchmark or silently promote another checkpoint.
