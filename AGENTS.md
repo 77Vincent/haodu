@@ -26,8 +26,19 @@ Both tasks enter `src/backend/chunker.js`, which dispatches using model metadata
 Both decoders use the same `src/backend/clauses.js` presegmentation and skip
 clauses without Han. Multi-cut normalization and windowed decoding operate
 independently within each pre-split clause; never join clauses across proxies.
-Each window predicts all cuts once, with long clauses advancing from the last
-predicted cut. Natural clause boundaries are not emitted as model dividers.
+Fragmentation prevention is temporarily disabled by default: retain every
+threshold-passing mappable cut, deduplicating original offsets. Consecutive short
+pieces are allowed. The retained filter is enabled only by explicitly setting
+`multiCut.preventConsecutiveShortSegments: true`; when enabled, forbid two
+adjacent pieces both at most two normalized Unicode characters. Across the whole
+clause, remove the lowest-logit cut touching a violating pair, rechecking the merged
+pieces after each removal; remove the later gap first on ties. Either the pair's
+internal cut or its outer cuts can help by merging a short piece with a neighbor.
+Do not minimize deletion count ahead of score. There is no independent input floor
+or three-character minimum per piece; fewer than two characters need no inference.
+Never merge separate natural clauses to fix short pieces.
+Each window predicts all cuts once, with long clauses advancing from the last raw
+predicted cut before final selection. Natural clause boundaries are not emitted as model dividers.
 The bundled export is the explicitly promoted single-cut epoch-1 checkpoint at
 5,050,003,261 samples, using the 13-visual-unit floor and strict softmax > 0.45
 gate. Multi-cut decoding remains available for explicitly supplied multi-cut models.
